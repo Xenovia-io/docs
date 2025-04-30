@@ -15,6 +15,7 @@ security:
 paths:
   /admin/audit-logs:
     get:
+      summary: List System Audit Logs
       tags:
       - admin
       description: API endpoint for retrieving system audit logs.
@@ -25,6 +26,7 @@ paths:
           content: {}
   /admin/audit-logs/{log_id}:
     get:
+      summary: Get Specific Audit Log
       tags:
       - admin
       description: API endpoint for retrieving a specific audit log.
@@ -41,6 +43,7 @@ paths:
           content: {}
   /admin/maintenance:
     get:
+      summary: Get Maintenance Mode Status
       tags:
       - admin
       description: API endpoint for managing system maintenance mode.
@@ -50,6 +53,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Toggle Maintenance Mode
       tags:
       - admin
       description: API endpoint for managing system maintenance mode.
@@ -60,6 +64,7 @@ paths:
           content: {}
   /admin/settings:
     get:
+      summary: List Global Settings
       tags:
       - admin
       description: API endpoint for managing global system settings.
@@ -69,6 +74,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Global Setting
       tags:
       - admin
       description: API endpoint for managing global system settings.
@@ -79,6 +85,7 @@ paths:
           content: {}
   /admin/settings/{setting_key}:
     get:
+      summary: Get Specific Setting
       tags:
       - admin
       description: API endpoint for managing a specific global system setting.
@@ -94,6 +101,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Specific Setting
       tags:
       - admin
       description: API endpoint for managing a specific global system setting.
@@ -109,6 +117,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Specific Setting
       tags:
       - admin
       description: API endpoint for managing a specific global system setting.
@@ -125,6 +134,7 @@ paths:
           content: {}
   /admin/stats:
     get:
+      summary: Get System Statistics
       tags:
       - admin
       description: API endpoint for retrieving system statistics.
@@ -135,6 +145,7 @@ paths:
           content: {}
   /admin/users:
     get:
+      summary: List Users
       tags:
       - admin
       description: API endpoint for admin user management.
@@ -144,6 +155,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create User
       tags:
       - admin
       description: API endpoint for admin user management.
@@ -154,6 +166,7 @@ paths:
           content: {}
   /admin/users/{user_id}:
     get:
+      summary: Get User Details
       tags:
       - admin
       description: API endpoint for admin user detail operations.
@@ -169,6 +182,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update User
       tags:
       - admin
       description: API endpoint for admin user detail operations.
@@ -184,6 +198,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete User
       tags:
       - admin
       description: API endpoint for admin user detail operations.
@@ -200,6 +215,7 @@ paths:
           content: {}
   /agents/agents/:
     get:
+      summary: List Agents
       tags:
       - agents
       description: List all agents for the current user or for a specific project.
@@ -209,6 +225,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Agent
       tags:
       - agents
       description: Create a new agent.
@@ -219,6 +236,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/:
     get:
+      summary: Get Agent Details
       tags:
       - agents
       description: Retrieve details of a specific agent.
@@ -234,6 +252,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Agent
       tags:
       - agents
       description: Update a specific agent.
@@ -249,6 +268,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Agent
       tags:
       - agents
       description: Delete a specific agent.
@@ -265,6 +285,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/config/:
     get:
+      summary: Get Agent Configuration
       tags:
       - agents
       description: Retrieve an agent's configuration.
@@ -280,6 +301,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Agent Configuration
       tags:
       - agents
       description: Update an agent's configuration.
@@ -296,6 +318,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/files/:
     get:
+      summary: Get Agent File Contents
       tags:
       - agents
       description: Get the contents of a file in the agent's workspace.
@@ -311,6 +334,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Agent File
       tags:
       - agents
       description: Update a file in the agent's workspace.
@@ -326,6 +350,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Upload Agent File
       tags:
       - agents
       description: Upload a file to the agent's workspace.
@@ -342,6 +367,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/logs/:
     get:
+      summary: Get Agent Logs
       tags:
       - agents
       description: Retrieve logs for a specific agent.
@@ -358,6 +384,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/memory/:
     get:
+      summary: List Agent Memory Items
       tags:
       - agents
       description: List memory items for a specific agent.
@@ -373,6 +400,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Agent Memory Item
       tags:
       - agents
       description: Add a memory item to an agent's memory.
@@ -388,6 +416,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Agent Memory Items
       tags:
       - agents
       description: Delete memory items for an agent.
@@ -404,6 +433,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/memory/export/:
     get:
+      summary: Export Agent Memory
       tags:
       - agents
       description: Export an agent's memory.
@@ -420,6 +450,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/memory/search/:
     post:
+      summary: Search Agent Memory
       tags:
       - agents
       description: Search an agent's memory.
@@ -436,6 +467,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/run/:
     post:
+      summary: Run Agent
       tags:
       - agents
       description: Run an agent with a message.
@@ -452,6 +484,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/runner/:
     post:
+      summary: Execute Code in Agent Workspace
       tags:
       - agents
       description: Execute code in an agent's workspace.
@@ -468,6 +501,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/stats/:
     get:
+      summary: Get Agent Statistics
       tags:
       - agents
       description: Retrieve statistics for a specific agent.
@@ -484,6 +518,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/status/:
     get:
+      summary: Get Agent Status
       tags:
       - agents
       description: Retrieve an agent's status.
@@ -499,6 +534,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Agent Status
       tags:
       - agents
       description: Update an agent's status.
@@ -515,6 +551,7 @@ paths:
           content: {}
   /agents/agents/{agent_id}/workspace/:
     get:
+      summary: Get Agent Workspace Contents
       tags:
       - agents
       description: Get an agent's workspace contents.
@@ -530,6 +567,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Directory in Agent Workspace
       tags:
       - agents
       description: Create a new directory in the agent's workspace.
@@ -545,6 +583,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete File/Directory in Agent Workspace
       tags:
       - agents
       description: Delete a file or directory from the agent's workspace.
@@ -561,6 +600,7 @@ paths:
           content: {}
   /agents/analytics/agents/{agent_id}/:
     get:
+      summary: Get Agent Analytics
       tags:
       - agents
       description: Get analytics data for a specific agent.
@@ -577,6 +617,7 @@ paths:
           content: {}
   /agents/analytics/cost/:
     get:
+      summary: Get Cost Analytics
       tags:
       - agents
       description: Get cost analytics data.
@@ -587,6 +628,7 @@ paths:
           content: {}
   /agents/analytics/performance/:
     get:
+      summary: Get Performance Analytics
       tags:
       - agents
       description: Get system performance analytics data.
@@ -597,6 +639,7 @@ paths:
           content: {}
   /agents/analytics/projects/{project_id}/:
     get:
+      summary: Get Project Analytics
       tags:
       - agents
       description: Get analytics data for a specific project.
@@ -613,6 +656,7 @@ paths:
           content: {}
   /agents/analytics/usage/:
     get:
+      summary: Get Usage Analytics
       tags:
       - agents
       description: Get system-wide usage analytics data.
@@ -623,6 +667,7 @@ paths:
           content: {}
   /agents/analytics/users/{user_id}/:
     get:
+      summary: Get User Analytics
       tags:
       - agents
       description: Get analytics data for a specific user.
@@ -639,6 +684,7 @@ paths:
           content: {}
   /agents/collaboration/messages/{message_id}/:
     get:
+      summary: Get Collaboration Message
       tags:
       - agents
       description: Get a specific message from a collaboration session
@@ -654,6 +700,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Collaboration Message
       tags:
       - agents
       description: Update a specific message in a collaboration session
@@ -669,6 +716,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Collaboration Message
       tags:
       - agents
       description: Delete a specific message from a collaboration session
@@ -685,6 +733,7 @@ paths:
           content: {}
   /agents/collaboration/sessions/:
     get:
+      summary: List Collaboration Sessions
       tags:
       - agents
       description: List collaboration sessions with optional filtering
@@ -694,6 +743,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Collaboration Session
       tags:
       - agents
       description: Create a new collaboration session
@@ -704,6 +754,7 @@ paths:
           content: {}
   /agents/collaboration/sessions/{session_id}/:
     get:
+      summary: List Collaboration Session Messages
       tags:
       - agents
       description: List all messages in a collaboration session
@@ -719,6 +770,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Collaboration Session
       tags:
       - agents
       description: Update a specific collaboration session
@@ -734,6 +786,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Collaboration Session Message
       tags:
       - agents
       description: Add a message to a collaboration session
@@ -749,6 +802,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Collaboration Session
       tags:
       - agents
       description: Delete a specific collaboration session
@@ -765,6 +819,7 @@ paths:
           content: {}
   /agents/collaboration/sessions/{session_id}/messages/:
     get:
+      summary: List Collaboration Session Messages by Sender
       tags:
       - agents
       description: List messages from a specific sender in a collaboration session
@@ -780,6 +835,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Perform Action on Collaboration Session Messages
       tags:
       - agents
       description: Perform an action on all messages from a sender in a session
@@ -796,6 +852,7 @@ paths:
           content: {}
   /agents/conversations/:
     get:
+      summary: List Conversations
       tags:
       - agents
       description: List all conversations with optional filtering
@@ -805,6 +862,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Start Conversation
       tags:
       - agents
       description: Start a new conversation with an agent
@@ -815,6 +873,7 @@ paths:
           content: {}
   /agents/conversations/{conversation_id}/:
     get:
+      summary: Get Conversation Details
       tags:
       - agents
       description: Get details of a specific conversation
@@ -830,6 +889,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Conversation
       tags:
       - agents
       description: Update a specific conversation
@@ -845,6 +905,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Conversation
       tags:
       - agents
       description: Delete a specific conversation
@@ -861,6 +922,7 @@ paths:
           content: {}
   /agents/conversations/{conversation_id}/messages/:
     get:
+      summary: Get Conversation Message
       tags:
       - agents
       description: Get a specific message from a conversation
@@ -876,6 +938,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Conversation Message
       tags:
       - agents
       description: "Update a message in a conversation (e.g., for feedback)"
@@ -891,6 +954,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Conversation Message
       tags:
       - agents
       description: Delete a message from a conversation
@@ -907,6 +971,7 @@ paths:
           content: {}
   /agents/deployments/:
     get:
+      summary: List Deployments
       tags:
       - agents
       description: List all deployments with optional filtering
@@ -916,6 +981,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Deployment
       tags:
       - agents
       description: Create a new deployment
@@ -926,6 +992,7 @@ paths:
           content: {}
   /agents/deployments/{deployment_id}/:
     get:
+      summary: Get Deployment Details
       tags:
       - agents
       description: Get a specific deployment
@@ -941,6 +1008,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Deployment
       tags:
       - agents
       description: Update a deployment
@@ -956,6 +1024,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Deployment
       tags:
       - agents
       description: Delete a deployment
@@ -972,6 +1041,7 @@ paths:
           content: {}
   /agents/deployments/{deployment_id}/logs/:
     get:
+      summary: Get Deployment Logs
       tags:
       - agents
       description: Get logs for a specific deployment
@@ -988,6 +1058,7 @@ paths:
           content: {}
   /agents/executions/:
     get:
+      summary: List Agent Executions
       tags:
       - agents
       description: List agent executions with optional filtering.
@@ -997,6 +1068,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Agent Execution
       tags:
       - agents
       description: Create a new execution for an agent.
@@ -1007,6 +1079,7 @@ paths:
           content: {}
   /agents/executions/{execution_id}/:
     get:
+      summary: Get Execution Details
       tags:
       - agents
       description: Retrieve details of a specific execution.
@@ -1022,6 +1095,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Cancel Execution
       tags:
       - agents
       description: Cancel a running execution.
@@ -1038,6 +1112,7 @@ paths:
           content: {}
   /agents/fine-tuning/datasets/:
     get:
+      summary: List Fine-tuning Datasets
       tags:
       - agents
       description: List all fine-tuning datasets with optional filtering.
@@ -1047,6 +1122,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Fine-tuning Dataset
       tags:
       - agents
       description: Create a new fine-tuning dataset.
@@ -1057,6 +1133,7 @@ paths:
           content: {}
   /agents/fine-tuning/datasets/{dataset_id}/:
     get:
+      summary: Get Fine-tuning Dataset Details
       tags:
       - agents
       description: Retrieve details of a specific fine-tuning dataset.
@@ -1072,6 +1149,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Fine-tuning Dataset
       tags:
       - agents
       description: Update a fine-tuning dataset.
@@ -1087,6 +1165,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Fine-tuning Dataset
       tags:
       - agents
       description: Delete a fine-tuning dataset.
@@ -1103,6 +1182,7 @@ paths:
           content: {}
   /agents/fine-tuning/jobs/:
     get:
+      summary: List Fine-tuning Jobs
       tags:
       - agents
       description: List all fine-tuning jobs with optional filtering.
@@ -1112,6 +1192,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Fine-tuning Job
       tags:
       - agents
       description: Create a new fine-tuning job.
@@ -1122,6 +1203,7 @@ paths:
           content: {}
   /agents/fine-tuning/jobs/{job_id}/:
     get:
+      summary: Get Fine-tuning Job Details
       tags:
       - agents
       description: Retrieve details of a specific fine-tuning job.
@@ -1138,6 +1220,7 @@ paths:
           content: {}
   /agents/fine-tuning/jobs/{job_id}/cancel/:
     post:
+      summary: Cancel Fine-tuning Job
       tags:
       - agents
       description: Cancel a fine-tuning job in progress.
@@ -1154,6 +1237,7 @@ paths:
           content: {}
   /agents/fine-tuning/models/:
     get:
+      summary: List Fine-tuned Models
       tags:
       - agents
       description: List all fine-tuned models with optional filtering.
@@ -1163,6 +1247,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Fine-tuned Model
       tags:
       - agents
       description: Create a new fine-tuned model by starting a fine-tuning job.
@@ -1173,6 +1258,7 @@ paths:
           content: {}
   /agents/fine-tuning/models/{model_id}/:
     get:
+      summary: Get Fine-tuned Model Details
       tags:
       - agents
       description: Retrieve details of a specific fine-tuned model.
@@ -1188,6 +1274,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Fine-tuned Model
       tags:
       - agents
       description: Update a fine-tuned model.
@@ -1203,6 +1290,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Fine-tuned Model
       tags:
       - agents
       description: Delete a fine-tuned model.
@@ -1219,6 +1307,7 @@ paths:
           content: {}
   /agents/integrations/:
     get:
+      summary: List Integrations
       tags:
       - agents
       description: List available integrations with optional filtering
@@ -1228,6 +1317,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Integration
       tags:
       - agents
       description: Create a custom integration
@@ -1238,6 +1328,7 @@ paths:
           content: {}
   /agents/integrations/{integration_id}/:
     get:
+      summary: Get Integration Details
       tags:
       - agents
       description: Get details of a specific integration
@@ -1253,6 +1344,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Integration
       tags:
       - agents
       description: Update a specific integration
@@ -1268,6 +1360,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Integration
       tags:
       - agents
       description: Delete a specific integration
@@ -1284,6 +1377,7 @@ paths:
           content: {}
   /agents/integrations/{integration_id}/auth/:
     get:
+      summary: Get Integration Auth Info
       tags:
       - agents
       description: Get authentication information for an integration
@@ -1299,6 +1393,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Complete Integration OAuth Flow
       tags:
       - agents
       description: Complete OAuth authentication flow
@@ -1314,6 +1409,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Initiate/Update Integration Auth
       tags:
       - agents
       description: Initiate or update authentication for an integration
@@ -1329,6 +1425,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Remove Integration Auth
       tags:
       - agents
       description: Remove authentication for an integration
@@ -1345,6 +1442,7 @@ paths:
           content: {}
   /agents/knowledgebases/:
     get:
+      summary: List Knowledge Bases
       tags:
       - agents
       description: List all knowledge bases with optional filtering
@@ -1354,6 +1452,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Knowledge Base
       tags:
       - agents
       description: Create a new knowledge base
@@ -1364,6 +1463,7 @@ paths:
           content: {}
   /agents/knowledgebases/{kb_id}/:
     get:
+      summary: Get Knowledge Base Details
       tags:
       - agents
       description: Retrieve a specific knowledge base
@@ -1379,6 +1479,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Knowledge Base
       tags:
       - agents
       description: Update a knowledge base
@@ -1394,6 +1495,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Knowledge Base
       tags:
       - agents
       description: Delete a knowledge base
@@ -1410,6 +1512,7 @@ paths:
           content: {}
   /agents/knowledgebases/{kb_id}/documents/:
     get:
+      summary: List Knowledge Base Documents
       tags:
       - agents
       description: List documents in a knowledge base
@@ -1425,6 +1528,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Knowledge Base Document
       tags:
       - agents
       description: Add a document to a knowledge base
@@ -1441,6 +1545,7 @@ paths:
           content: {}
   /agents/knowledgebases/{kb_id}/documents/{doc_id}/:
     get:
+      summary: Get Knowledge Base Document Details
       tags:
       - agents
       description: Retrieve a specific document
@@ -1461,6 +1566,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Knowledge Base Document
       tags:
       - agents
       description: Update a document
@@ -1481,6 +1587,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Knowledge Base Document
       tags:
       - agents
       description: Delete a document
@@ -1502,6 +1609,7 @@ paths:
           content: {}
   /agents/knowledgebases/{kb_id}/search/:
     post:
+      summary: Search Knowledge Base
       tags:
       - agents
       description: Search a knowledge base
@@ -1518,6 +1626,7 @@ paths:
           content: {}
   /agents/marketplace/:
     get:
+      summary: Search Marketplace Agents
       tags:
       - agents
       description: Search for agents in the marketplace.
@@ -1528,6 +1637,7 @@ paths:
           content: {}
   /agents/marketplace/categories/:
     get:
+      summary: Get Marketplace Categories
       tags:
       - agents
       description: Get all marketplace categories.
@@ -1538,6 +1648,7 @@ paths:
           content: {}
   /agents/marketplace/{agent_id}/:
     get:
+      summary: Get Marketplace Agent Details
       tags:
       - agents
       description: Get details of a specific marketplace agent.
@@ -1553,6 +1664,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Install Marketplace Agent
       tags:
       - agents
       description: Install a marketplace agent into a project.
@@ -1569,6 +1681,7 @@ paths:
           content: {}
   /agents/memory/collections/:
     get:
+      summary: List Memory Collections
       tags:
       - agents
       description: List memory collections for a user.
@@ -1578,6 +1691,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Memory Collection
       tags:
       - agents
       description: Create a new memory collection.
@@ -1588,6 +1702,7 @@ paths:
           content: {}
   /agents/monitoring/alerts/:
     get:
+      summary: List Monitoring Alerts
       tags:
       - agents
       description: List system alerts with optional filtering.
@@ -1597,6 +1712,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Monitoring Alert
       tags:
       - agents
       description: Create a new system alert.
@@ -1607,6 +1723,7 @@ paths:
           content: {}
   /agents/monitoring/alerts/{alert_id}/:
     get:
+      summary: Get Monitoring Alert Details
       tags:
       - agents
       description: Retrieve details of a specific alert.
@@ -1622,6 +1739,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Monitoring Alert
       tags:
       - agents
       description: Update an alert.
@@ -1637,6 +1755,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Monitoring Alert
       tags:
       - agents
       description: Delete an alert.
@@ -1653,6 +1772,7 @@ paths:
           content: {}
   /agents/monitoring/dashboard/:
     get:
+      summary: Get Monitoring Dashboard Data
       tags:
       - agents
       description: Get monitoring dashboard data.
@@ -1663,6 +1783,7 @@ paths:
           content: {}
   /agents/monitoring/discovery/:
     get:
+      summary: Discover Monitoring Services
       tags:
       - agents
       description: Discover available services in the system.
@@ -1673,6 +1794,7 @@ paths:
           content: {}
   /agents/monitoring/health/:
     get:
+      summary: Get Monitoring System Health
       tags:
       - agents
       description: Get the overall health status of the system.
@@ -1683,6 +1805,7 @@ paths:
           content: {}
   /agents/monitoring/logs/:
     get:
+      summary: Get Monitoring System Logs
       tags:
       - agents
       description: Get system logs with optional filtering.
@@ -1693,6 +1816,7 @@ paths:
           content: {}
   /agents/monitoring/metrics/:
     get:
+      summary: Get Monitoring System Metrics
       tags:
       - agents
       description: Get system metrics with optional filtering.
@@ -1703,6 +1827,7 @@ paths:
           content: {}
   /agents/monitoring/services/health/:
     get:
+      summary: Get Monitoring Service Health
       tags:
       - agents
       description: Get health information for individual services.
@@ -1713,6 +1838,7 @@ paths:
           content: {}
   /agents/notifications/:
     get:
+      summary: Get User Notifications
       tags:
       - agents
       description: Get notifications for the current user
@@ -1722,6 +1848,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Mark All User Notifications Read
       tags:
       - agents
       description: Mark all notifications as read for the current user
@@ -1732,6 +1859,7 @@ paths:
           content: {}
   /agents/notifications/settings/:
     get:
+      summary: Get User Notification Settings
       tags:
       - agents
       description: Get notification preferences for the current user
@@ -1741,6 +1869,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update User Notification Settings
       tags:
       - agents
       description: Update notification preferences for the current user
@@ -1751,6 +1880,7 @@ paths:
           content: {}
   /agents/notifications/{notification_id}/:
     get:
+      summary: Get Notification Details
       tags:
       - agents
       description: Get details for a specific notification
@@ -1766,6 +1896,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Mark Notification Read
       tags:
       - agents
       description: Mark a specific notification as read
@@ -1781,6 +1912,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Notification
       tags:
       - agents
       description: Delete a specific notification
@@ -1797,6 +1929,7 @@ paths:
           content: {}
   /agents/projects/{project_id}/notifications/:
     get:
+      summary: Get Project Notifications
       tags:
       - agents
       description: Get notifications related to a specific project
@@ -1812,6 +1945,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Project Notification
       tags:
       - agents
       description: Create a notification for a project
@@ -1828,6 +1962,7 @@ paths:
           content: {}
   /agents/security/policies/:
     get:
+      summary: List Security Policies
       tags:
       - agents
       description: API endpoint for managing security policies
@@ -1837,6 +1972,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Security Policy
       tags:
       - agents
       description: API endpoint for managing security policies
@@ -1847,6 +1983,7 @@ paths:
           content: {}
   /agents/security/rules/:
     get:
+      summary: List Security Rules
       tags:
       - agents
       description: List all security rules
@@ -1856,6 +1993,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Security Rule
       tags:
       - agents
       description: Create a new security rule
@@ -1866,6 +2004,7 @@ paths:
           content: {}
   /agents/security/rules/{rule_id}/:
     get:
+      summary: Get Security Rule Details
       tags:
       - agents
       description: "API endpoint for retrieving, updating and deleting a security rule"
@@ -1881,6 +2020,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Security Rule
       tags:
       - agents
       description: "API endpoint for retrieving, updating and deleting a security rule"
@@ -1896,6 +2036,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Security Rule
       tags:
       - agents
       description: "API endpoint for retrieving, updating and deleting a security rule"
@@ -1912,6 +2053,7 @@ paths:
           content: {}
   /agents/security/scans/:
     get:
+      summary: List Security Scans
       tags:
       - agents
       description: API endpoint for performing and listing security scans
@@ -1921,6 +2063,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Start Security Scan
       tags:
       - agents
       description: API endpoint for performing and listing security scans
@@ -1931,6 +2074,7 @@ paths:
           content: {}
   /agents/security/scans/{scan_id}/:
     get:
+      summary: Get Security Scan Details
       tags:
       - agents
       description: API endpoint for retrieving and managing a specific security scan
@@ -1946,6 +2090,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Security Scan
       tags:
       - agents
       description: API endpoint for retrieving and managing a specific security scan
@@ -1962,6 +2107,7 @@ paths:
           content: {}
   /agents/settings/apikeys/:
     get:
+      summary: List API Keys
       tags:
       - agents
       description: List all API keys for the current user.
@@ -1971,6 +2117,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create API Key
       tags:
       - agents
       description: Create a new API key.
@@ -1981,6 +2128,7 @@ paths:
           content: {}
   /agents/settings/apikeys/{key_id}/:
     get:
+      summary: Get API Key Details
       tags:
       - agents
       description: Get details of a specific API key.
@@ -1996,6 +2144,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update API Key
       tags:
       - agents
       description: Update an API key.
@@ -2011,6 +2160,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete API Key
       tags:
       - agents
       description: Delete an API key.
@@ -2027,6 +2177,7 @@ paths:
           content: {}
   /agents/settings/keys/:
     get:
+      summary: List Settings Keys
       tags:
       - agents
       description: List available settings keys and their metadata.
@@ -2037,6 +2188,7 @@ paths:
           content: {}
   /agents/settings/organization/:
     get:
+      summary: Get Organization Settings
       tags:
       - agents
       description: Get organization settings.
@@ -2046,6 +2198,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Organization Settings
       tags:
       - agents
       description: Update organization settings.
@@ -2056,6 +2209,7 @@ paths:
           content: {}
   /agents/settings/user/:
     get:
+      summary: Get User Settings
       tags:
       - agents
       description: Get settings for the current user.
@@ -2065,6 +2219,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update User Settings
       tags:
       - agents
       description: Update settings for the current user.
@@ -2075,6 +2230,7 @@ paths:
           content: {}
   /agents/system/notifications/:
     post:
+      summary: Create System Notification
       tags:
       - agents
       description: Create a system-wide notification (admin only)
@@ -2085,6 +2241,7 @@ paths:
           content: {}
   /agents/teams/:
     get:
+      summary: List Teams
       tags:
       - agents
       description: Get teams for the current user
@@ -2094,6 +2251,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Team
       tags:
       - agents
       description: Create a new team
@@ -2104,6 +2262,7 @@ paths:
           content: {}
   /agents/teams/{team_id}/:
     get:
+      summary: Get Team Details
       tags:
       - agents
       description: Get details for a specific team
@@ -2119,6 +2278,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Team
       tags:
       - agents
       description: Update a team
@@ -2134,6 +2294,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Team
       tags:
       - agents
       description: Delete a team
@@ -2150,6 +2311,7 @@ paths:
           content: {}
   /agents/teams/{team_id}/members/:
     get:
+      summary: List Team Members
       tags:
       - agents
       description: List all members of a team
@@ -2165,6 +2327,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Team Member
       tags:
       - agents
       description: Add a member to a team
@@ -2180,6 +2343,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Remove Team Member (Deprecated)
       tags:
       - agents
       description: Remove a member from a team
@@ -2196,6 +2360,7 @@ paths:
           content: {}
   /agents/teams/{team_id}/members/{user_id}/:
     put:
+      summary: Update Team Member Role
       tags:
       - agents
       description: Update a team member's role
@@ -2216,6 +2381,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Remove Team Member
       tags:
       - agents
       description: Remove a member from a team
@@ -2237,6 +2403,7 @@ paths:
           content: {}
   /agents/teams/{team_id}/projects/:
     get:
+      summary: List Team Projects
       tags:
       - agents
       description: Get projects for a specific team
@@ -2252,6 +2419,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Project to Team
       tags:
       - agents
       description: Add a project to a team
@@ -2268,6 +2436,7 @@ paths:
           content: {}
   /agents/teams/{team_id}/projects/{project_id}/:
     delete:
+      summary: Remove Project from Team
       tags:
       - agents
       description: Remove a project from a team
@@ -2289,6 +2458,7 @@ paths:
           content: {}
   /agents/tests/cases/:
     get:
+      summary: List Test Cases
       tags:
       - agents
       description: List test cases with optional filtering.
@@ -2298,6 +2468,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Test Case
       tags:
       - agents
       description: Create a new test case.
@@ -2308,6 +2479,7 @@ paths:
           content: {}
   /agents/tests/cases/{case_id}/:
     get:
+      summary: Get Test Case Details
       tags:
       - agents
       description: Get details of a specific test case.
@@ -2323,6 +2495,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Test Case
       tags:
       - agents
       description: Update a test case.
@@ -2338,6 +2511,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Test Case
       tags:
       - agents
       description: Delete a test case.
@@ -2354,6 +2528,7 @@ paths:
           content: {}
   /agents/tests/evaluate/:
     post:
+      summary: Evaluate Agent Test
       tags:
       - agents
       description: Evaluate an agent against a test case or custom input.
@@ -2364,6 +2539,7 @@ paths:
           content: {}
   /agents/tests/runs/:
     get:
+      summary: List Test Runs
       tags:
       - agents
       description: List test runs with optional filtering.
@@ -2373,6 +2549,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Test Run
       tags:
       - agents
       description: Create a new test run and start execution.
@@ -2383,6 +2560,7 @@ paths:
           content: {}
   /agents/tests/runs/{run_id}/:
     get:
+      summary: Get Test Run Details
       tags:
       - agents
       description: Get details of a specific test run.
@@ -2398,6 +2576,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Test Run
       tags:
       - agents
       description: Delete a test run.
@@ -2414,6 +2593,7 @@ paths:
           content: {}
   /agents/tests/suites/:
     get:
+      summary: List Test Suites
       tags:
       - agents
       description: List test suites with optional filtering.
@@ -2423,6 +2603,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Test Suite
       tags:
       - agents
       description: Create a new test suite.
@@ -2433,6 +2614,7 @@ paths:
           content: {}
   /agents/tests/suites/{suite_id}/:
     get:
+      summary: Get Test Suite Details
       tags:
       - agents
       description: Get details of a specific test suite.
@@ -2448,6 +2630,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Test Suite
       tags:
       - agents
       description: Update a test suite.
@@ -2463,6 +2646,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Test Suite
       tags:
       - agents
       description: Delete a test suite.
@@ -2479,6 +2663,7 @@ paths:
           content: {}
   /agents/webhook-endpoints/:
     get:
+      summary: List Webhook Endpoints
       tags:
       - agents
       description: List all webhook endpoints for a project.
@@ -2488,6 +2673,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Webhook Endpoint
       tags:
       - agents
       description: Create a new webhook endpoint.
@@ -2498,6 +2684,7 @@ paths:
           content: {}
   /agents/webhook-endpoints/{endpoint_id}/:
     get:
+      summary: Get Webhook Endpoint Details
       tags:
       - agents
       description: Get a webhook endpoint by ID.
@@ -2513,6 +2700,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Webhook Endpoint
       tags:
       - agents
       description: Update a webhook endpoint.
@@ -2528,6 +2716,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Webhook Endpoint
       tags:
       - agents
       description: Delete a webhook endpoint.
@@ -2544,6 +2733,7 @@ paths:
           content: {}
   /agents/webhook-endpoints/{endpoint_id}/events/:
     get:
+      summary: List Webhook Endpoint Events
       tags:
       - agents
       description: List events for a webhook endpoint.
@@ -2560,6 +2750,7 @@ paths:
           content: {}
   /agents/webhook-event-types:
     get:
+      summary: List Webhook Event Types
       tags:
       - agents
       description: Get all available webhook event types.
@@ -2570,6 +2761,7 @@ paths:
           content: {}
   /agents/webhook-events/{event_id}/:
     get:
+      summary: Get Webhook Event Details
       tags:
       - agents
       description: Get a webhook event by ID.
@@ -2585,6 +2777,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Retry Webhook Event
       tags:
       - agents
       description: Retry a failed webhook event.
@@ -2601,6 +2794,7 @@ paths:
           content: {}
   /agents/webhooks/:
     get:
+      summary: List Webhooks
       tags:
       - agents
       description: List all webhooks for a project.
@@ -2610,6 +2804,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Webhook
       tags:
       - agents
       description: Create a new webhook.
@@ -2620,6 +2815,7 @@ paths:
           content: {}
   /agents/webhooks/{webhook_id}/:
     get:
+      summary: Get Webhook Details
       tags:
       - agents
       description: Get a webhook by ID.
@@ -2635,6 +2831,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Webhook
       tags:
       - agents
       description: Update a webhook.
@@ -2650,6 +2847,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Webhook
       tags:
       - agents
       description: Delete a webhook.
@@ -2666,6 +2864,7 @@ paths:
           content: {}
   /agents/webhooks/{webhook_id}/logs/:
     get:
+      summary: List Webhook Logs
       tags:
       - agents
       description: List logs for a webhook.
@@ -2682,6 +2881,7 @@ paths:
           content: {}
   /agents/webhooks/{webhook_id}/test/:
     post:
+      summary: Test Webhook
       tags:
       - agents
       description: Test a webhook by sending a test event.
@@ -2698,6 +2898,7 @@ paths:
           content: {}
   /agents/workflows/:
     get:
+      summary: List Workflows
       tags:
       - agents
       description: List all workflows
@@ -2707,6 +2908,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Workflow
       tags:
       - agents
       description: Create a new workflow
@@ -2717,6 +2919,7 @@ paths:
           content: {}
   /agents/workflows/runs/{run_id}/:
     get:
+      summary: Get Workflow Run Details
       tags:
       - agents
       description: Get details of a workflow run or list all runs for a workflow
@@ -2732,6 +2935,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Perform Action on Workflow Run
       tags:
       - agents
       description: Start a new workflow run or perform actions on an existing run
@@ -2747,6 +2951,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Workflow Run
       tags:
       - agents
       description: Delete a workflow run
@@ -2763,6 +2968,7 @@ paths:
           content: {}
   /agents/workflows/{workflow_id}/:
     get:
+      summary: Get Workflow Details
       tags:
       - agents
       description: Get a specific workflow
@@ -2778,6 +2984,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Workflow
       tags:
       - agents
       description: Update a workflow
@@ -2793,6 +3000,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Workflow
       tags:
       - agents
       description: Delete a workflow
@@ -2809,6 +3017,7 @@ paths:
           content: {}
   /agents/workflows/{workflow_id}/run/:
     get:
+      summary: List Workflow Runs
       tags:
       - agents
       description: Get details of a workflow run or list all runs for a workflow
@@ -2824,6 +3033,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Start Workflow Run
       tags:
       - agents
       description: Start a new workflow run or perform actions on an existing run
@@ -2839,6 +3049,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Workflow Run (Duplicate?)
       tags:
       - agents
       description: Delete a workflow run
@@ -2855,6 +3066,7 @@ paths:
           content: {}
   /analytics/agents/{agent_id}/:
     get:
+      summary: Get Agent Analytics Data
       tags:
       - analytics
       description: Get agent analytics data
@@ -2871,6 +3083,7 @@ paths:
           content: {}
   /analytics/custom/:
     post:
+      summary: Get Custom Analytics Data
       tags:
       - analytics
       description: Get custom analytics data
@@ -2881,6 +3094,7 @@ paths:
           content: {}
   /analytics/dashboard/:
     get:
+      summary: Get Dashboard Analytics Data
       tags:
       - analytics
       description: Get dashboard analytics data
@@ -2891,6 +3105,7 @@ paths:
           content: {}
   /analytics/executions/:
     get:
+      summary: Get Execution Analytics Data
       tags:
       - analytics
       description: Get execution analytics data
@@ -2901,6 +3116,7 @@ paths:
           content: {}
   /analytics/performance/:
     get:
+      summary: Get Performance Analytics Data
       tags:
       - analytics
       description: Get performance analytics data
@@ -2911,6 +3127,7 @@ paths:
           content: {}
   /analytics/projects/{project_id}/:
     get:
+      summary: Get Project Analytics Data
       tags:
       - analytics
       description: Get project analytics data
@@ -2927,6 +3144,7 @@ paths:
           content: {}
   /analytics/usage/:
     get:
+      summary: Get Usage Analytics Data
       tags:
       - analytics
       description: Get usage analytics data
@@ -2937,6 +3155,7 @@ paths:
           content: {}
   /auth/login:
     post:
+      summary: User Login
       tags:
       - auth
       description: API endpoint for user login.
@@ -2947,6 +3166,7 @@ paths:
           content: {}
   /auth/logout:
     post:
+      summary: User Logout
       tags:
       - auth
       description: API endpoint for user logout.
@@ -2957,6 +3177,7 @@ paths:
           content: {}
   /auth/mfa/challenge:
     post:
+      summary: MFA Challenge
       tags:
       - auth
       operationId: auth_mfa_challenge_create
@@ -2966,6 +3187,7 @@ paths:
           content: {}
   /auth/mfa/disable:
     post:
+      summary: Disable MFA
       tags:
       - auth
       description: API endpoint to disable MFA.
@@ -2976,6 +3198,7 @@ paths:
           content: {}
   /auth/mfa/setup:
     post:
+      summary: Setup MFA
       tags:
       - auth
       description: API endpoint to set up Multi-Factor Authentication.
@@ -2986,6 +3209,7 @@ paths:
           content: {}
   /auth/mfa/verify:
     post:
+      summary: Verify MFA
       tags:
       - auth
       operationId: auth_mfa_verify_create
@@ -2995,6 +3219,7 @@ paths:
           content: {}
   /auth/password-reset:
     post:
+      summary: Request Password Reset
       tags:
       - auth
       description: API endpoint to request a password reset.
@@ -3005,6 +3230,7 @@ paths:
           content: {}
   /auth/password-reset/confirm:
     post:
+      summary: Confirm Password Reset
       tags:
       - auth
       description: API endpoint to confirm a password reset.
@@ -3015,6 +3241,7 @@ paths:
           content: {}
   /auth/profile/:
     get:
+      summary: Get User Profile
       tags:
       - auth
       description: Get the current user's profile.
@@ -3024,6 +3251,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update User Profile
       tags:
       - auth
       description: Update the current user's profile.
@@ -3034,6 +3262,7 @@ paths:
           content: {}
   /auth/refresh-token:
     post:
+      summary: Refresh Auth Token
       tags:
       - auth
       operationId: auth_refresh-token_create
@@ -3043,6 +3272,7 @@ paths:
           content: {}
   /auth/register:
     post:
+      summary: User Registration
       tags:
       - auth
       description: API endpoint for user registration.
@@ -3053,6 +3283,7 @@ paths:
           content: {}
   /billing/invoices/:
     get:
+      summary: Get Invoices
       tags:
       - billing
       description: Get invoices
@@ -3063,6 +3294,7 @@ paths:
           content: {}
   /billing/payment-methods/:
     get:
+      summary: Get Payment Methods
       tags:
       - billing
       description: Get payment methods
@@ -3072,6 +3304,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Payment Method
       tags:
       - billing
       description: Add a payment method
@@ -3082,6 +3315,7 @@ paths:
           content: {}
   /billing/plans/:
     get:
+      summary: Get Billing Plans
       tags:
       - billing
       description: Get available billing plans
@@ -3092,6 +3326,7 @@ paths:
           content: {}
   /billing/projects/{project_id}/:
     get:
+      summary: Get Project Billing Info
       tags:
       - billing
       description: Get billing information for a project
@@ -3107,6 +3342,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Project Billing Settings
       tags:
       - billing
       description: Update billing settings for a project
@@ -3123,6 +3359,7 @@ paths:
           content: {}
   /billing/subscription/:
     get:
+      summary: Get Subscription
       tags:
       - billing
       description: Get current subscription
@@ -3132,6 +3369,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Subscription
       tags:
       - billing
       description: Update subscription
@@ -3142,6 +3380,7 @@ paths:
           content: {}
   /billing/usage/:
     get:
+      summary: Get Billing Usage Data
       tags:
       - billing
       description: Get usage data
@@ -3152,6 +3391,7 @@ paths:
           content: {}
   /billing/user/:
     get:
+      summary: Get User Billing Info
       tags:
       - billing
       description: Get billing information for the current user
@@ -3161,6 +3401,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update User Billing Info
       tags:
       - billing
       description: Update billing information for the current user
@@ -3171,6 +3412,7 @@ paths:
           content: {}
   /environments/:
     get:
+      summary: List Environments
       tags:
       - environments
       description: List all environments
@@ -3180,6 +3422,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Environment
       tags:
       - environments
       description: Create a new environment
@@ -3190,6 +3433,7 @@ paths:
           content: {}
   /environments/{environment_id}:
     get:
+      summary: Get Environment Details
       tags:
       - environments
       description: Get a specific environment
@@ -3205,6 +3449,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Environment
       tags:
       - environments
       description: Update an environment
@@ -3220,6 +3465,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Environment
       tags:
       - environments
       description: Delete an environment
@@ -3236,6 +3482,7 @@ paths:
           content: {}
   /export/agents/import:
     post:
+      summary: Import Agent
       tags:
       - export
       description: API endpoint for importing an agent.
@@ -3246,6 +3493,7 @@ paths:
           content: {}
   /export/agents/{agent_id}/export:
     get:
+      summary: Export Agent
       tags:
       - export
       description: API endpoint for exporting an agent.
@@ -3262,6 +3510,7 @@ paths:
           content: {}
   /export/backup:
     get:
+      summary: Create System Backup
       tags:
       - export
       description: API endpoint for creating a system backup.
@@ -3272,6 +3521,7 @@ paths:
           content: {}
   /export/projects/import:
     post:
+      summary: Import Project
       tags:
       - export
       description: API endpoint for importing a project.
@@ -3282,6 +3532,7 @@ paths:
           content: {}
   /export/projects/{project_id}/export:
     get:
+      summary: Export Project
       tags:
       - export
       description: API endpoint for exporting a project.
@@ -3298,6 +3549,7 @@ paths:
           content: {}
   /export/restore:
     post:
+      summary: Restore System Backup
       tags:
       - export
       description: API endpoint for restoring from a system backup.
@@ -3308,6 +3560,7 @@ paths:
           content: {}
   /fine-tuning/base-models/:
     get:
+      summary: Get Base Models
       tags:
       - fine-tuning
       description: Get all base models
@@ -3318,6 +3571,7 @@ paths:
           content: {}
   /fine-tuning/datasets/:
     get:
+      summary: List Fine-tuning Datasets
       tags:
       - fine-tuning
       description: List all datasets with optional filtering
@@ -3327,6 +3581,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Fine-tuning Dataset
       tags:
       - fine-tuning
       description: Create a new dataset
@@ -3337,6 +3592,7 @@ paths:
           content: {}
   /fine-tuning/datasets/{dataset_id}/:
     get:
+      summary: Get Fine-tuning Dataset Details
       tags:
       - fine-tuning
       description: Get a specific dataset
@@ -3352,6 +3608,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Fine-tuning Dataset
       tags:
       - fine-tuning
       description: Update a dataset
@@ -3367,6 +3624,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Fine-tuning Dataset
       tags:
       - fine-tuning
       description: Delete a dataset
@@ -3383,6 +3641,7 @@ paths:
           content: {}
   /fine-tuning/datasets/{dataset_id}/samples/:
     get:
+      summary: List Fine-tuning Dataset Samples
       tags:
       - fine-tuning
       description: List samples in a dataset
@@ -3398,6 +3657,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Fine-tuning Dataset Sample
       tags:
       - fine-tuning
       description: Add a sample to a dataset
@@ -3414,6 +3674,7 @@ paths:
           content: {}
   /fine-tuning/datasets/{dataset_id}/upload/:
     post:
+      summary: Upload Fine-tuning Data
       tags:
       - fine-tuning
       description: Upload data files
@@ -3430,6 +3691,7 @@ paths:
           content: {}
   /fine-tuning/jobs/:
     get:
+      summary: List Fine-tuning Jobs
       tags:
       - fine-tuning
       description: List all fine-tuning jobs with optional filtering
@@ -3439,6 +3701,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Fine-tuning Job
       tags:
       - fine-tuning
       description: Create a new fine-tuning job
@@ -3449,6 +3712,7 @@ paths:
           content: {}
   /fine-tuning/jobs/{job_id}/:
     get:
+      summary: Get Fine-tuning Job Details
       tags:
       - fine-tuning
       description: Get a specific fine-tuning job
@@ -3464,6 +3728,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Cancel Fine-tuning Job
       tags:
       - fine-tuning
       description: Cancel a fine-tuning job
@@ -3480,6 +3745,7 @@ paths:
           content: {}
   /fine-tuning/models/:
     get:
+      summary: List Fine-tuned Models
       tags:
       - fine-tuning
       description: List all fine-tuned models with optional filtering
@@ -3489,6 +3755,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Fine-tuned Model
       tags:
       - fine-tuning
       description: Create a new fine-tuned model
@@ -3499,6 +3766,7 @@ paths:
           content: {}
   /fine-tuning/models/{model_id}/:
     get:
+      summary: Get Fine-tuned Model Details
       tags:
       - fine-tuning
       description: Get a specific fine-tuned model
@@ -3514,6 +3782,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Fine-tuned Model
       tags:
       - fine-tuning
       description: Update a fine-tuned model
@@ -3529,6 +3798,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Fine-tuned Model
       tags:
       - fine-tuning
       description: Delete a fine-tuned model
@@ -3545,6 +3815,7 @@ paths:
           content: {}
   /fine-tuning/models/{model_id}/evaluate/:
     post:
+      summary: Evaluate Fine-tuned Model
       tags:
       - fine-tuning
       description: Evaluate a model
@@ -3561,6 +3832,7 @@ paths:
           content: {}
   /fine-tuning/projects/{project_id}/datasets/:
     get:
+      summary: Get Project Fine-tuning Datasets
       tags:
       - fine-tuning
       description: Get datasets for a project
@@ -3577,6 +3849,7 @@ paths:
           content: {}
   /fine-tuning/projects/{project_id}/models/:
     get:
+      summary: Get Project Fine-tuned Models
       tags:
       - fine-tuning
       description: Get models for a project
@@ -3593,6 +3866,7 @@ paths:
           content: {}
   /knowledge/:
     get:
+      summary: List Knowledge Bases
       tags:
       - knowledge
       description: List all knowledge bases with optional filtering
@@ -3602,6 +3876,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Knowledge Base
       tags:
       - knowledge
       description: Create a new knowledge base
@@ -3612,6 +3887,7 @@ paths:
           content: {}
   /knowledge/projects/{project_id}/:
     get:
+      summary: Get Project Knowledge Bases
       tags:
       - knowledge
       description: Get knowledge bases for a project
@@ -3628,6 +3904,7 @@ paths:
           content: {}
   /knowledge/{kb_id}/:
     get:
+      summary: Get Knowledge Base Details
       tags:
       - knowledge
       description: Get a specific knowledge base
@@ -3643,6 +3920,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Knowledge Base
       tags:
       - knowledge
       description: Update a knowledge base
@@ -3658,6 +3936,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Knowledge Base
       tags:
       - knowledge
       description: Delete a knowledge base
@@ -3674,6 +3953,7 @@ paths:
           content: {}
   /knowledge/{kb_id}/documents/:
     get:
+      summary: List Knowledge Base Documents
       tags:
       - knowledge
       description: List documents in a knowledge base
@@ -3689,6 +3969,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Knowledge Base Document
       tags:
       - knowledge
       description: Add a document to a knowledge base
@@ -3705,6 +3986,7 @@ paths:
           content: {}
   /knowledge/{kb_id}/documents/{document_id}/:
     get:
+      summary: Get Knowledge Base Document Details
       tags:
       - knowledge
       description: Get a specific document
@@ -3725,6 +4007,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Knowledge Base Document
       tags:
       - knowledge
       description: Update a document
@@ -3745,6 +4028,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Knowledge Base Document
       tags:
       - knowledge
       description: Delete a document
@@ -3766,6 +4050,7 @@ paths:
           content: {}
   /knowledge/{kb_id}/search/:
     post:
+      summary: Search Knowledge Base Documents
       tags:
       - knowledge
       description: Search documents
@@ -3782,6 +4067,7 @@ paths:
           content: {}
   /knowledge/{kb_id}/upload/:
     post:
+      summary: Upload Knowledge Base Documents
       tags:
       - knowledge
       description: Upload document files
@@ -3798,6 +4084,7 @@ paths:
           content: {}
   /monitoring/alerts/:
     get:
+      summary: List Monitoring Alerts
       tags:
       - monitoring
       description: Get list of system alerts
@@ -3808,6 +4095,7 @@ paths:
           content: {}
   /monitoring/alerts/{alert_id}/:
     get:
+      summary: Get Monitoring Alert Details
       tags:
       - monitoring
       description: Get details of a specific alert
@@ -3824,6 +4112,7 @@ paths:
           content: {}
   /monitoring/health/:
     get:
+      summary: Get System Health Status
       tags:
       - monitoring
       description: Check if the system is healthy
@@ -3834,6 +4123,7 @@ paths:
           content: {}
   /monitoring/logs/:
     get:
+      summary: Get System Logs
       tags:
       - monitoring
       description: Get system logs with optional filtering
@@ -3844,6 +4134,7 @@ paths:
           content: {}
   /monitoring/metrics/performance/:
     get:
+      summary: Get Performance Metrics
       tags:
       - monitoring
       description: Get performance metrics including response times and throughput
@@ -3854,6 +4145,7 @@ paths:
           content: {}
   /monitoring/metrics/system/:
     get:
+      summary: Get System Metrics
       tags:
       - monitoring
       description: "Get system metrics including CPU, memory, and disk usage"
@@ -3864,6 +4156,7 @@ paths:
           content: {}
   /projects/:
     get:
+      summary: List Projects
       tags:
       - projects
       description: List projects with optional filtering
@@ -3873,6 +4166,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Project
       tags:
       - projects
       description: Create a new project
@@ -3883,6 +4177,7 @@ paths:
           content: {}
   /projects/default/:
     get:
+      summary: Get Default Project
       tags:
       - projects
       description: Get the default project
@@ -3893,6 +4188,7 @@ paths:
           content: {}
   /projects/{project_id}/:
     get:
+      summary: Get Project Details
       tags:
       - projects
       description: Get a specific project by ID
@@ -3908,6 +4204,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Project
       tags:
       - projects
       description: Update an existing project
@@ -3923,6 +4220,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Project
       tags:
       - projects
       description: Delete a project
@@ -3939,6 +4237,7 @@ paths:
           content: {}
   /projects/{project_id}/agents:
     get:
+      summary: List Project Agents
       tags:
       - projects
       description: Get all agents for a project
@@ -3954,6 +4253,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Project Agent
       tags:
       - projects
       description: Create a new agent for a project
@@ -3970,6 +4270,7 @@ paths:
           content: {}
   /projects/{project_id}/billing:
     get:
+      summary: Get Project Billing Info
       tags:
       - projects
       description: Get billing information for a project
@@ -3985,6 +4286,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Project Billing Settings
       tags:
       - projects
       description: Update billing settings for a project
@@ -4001,6 +4303,7 @@ paths:
           content: {}
   /projects/{project_id}/members/:
     get:
+      summary: List Project Members
       tags:
       - projects
       description: List all members for a project
@@ -4016,6 +4319,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Project Member
       tags:
       - projects
       description: Add a member to a project
@@ -4032,6 +4336,7 @@ paths:
           content: {}
   /projects/{project_id}/members/{user_id}/:
     put:
+      summary: Update Project Member Role
       tags:
       - projects
       description: Update project member role
@@ -4052,6 +4357,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Remove Project Member
       tags:
       - projects
       description: Remove a member from a project
@@ -4073,6 +4379,7 @@ paths:
           content: {}
   /projects/{project_id}/memory:
     get:
+      summary: List Project Memory Items
       tags:
       - projects
       description: List all memories for a specific project
@@ -4088,6 +4395,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Add Project Memory Item
       tags:
       - projects
       description: Create a new memory for a specific project
@@ -4104,6 +4412,7 @@ paths:
           content: {}
   /projects/{project_id}/security/audit-logs/:
     get:
+      summary: Get Project Audit Logs
       tags:
       - projects
       description: Get audit logs for a project
@@ -4120,6 +4429,7 @@ paths:
           content: {}
   /projects/{project_id}/security/policies/:
     get:
+      summary: List Project Security Policies
       tags:
       - projects
       description: List security policies for a project
@@ -4135,6 +4445,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Project Security Policy
       tags:
       - projects
       description: Create a new security policy for a project
@@ -4151,6 +4462,7 @@ paths:
           content: {}
   /projects/{project_id}/security/policies/{policy_id}/:
     put:
+      summary: Update Project Security Policy
       tags:
       - projects
       description: Update a security policy for a project
@@ -4171,6 +4483,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Project Security Policy
       tags:
       - projects
       description: Delete a security policy for a project
@@ -4192,6 +4505,7 @@ paths:
           content: {}
   /projects/{project_id}/workflows:
     get:
+      summary: List Project Workflows
       tags:
       - projects
       description: List workflows for a specific project
@@ -4207,6 +4521,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Project Workflow
       tags:
       - projects
       description: Create a new workflow for a specific project
@@ -4223,6 +4538,7 @@ paths:
           content: {}
   /prompts/:
     get:
+      summary: List Prompts
       tags:
       - prompts
       description: List all prompts
@@ -4232,6 +4548,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Prompt
       tags:
       - prompts
       description: Create a new prompt
@@ -4242,6 +4559,7 @@ paths:
           content: {}
   /prompts/projects/{project_id}/:
     get:
+      summary: List Project Prompts
       tags:
       - prompts
       description: List prompts for a specific project
@@ -4257,6 +4575,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Project Prompt
       tags:
       - prompts
       description: Create a new prompt for a specific project
@@ -4273,6 +4592,7 @@ paths:
           content: {}
   /prompts/templates/:
     get:
+      summary: List Prompt Templates
       tags:
       - prompts
       description: Get all prompt templates
@@ -4283,6 +4603,7 @@ paths:
           content: {}
   /prompts/{prompt_id}/:
     get:
+      summary: Get Prompt Details
       tags:
       - prompts
       description: Get a specific prompt
@@ -4298,6 +4619,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Prompt
       tags:
       - prompts
       description: Update a prompt
@@ -4313,6 +4635,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Prompt
       tags:
       - prompts
       description: Delete a prompt
@@ -4329,6 +4652,7 @@ paths:
           content: {}
   /prompts/{prompt_id}/test/:
     post:
+      summary: Test Prompt
       tags:
       - prompts
       description: Test a prompt
@@ -4345,6 +4669,7 @@ paths:
           content: {}
   /prompts/{prompt_id}/versions/:
     get:
+      summary: List Prompt Versions
       tags:
       - prompts
       description: Get all versions of a prompt
@@ -4361,6 +4686,7 @@ paths:
           content: {}
   /security/audit-logs/:
     get:
+      summary: List Security Audit Logs
       tags:
       - security
       description: Get audit logs with optional filtering
@@ -4371,6 +4697,7 @@ paths:
           content: {}
   /security/policies/:
     get:
+      summary: List Security Policies
       tags:
       - security
       description: Get list of security policies
@@ -4380,6 +4707,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Security Policy
       tags:
       - security
       description: Create a new security policy
@@ -4390,6 +4718,7 @@ paths:
           content: {}
   /security/policies/{policy_id}/:
     put:
+      summary: Update Security Policy
       tags:
       - security
       description: Update a security policy
@@ -4405,6 +4734,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Security Policy
       tags:
       - security
       description: Delete a security policy
@@ -4421,6 +4751,7 @@ paths:
           content: {}
   /security/scan/:
     post:
+      summary: Start Security Scan
       tags:
       - security
       description: Initiate a security scan
@@ -4431,6 +4762,7 @@ paths:
           content: {}
   /security/scan/results/:
     get:
+      summary: Get Security Scan Results
       tags:
       - security
       description: Get security scan results
@@ -4441,6 +4773,7 @@ paths:
           content: {}
   /testing/ab-tests/:
     get:
+      summary: List A/B Tests
       tags:
       - testing
       description: List all A/B tests with optional filtering
@@ -4450,6 +4783,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create A/B Test
       tags:
       - testing
       description: Create a new A/B test
@@ -4460,6 +4794,7 @@ paths:
           content: {}
   /testing/ab-tests/{ab_test_id}/:
     get:
+      summary: Get A/B Test Details
       tags:
       - testing
       description: Get a specific A/B test
@@ -4475,6 +4810,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update A/B Test
       tags:
       - testing
       description: Update an A/B test
@@ -4490,6 +4826,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete A/B Test
       tags:
       - testing
       description: Delete an A/B test
@@ -4506,6 +4843,7 @@ paths:
           content: {}
   /testing/ab-tests/{ab_test_id}/results/:
     get:
+      summary: Get A/B Test Results
       tags:
       - testing
       description: Get A/B test results
@@ -4522,6 +4860,7 @@ paths:
           content: {}
   /testing/agents/{agent_id}/test-cases/:
     get:
+      summary: List Agent Test Cases
       tags:
       - testing
       description: Get test cases for an agent
@@ -4538,6 +4877,7 @@ paths:
           content: {}
   /testing/projects/{project_id}/test-cases/:
     get:
+      summary: List Project Test Cases
       tags:
       - testing
       description: Get test cases for a project
@@ -4554,6 +4894,7 @@ paths:
           content: {}
   /testing/regression-tests/:
     get:
+      summary: List Regression Tests
       tags:
       - testing
       description: List all regression tests with optional filtering
@@ -4563,6 +4904,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Regression Test
       tags:
       - testing
       description: Create a new regression test
@@ -4573,6 +4915,7 @@ paths:
           content: {}
   /testing/regression-tests/{regression_test_id}/:
     get:
+      summary: Get Regression Test Details
       tags:
       - testing
       description: Get a specific regression test
@@ -4588,6 +4931,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Regression Test
       tags:
       - testing
       description: Update a regression test
@@ -4603,6 +4947,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Regression Test
       tags:
       - testing
       description: Delete a regression test
@@ -4619,6 +4964,7 @@ paths:
           content: {}
   /testing/regression-tests/{regression_test_id}/run/:
     post:
+      summary: Run Regression Test
       tags:
       - testing
       description: Run a regression test
@@ -4635,6 +4981,7 @@ paths:
           content: {}
   /testing/test-cases/:
     get:
+      summary: List Test Cases
       tags:
       - testing
       description: List all test cases with optional filtering
@@ -4644,6 +4991,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Test Case
       tags:
       - testing
       description: Create a new test case
@@ -4654,6 +5002,7 @@ paths:
           content: {}
   /testing/test-cases/{test_case_id}/:
     get:
+      summary: Get Test Case Details
       tags:
       - testing
       description: Get a specific test case
@@ -4669,6 +5018,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Test Case
       tags:
       - testing
       description: Update a test case
@@ -4684,6 +5034,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Test Case
       tags:
       - testing
       description: Delete a test case
@@ -4700,6 +5051,7 @@ paths:
           content: {}
   /testing/test-cases/{test_case_id}/run/:
     post:
+      summary: Run Test Case
       tags:
       - testing
       description: Run a test case
@@ -4716,6 +5068,7 @@ paths:
           content: {}
   /testing/test-runs/:
     get:
+      summary: List Test Runs
       tags:
       - testing
       description: List all test runs with optional filtering
@@ -4726,6 +5079,7 @@ paths:
           content: {}
   /testing/test-runs/{test_run_id}/:
     get:
+      summary: Get Test Run Details
       tags:
       - testing
       description: Get a specific test run
@@ -4742,6 +5096,7 @@ paths:
           content: {}
   /tools/:
     get:
+      summary: List Tools
       tags:
       - tools
       description: List all tools with optional filtering
@@ -4751,6 +5106,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Tool
       tags:
       - tools
       description: Create a new tool
@@ -4761,6 +5117,7 @@ paths:
           content: {}
   /tools/categories/:
     get:
+      summary: List Tool Categories
       tags:
       - tools
       description: Get all tool categories
@@ -4771,6 +5128,7 @@ paths:
           content: {}
   /tools/projects/{project_id}/:
     get:
+      summary: List Project Tools
       tags:
       - tools
       description: Get tools for a project
@@ -4787,6 +5145,7 @@ paths:
           content: {}
   /tools/{tool_id}/:
     get:
+      summary: Get Tool Details
       tags:
       - tools
       description: Get a specific tool
@@ -4802,6 +5161,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Tool
       tags:
       - tools
       description: Update a tool
@@ -4817,6 +5177,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Tool
       tags:
       - tools
       description: Delete a tool
@@ -4833,6 +5194,7 @@ paths:
           content: {}
   /tools/{tool_id}/execute/:
     post:
+      summary: Execute Tool
       tags:
       - tools
       description: Execute a tool
@@ -4849,6 +5211,7 @@ paths:
           content: {}
   /users/:
     get:
+      summary: List Users
       tags:
       - users
       description: List all users. Admin access only.
@@ -4858,6 +5221,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create User
       tags:
       - users
       description: Create a new user. Admin access only.
@@ -4868,6 +5232,7 @@ paths:
           content: {}
   /users/profile:
     get:
+      summary: Get Current User Profile
       tags:
       - users
       description: Get the current user's profile.
@@ -4877,6 +5242,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Current User Profile
       tags:
       - users
       description: Update the current user's profile.
@@ -4887,6 +5253,7 @@ paths:
           content: {}
   /users/{user_id}:
     get:
+      summary: Get User Details
       tags:
       - users
       description: Get details for a specific user. Admin access only.
@@ -4902,6 +5269,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update User
       tags:
       - users
       description: Update a specific user. Admin access only.
@@ -4917,6 +5285,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete User
       tags:
       - users
       description: Delete a specific user. Admin access only.
@@ -4933,6 +5302,7 @@ paths:
           content: {}
   /users/{user_id}/password:
     put:
+      summary: Update User Password
       tags:
       - users
       description: Update a user's password
@@ -4949,6 +5319,7 @@ paths:
           content: {}
   /users/{user_id}/projects:
     get:
+      summary: List User Projects
       tags:
       - users
       description: List all projects for a specific user. Admin access only.
@@ -4965,6 +5336,7 @@ paths:
           content: {}
   /webhooks/:
     get:
+      summary: List Webhooks
       tags:
       - webhooks
       description: API endpoint for listing and creating webhooks.
@@ -4974,6 +5346,7 @@ paths:
           description: ""
           content: {}
     post:
+      summary: Create Webhook
       tags:
       - webhooks
       description: API endpoint for listing and creating webhooks.
@@ -4984,6 +5357,7 @@ paths:
           content: {}
   /webhooks/event-types:
     get:
+      summary: List Webhook Event Types
       tags:
       - webhooks
       description: API endpoint for retrieving available webhook event types.
@@ -4994,6 +5368,7 @@ paths:
           content: {}
   /webhooks/{webhook_id}:
     get:
+      summary: Get Webhook Details
       tags:
       - webhooks
       description: "API endpoint for retrieving, updating, and deleting a webhook."
@@ -5009,6 +5384,7 @@ paths:
           description: ""
           content: {}
     put:
+      summary: Update Webhook
       tags:
       - webhooks
       description: "API endpoint for retrieving, updating, and deleting a webhook."
@@ -5024,6 +5400,7 @@ paths:
           description: ""
           content: {}
     delete:
+      summary: Delete Webhook
       tags:
       - webhooks
       description: "API endpoint for retrieving, updating, and deleting a webhook."
@@ -5040,6 +5417,7 @@ paths:
           content: {}
   /webhooks/{webhook_id}/logs:
     get:
+      summary: List Webhook Logs
       tags:
       - webhooks
       description: API endpoint for retrieving webhook delivery logs.
@@ -5056,6 +5434,7 @@ paths:
           content: {}
   /webhooks/{webhook_id}/test:
     post:
+      summary: Test Webhook
       tags:
       - webhooks
       description: API endpoint for testing a webhook.
