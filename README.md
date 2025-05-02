@@ -1,7 +1,7 @@
 # Mintlify Documentation
 
 
-### Get Started
+### Get Startedddd
 
 Clone the repo
 
