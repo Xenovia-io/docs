@@ -1,0 +1,165 @@
+---
+title: 'Agent Execution'
+description: 'Interact with your AI agents in real-time and monitor their performance'
+icon: 'play'
+---
+
+# Agent Execution
+
+The Agent Execution environment allows you to interact with your AI agents in real-time, test their capabilities, and monitor their performance during operation.
+
+<img
+  src="/images/agent-execution-interface.png"
+  alt="Xenovia Agent Execution Interface"
+  width="100%"
+/>
+
+## Execution Interface
+
+The execution interface is divided into several key areas:
+
+<CardGroup cols={2}>
+  <Card title="Agent Selection" icon="list-check">
+    Choose which agent to work with
+  </Card>
+  <Card title="Conversation Interface" icon="comments">
+    Interact with your agent
+  </Card>
+  <Card title="Execution Details" icon="magnifying-glass-chart">
+    Monitor the execution process
+  </Card>
+  <Card title="Debugging Tools" icon="bug">
+    Access detailed information
+  </Card>
+</CardGroup>
+
+## Agent Selection
+
+The Agent Selection panel allows you to choose which agent to work with from your library:
+
+<Callout type="tip">
+  You can save favorite agents for quick access or browse recently used agents.
+</Callout>
+
+Features include:
+- Search by name, description, or tag
+- Filter by category, status, or performance
+- View basic agent information
+- Check agent status and availability
+- Select agent version
+
+## Conversation Interface
+
+The Conversation Interface provides a chat-like experience for interacting with your agent:
+
+<Tabs>
+  <Tab title="Message Input">
+    - Type or paste text messages
+    - Upload files and attachments
+    - Use templates for common queries
+    - Access message history
+  </Tab>
+  <Tab title="Response Display">
+    - View agent responses in real-time
+    - See typing indicators during processing
+    - Access formatted content (markdown, code, etc.)
+    - View media and interactive elements
+  </Tab>
+  <Tab title="Conversation Controls">
+    - Start new conversations
+    - Clear conversation history
+    - Save conversations for reference
+    - Export conversation logs
+  </Tab>
+</Tabs>
+
+## Execution Details
+
+The Execution Details panel provides visibility into the step-by-step process of how your agent handles requests:
+
+<Steps>
+  <Step title="Input Processing">
+    See how your agent interprets the input
+  </Step>
+  <Step title="Tool Calls">
+    Monitor which tools are being called and their results
+  </Step>
+  <Step title="Reasoning Steps">
+    View the agent's thought process and decision making
+  </Step>
+  <Step title="Response Generation">
+    See how the final response is formulated
+  </Step>
+</Steps>
+
+Each step includes:
+- Timestamp and duration
+- Input and output data
+- Status and result
+- Resource usage
+
+## Debugging Tools
+
+Access detailed information to help troubleshoot and optimize your agents:
+
+<CardGroup cols={2}>
+  <Card title="Execution Logs" icon="file-lines">
+    Detailed logs with timestamps and context
+  </Card>
+  <Card title="Tool Usage" icon="toolbox">
+    Statistics on tool calls and performance
+  </Card>
+  <Card title="Performance Metrics" icon="gauge">
+    Response times and resource consumption
+  </Card>
+  <Card title="Error Tracking" icon="triangle-exclamation">
+    Detailed error information and context
+  </Card>
+</CardGroup>
+
+<Callout type="warning">
+  Debugging information is only available during the execution session unless explicitly saved.
+</Callout>
+
+## Execution Modes
+
+Xenovia supports different execution modes to suit various needs:
+
+<Tabs>
+  <Tab title="Interactive Mode">
+    Real-time conversation with the agent, ideal for testing and exploration
+  </Tab>
+  <Tab title="Batch Mode">
+    Process multiple inputs at once, perfect for bulk processing
+  </Tab>
+  <Tab title="Simulation Mode">
+    Test against predefined scenarios with expected outcomes
+  </Tab>
+  <Tab title="Debug Mode">
+    Detailed step-by-step execution with breakpoints and inspection
+  </Tab>
+</Tabs>
+
+## Saving and Sharing
+
+Xenovia allows you to save and share execution sessions:
+
+- **Save Conversations**: Store complete interaction history
+- **Create Test Cases**: Convert successful interactions into test cases
+- **Share Sessions**: Collaborate with team members on specific executions
+- **Export Data**: Download execution data in various formats
+- **Create Reports**: Generate summaries of execution performance
+
+## Related Components
+
+<CardGroup cols={3}>
+  <Card title="Testing" icon="vial" href="/components/testing">
+    Systematic agent evaluation
+  </Card>
+  <Card title="Analytics" icon="chart-line" href="/components/analytics">
+    Performance insights
+  </Card>
+  <Card title="Memory Management" icon="brain" href="/components/memory-management">
+    Agent memory systems
+  </Card>
+</CardGroup>

@@ -15,7 +15,25 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "products"]
+            "pages": [
+              "xenovia-platform/introduction",
+              "xenovia-platform/components/overview",
+              "xenovia-platform/components/agent-creation",
+              "xenovia-platform/components/agent-execution",
+              "xenovia-platform/components/analytics",
+              "xenovia-platform/components/collaboration",
+              "xenovia-platform/components/dashboard",
+              "xenovia-platform/components/deployment",
+              "xenovia-platform/components/fine-tuning",
+              "xenovia-platform/components/integrations",
+              "xenovia-platform/components/knowledge-management",
+              "xenovia-platform/components/marketplace",
+              "xenovia-platform/components/memory-management",
+              "xenovia-platform/components/prompts",
+              "xenovia-platform/components/security",
+              "xenovia-platform/components/testing",
+              "xenovia-platform/components/tools"
+            ]
           }
         ]
       },

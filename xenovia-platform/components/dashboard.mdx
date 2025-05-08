@@ -1,0 +1,130 @@
+---
+title: 'Dashboard'
+description: 'The central hub of the Xenovia platform, providing an overview of all your AI agents and their performance'
+icon: 'gauge'
+---
+
+# Dashboard
+
+The Dashboard is the central hub of the Xenovia platform, providing a comprehensive overview of your AI agents, their performance, and system resources. It serves as the starting point for navigating to other sections of the platform.
+
+<img
+  src="/images/dashboard-overview.png"
+  alt="Xenovia Dashboard Overview"
+  width="100%"
+/>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Agent Library" icon="book">
+    Access all your AI agents in one place
+  </Card>
+  <Card title="Performance Metrics" icon="chart-simple">
+    Track key performance indicators
+  </Card>
+  <Card title="Resource Usage" icon="microchip">
+    Monitor system resource consumption
+  </Card>
+  <Card title="Recent Executions" icon="clock-rotate-left">
+    View recent agent activities
+  </Card>
+</CardGroup>
+
+## Agent Library
+
+The Agent Library provides a collection of all your AI agents with quick access to their details, status, and actions.
+
+<Callout type="tip">
+  Use the search and filter options to quickly find specific agents in large deployments.
+</Callout>
+
+From the Agent Library, you can:
+- View agent details and configuration
+- Check operational status
+- Access edit and configuration options
+- Execute agents directly
+- View performance statistics
+
+## Performance Metrics
+
+The Dashboard presents visual representations of important metrics to help you understand your AI operations at a glance:
+
+<Tabs>
+  <Tab title="Agent Metrics">
+    - Total number of agents
+    - Active vs. inactive agents
+    - Agent creation trends
+    - Agent types distribution
+  </Tab>
+  <Tab title="Execution Metrics">
+    - Total executions
+    - Success rate
+    - Average response time
+    - Error distribution
+  </Tab>
+  <Tab title="Usage Metrics">
+    - API calls
+    - Token consumption
+    - User interactions
+    - Peak usage periods
+  </Tab>
+</Tabs>
+
+## Resource Usage
+
+The Resource Usage section monitors system resource consumption to help you optimize performance and manage costs:
+
+- **CPU Utilization**: Track processing power usage
+- **Memory Usage**: Monitor RAM consumption
+- **API Call Volume**: Track external service usage
+- **Token Consumption**: Monitor model token usage
+- **Storage Utilization**: Track data storage usage
+
+<Callout type="warning">
+  Set up alerts for resource thresholds to avoid unexpected costs or performance issues.
+</Callout>
+
+## Recent Executions
+
+The Recent Executions section provides a chronological list of agent activities, showing:
+
+- Execution ID and timestamp
+- Agent name and version
+- Execution status (success, error, in progress)
+- Duration and resource consumption
+- User or system that initiated the execution
+- Quick access to detailed logs
+
+## Dashboard Customization
+
+Xenovia allows you to customize the Dashboard to focus on the metrics and information most relevant to your needs:
+
+<Steps>
+  <Step title="Select Widgets">
+    Choose which information components to display
+  </Step>
+  <Step title="Arrange Layout">
+    Drag and drop widgets to organize your view
+  </Step>
+  <Step title="Configure Timeframes">
+    Set default time periods for metrics and charts
+  </Step>
+  <Step title="Save Profiles">
+    Create and switch between different dashboard configurations
+  </Step>
+</Steps>
+
+## Related Components
+
+<CardGroup cols={3}>
+  <Card title="Analytics" icon="chart-line" href="/components/analytics">
+    Detailed performance insights
+  </Card>
+  <Card title="Agent Execution" icon="play" href="/components/agent-execution">
+    Run and test your agents
+  </Card>
+  <Card title="Agent Creation" icon="wand-magic-sparkles" href="/components/agent-creation">
+    Build new AI agents
+  </Card>
+</CardGroup>
