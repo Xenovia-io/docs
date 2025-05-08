@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Xenovia Docs",
   "colors": {
-    "primary": "#ff793f",
-    "light": "#ff793f",
-    "dark": "#ff793f"
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
   },
   "favicon": "/favicon.png",
   "navigation": {
@@ -15,10 +15,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": [
-              "introduction",
-              "products"
-            ]
+            "pages": ["introduction", "products"]
           }
         ]
       },
