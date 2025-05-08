@@ -17,7 +17,12 @@
             "group": "Get Started",
             "pages": [
               "xenovia-platform/introduction",
-              "xenovia-platform/components/overview",
+              "xenovia-platform/components/overview"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
               "xenovia-platform/components/agent-creation",
               "xenovia-platform/components/agent-execution",
               "xenovia-platform/components/analytics",
