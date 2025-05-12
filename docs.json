@@ -55,7 +55,7 @@
           {
             "group": "Endpoint Examples",
             "openapi": {
-              "source": "/api-reference/openapi.yaml",
+              "source": "https://carbon-api-806155479073.us-central1.run.app/api/schema/",
               "directory": "api-reference"
             }
           }
