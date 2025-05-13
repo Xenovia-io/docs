@@ -73,8 +73,8 @@
     }
   },
   "logo": {
-    "light": "/logo/xenovia-light.png",
-    "dark": "/logo/xenovia-dark.png"
+    "light": "/logo/xenovia-dark.svg",
+    "dark": "/logo/xenovia-light.svg"
   },
   "navbar": {
     "links": [
