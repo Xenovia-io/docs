@@ -1,11 +1,26 @@
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API requests must include an authentication token in the `Authorization` header:
+
+```bash
+Authorization: Bearer <your-token>
+```
+
+The token can be obtained from the Xenovia platform.
+
+## Rate Limiting
+
+The API has a rate limit of 100 requests per minute per user. If you exceed this limit, you will receive a `429` response.
+
+## Error Handling
+
+All API responses include an `error` field that provides additional information about the error.
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "Invalid request parameters"
   }
-]
+}
 ```
