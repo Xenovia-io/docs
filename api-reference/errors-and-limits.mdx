@@ -1,0 +1,66 @@
+---
+title: "Errors and Limits"
+description: "Error response format, status codes, and rate limit behavior."
+icon: "triangle-exclamation"
+---
+
+## Error payload shape
+
+When a request fails, Xenovia returns a structured error body:
+
+```json
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "Invalid request parameters",
+    "request_id": "req_1234567890"
+  }
+}
+```
+
+Use `request_id` to correlate API failures with platform traces and internal logs.
+
+## Common status codes
+
+<CardGroup cols={2}>
+  <Card title="400 Bad Request" icon="circle-exclamation">
+    Invalid payload, params, or schema mismatch.
+  </Card>
+  <Card title="401 Unauthorized" icon="key">
+    Missing or malformed token.
+  </Card>
+  <Card title="403 Forbidden" icon="lock">
+    Authenticated but lacking required scope.
+  </Card>
+  <Card title="404 Not Found" icon="magnifying-glass">
+    Resource missing or not visible in scope.
+  </Card>
+  <Card title="409 Conflict" icon="code-compare">
+    State conflict (for example, stale resource version).
+  </Card>
+  <Card title="429 Too Many Requests" icon="gauge-high">
+    Rate limit exceeded.
+  </Card>
+</CardGroup>
+
+`500 Internal Server Error` indicates an unexpected platform failure.
+
+## Rate limits
+
+Default baseline: **100 requests per minute per user**.
+
+If rate limited:
+
+1. Back off and retry with jitter.
+2. Respect any retry guidance returned by the API.
+3. Reduce bursty polling where possible.
+
+<Callout type="info">
+  Include `request_id` in your logs for every non-2xx response to speed up support and incident triage.
+</Callout>
+
+## Reliability practices
+
+- Add idempotency to write operations where supported.
+- Log request and response metadata (without sensitive payloads).
+- Implement retries only for transient classes (`429`, selected `5xx`).

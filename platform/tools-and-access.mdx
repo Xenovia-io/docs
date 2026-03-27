@@ -1,0 +1,34 @@
+---
+title: "Tools and Access"
+description: "Govern downstream system access for each agent."
+icon: "toolbox"
+---
+
+## Why tool governance matters
+
+Most agent risk comes from tool access, not text generation. Xenovia keeps tool permissions close to runtime policy decisions.
+
+## Access model
+
+<Steps>
+  <Step title="Register">Attach tool metadata: owner, environment, criticality.</Step>
+  <Step title="Scope">Define allowed operations per agent.</Step>
+  <Step title="Enforce">Run checks before every tool call.</Step>
+  <Step title="Record">Persist allowed, denied, and escalated outcomes.</Step>
+</Steps>
+
+## Recommended controls
+
+- Least-privilege credentials per agent.
+- Separate permissions by environment (`dev`, `staging`, `prod`).
+- Approval requirement for destructive operations.
+- Periodic review of unused or high-risk grants.
+
+## Evidence requirements
+
+Each tool interaction should retain:
+
+- Caller identity
+- Requested operation
+- Scope and policy comparison result
+- Final decision, timestamp, and operator involvement (if escalated)

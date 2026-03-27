@@ -1,24 +1,56 @@
-All API requests must include an authentication token in the `Authorization` header:
+---
+title: "Authentication"
+description: "Secure access patterns for Xenovia API requests."
+icon: "key"
+---
+
+All API requests must include a bearer token in the `Authorization` header:
 
 ```bash
 Authorization: Bearer <your-token>
 ```
 
-The token can be obtained from the Xenovia platform.
+<Callout type="warn">
+  Do not send API tokens from browser clients. Keep all privileged requests server-side.
+</Callout>
+
+## Token handling
+
+- Issue tokens through your Xenovia workspace or approved service integration.
+- Keep tokens server-side and never expose them in client-side bundles.
+- Rotate tokens on a scheduled cadence and after role changes.
+
+## Service-to-service recommendation
+
+For backend integrations:
+
+- Store tokens in a secure secret manager.
+- Attach tokens at request time.
+- Scope each token to the smallest required API surface.
+
+## Environment separation
+
+Use different credentials for each environment:
+
+- `dev`
+- `staging`
+- `production`
+
+Never reuse production credentials in non-production pipelines.
+
+## Recommended auth flow
+
+<Steps>
+  <Step title="Issue">Create scoped credentials for one environment.</Step>
+  <Step title="Store">Save token in your secrets manager.</Step>
+  <Step title="Inject">Attach token server-side at request time.</Step>
+  <Step title="Rotate">Rotate on schedule and after role changes.</Step>
+</Steps>
+
+## Authentication failures
+
+If authentication fails, the API returns `401 Unauthorized` or `403 Forbidden` depending on token validity and access scope.
 
 ## Rate Limiting
 
-The API has a rate limit of 100 requests per minute per user. If you exceed this limit, you will receive a `429` response.
-
-## Error Handling
-
-All API responses include an `error` field that provides additional information about the error.
-
-```json
-{
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Invalid request parameters"
-  }
-}
-```
+See [Errors and Limits](/api-reference/errors-and-limits) for response behavior and retry guidance.

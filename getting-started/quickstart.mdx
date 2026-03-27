@@ -1,0 +1,78 @@
+---
+title: "Quickstart"
+description: "Set up Xenovia with policy checks and trace review."
+icon: "bolt"
+---
+
+## Quickstart goals
+
+<CardGroup cols={2}>
+  <Card title="Onboard one agent" icon="robot">
+    Register ownership, environment, and declared scope.
+  </Card>
+  <Card title="Connect one tool" icon="plug">
+    Apply least-privilege access before first execution.
+  </Card>
+  <Card title="Enforce one policy" icon="shield-check">
+    Add a rule that requires approval for risky writes.
+  </Card>
+  <Card title="Validate one trace" icon="chart-network">
+    Confirm decision evidence and remediation path quality.
+  </Card>
+</CardGroup>
+
+## 1) Register an agent
+
+Create an agent record in Xenovia with:
+
+- `agent_id`
+- `owner`
+- `environment`
+- `declared_scope` (high-level allowed actions)
+
+## 2) Attach tool access
+
+Connect at least one tool your agent can call (for example, a ticketing API, data system, or workflow endpoint). Scope permissions to minimum required operations.
+
+<Callout type="warn">
+  Avoid broad wildcard permissions during initial rollout. Start narrow and expand based on observed behavior.
+</Callout>
+
+## 3) Add a runtime policy
+
+Define a baseline policy:
+
+- Allow low-risk reads in scope.
+- Require approval for write actions crossing environment boundaries.
+- Block actions outside declared scope.
+
+<Tabs>
+  <Tab title="Allow">
+    Safe, in-scope read operations with low blast radius.
+  </Tab>
+  <Tab title="Escalate">
+    Sensitive writes or cross-boundary changes requiring human approval.
+  </Tab>
+  <Tab title="Block">
+    Out-of-scope or explicitly restricted actions.
+  </Tab>
+</Tabs>
+
+## 4) Run and inspect
+
+Execute a known workflow and inspect:
+
+- Requested action and inferred intent.
+- Scope and policy comparison.
+- Final runtime decision.
+- Linked trace evidence.
+
+## 5) Validate remediation flow
+
+Trigger a controlled out-of-scope request and confirm operators can:
+
+- Review context.
+- Approve or deny with reason.
+- Update policy without losing historical evidence.
+
+Next, review [Platform Overview](/platform/overview) for the full runtime model.

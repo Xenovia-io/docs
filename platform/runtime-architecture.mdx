@@ -1,0 +1,33 @@
+---
+title: "Runtime Architecture"
+description: "From agent request to policy decision and operator action."
+icon: "sitemap"
+---
+
+## Decision path
+
+Xenovia applies deterministic runtime stages so every action is inspectable.
+
+<Steps>
+  <Step title="Request captured">Agent requests a tool action.</Step>
+  <Step title="Intent inferred">Runtime infers operational objective.</Step>
+  <Step title="Scope compared">Request is evaluated against ownership and boundaries.</Step>
+  <Step title="Policy evaluated">Rules and approval requirements are applied.</Step>
+  <Step title="Action routed">Action is allowed, blocked, or escalated.</Step>
+  <Step title="Trace persisted">Reasoning, decision, and effects are recorded.</Step>
+</Steps>
+
+## Architecture principles
+
+- **Legibility first**: Operators can always explain why a decision occurred.
+- **Control at runtime**: Enforcement happens when requests are made, not only after the fact.
+- **Evidence continuity**: Investigation and remediation never lose context.
+
+## Integration points
+
+Xenovia typically integrates with:
+
+- Agent orchestration runtimes
+- Identity and ownership systems
+- Approval and change-management workflows
+- Logging, alerting, and incident response stacks

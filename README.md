@@ -1,88 +1,64 @@
-# Mintlify Documentation
+# Xenovia Docs
 
+Documentation source for Xenovia's runtime governance platform, built with Mintlify.
 
-### Get Started
+## Local development
 
-Clone the repo
+### Prerequisites
 
-```
-https://github.com/Xenovia-io/docs
-```
+- Node.js 19+ (Node.js 20+ recommended)
+- npm
 
-### Development
+### Install Mintlify CLI
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the documentation changes locally. To install, use the following command
-
-```
-npm i -g mintlify  # install Node.js (version 19 or higher) before proceeding.
+```bash
+npm i -g mintlify
 ```
 
-Run the following command at the root of your documentation (where docs.json is)
+### Run locally
 
-```
+From the repo root (where `docs.json` exists):
+
+```bash
 mintlify dev
 ```
 
+By default, Mintlify serves docs at `http://localhost:3000`.
 
-#### Troubleshooting
+## Repo structure
 
-- Mintlify dev isn't running - Run `mintlify install` it'll re-install dependencies.
-- Page loads as a 404 - Make sure you are running in a folder with `docs.json`
-
-
-Refer https://mintlify.com/docs for more details and components/
-
-### Developing Documentation
-
-Pages in your documentation should be organized using the `docs.json` configuration file. Here's how to structure your pages:
-
-1. **Navigation Tabs**: Group your pages into tabs using the `navigation.tabs` field
-```json
-{
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Getting Started",
-        "groups": [...]
-      }
-    ]
-  }
-}
+```text
+.
+├── introduction.mdx
+├── getting-started/
+│   ├── overview.mdx
+│   └── quickstart.mdx
+├── platform/
+│   ├── overview.mdx
+│   ├── runtime-architecture.mdx
+│   ├── policies-and-approvals.mdx
+│   ├── tools-and-access.mdx
+│   └── traces-and-remediation.mdx
+├── api-reference/
+│   ├── introduction.mdx
+│   ├── authentication.mdx
+│   └── errors-and-limits.mdx
+└── docs.json
 ```
 
-2. **Page Groups**: Within each tab, create groups to organize related pages
-```json
-{
-  "groups": [
-    {
-      "group": "Overview",
-      "pages": ["introduction", "quickstart"]
-    }
-  ]
-}
-```
+## Editing guidelines
 
-3. **Adding Pages**: List your pages in the `pages` array using the file path without the `.mdx` extension
-```json
-{
-  "pages": ["introduction", "folder/page", "folder/another-page"]
-}
-```
+- Keep navigation in sync with `docs.json`.
+- Keep page metadata (`title`, `description`, `icon`) consistent.
+- Treat `api-reference/` as both authored API guides and generated endpoint docs from OpenAPI.
 
-4. **OpenAPI Integration**: For API documentation, you can automatically generate pages from an OpenAPI spec
-```json
-{
-  "groups": [
-    {
-      "group": "Endpoints",
-      "openapi": {
-        "source": "/api-reference/openapi.yaml",
-        "directory": "api-reference"
-      }
-    }
-  ]
-}
-```
+## Troubleshooting
 
+- `mintlify dev` fails to start: run `mintlify install` and retry.
+- Pages show `404`: verify page path is included in `docs.json`.
+- OpenAPI pages missing: verify the `openapi.source` URL in `docs.json` is reachable.
 
+## References
 
+- [Mintlify docs](https://mintlify.com/docs)
+- [Xenovia website](https://xenovia.io)

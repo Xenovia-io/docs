@@ -1,0 +1,46 @@
+---
+title: "Getting Started"
+description: "Roll out Xenovia as the governance layer for agent runtime."
+icon: "flag-checkered"
+---
+
+## Deployment mindset
+
+Treat Xenovia as a runtime control plane, not only as an observability tool. Your initial rollout should focus on high-risk tool interactions and operator review paths.
+
+<Callout type="tip">
+  Start narrow: onboard one critical workflow first, then expand coverage from real trace data.
+</Callout>
+
+## Prerequisites
+
+- A working agent runtime with identifiable agents or workflows.
+- Defined owners for each agent or service account.
+- Tool inventory with environment boundaries (dev, staging, prod).
+- Initial policy assumptions for allowed actions, approvals, and escalation.
+
+## First rollout targets
+
+<CardGroup cols={3}>
+  <Card title="Visibility" icon="eye">
+    Track agent inventory, ownership, and current runtime status.
+  </Card>
+  <Card title="Control" icon="shield-check">
+    Evaluate every requested tool action against policy scope.
+  </Card>
+  <Card title="Response" icon="siren-on">
+    Route unsafe or out-of-scope behavior to operator review.
+  </Card>
+</CardGroup>
+
+## Recommended sequence
+
+<Steps>
+  <Step title="Map inventory">Register agents, owners, and environment boundaries.</Step>
+  <Step title="Connect tools">Attach downstream systems with minimum required permissions.</Step>
+  <Step title="Enable policy baseline">Set allow, block, and approval conditions.</Step>
+  <Step title="Review traces">Validate decisions and tune controls using evidence.</Step>
+  <Step title="Harden production">Expand coverage and automate escalations.</Step>
+</Steps>
+
+Continue to the [Quickstart](/getting-started/quickstart) to stand up the first governed path.

@@ -1,0 +1,44 @@
+---
+title: "Traces and Remediation"
+description: "Investigate behavior drift and remediate with context."
+icon: "route"
+---
+
+## Traces as operational evidence
+
+Traces should answer three questions quickly:
+
+1. What did the agent attempt?
+2. Why did runtime decide this outcome?
+3. What changed downstream?
+
+<Callout type="tip">
+  Treat traces as operator tooling, not passive logs. They should enable decisions in minutes, not hours.
+</Callout>
+
+## Drift and incident handling
+
+When behavior drifts, teams need a repeatable path:
+
+<Steps>
+  <Step title="Detect">
+    Flag policy misses, unusual tool patterns, or repeated escalations.
+  </Step>
+  <Step title="Review">
+    Analyze trace evidence with ownership and policy context.
+  </Step>
+  <Step title="Decide">
+    Approve, block, reroute, or update policy controls.
+  </Step>
+  <Step title="Remediate">
+    Apply fixes without breaking historical trace continuity.
+  </Step>
+</Steps>
+
+## Response readiness checklist
+
+- Incident owners mapped per critical agent.
+- Escalation thresholds aligned with policy severity.
+- Trace retention period meets internal compliance needs.
+- Runbook links attached to major policy classes.
+- Post-incident updates feed back into policy tuning.

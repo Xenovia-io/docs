@@ -1,0 +1,45 @@
+---
+title: "Policies and Approvals"
+description: "Reviewable enforcement for risky or out-of-scope actions."
+icon: "scale-balanced"
+---
+
+## Policy outcomes
+
+Every action resolves into one of three outcomes:
+
+<CardGroup cols={3}>
+  <Card title="Allow" icon="circle-check">
+    Action is in scope and policy-safe.
+  </Card>
+  <Card title="Block" icon="ban">
+    Action violates hard constraints.
+  </Card>
+  <Card title="Escalate" icon="triangle-exclamation">
+    Action requires explicit operator approval.
+  </Card>
+</CardGroup>
+
+## Policy design guidelines
+
+- Use clear ownership boundaries per agent and environment.
+- Separate read-safe operations from state-changing operations.
+- Require approval for cross-environment writes and privileged tool calls.
+- Prefer explicit exceptions over broad allowlists.
+
+## Approval workflow basics
+
+For escalated actions, reviewers should see:
+
+- Requesting agent identity and owner.
+- Requested tool action and inferred intent.
+- Relevant policy clauses and risk rationale.
+- Proposed blast radius and downstream impact.
+
+<Callout type="info">
+  Good approvals are evidence-first: reviewers should never approve without clear scope comparison and policy context.
+</Callout>
+
+## Operating model
+
+Start with conservative defaults and tune from trace feedback. Good policy systems evolve from observed behavior rather than fixed one-time rules.

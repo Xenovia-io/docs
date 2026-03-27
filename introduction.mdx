@@ -1,0 +1,65 @@
+---
+title: "Xenovia Docs"
+description: "Runtime governance documentation for agentic AI teams."
+icon: "sparkles"
+---
+
+# Govern agent runtime
+
+Xenovia is an operator-first control plane for agentic systems. It helps teams see what agents are doing, control what tools they can access, enforce policy decisions with approvals, and preserve evidence for review and remediation.
+
+<Callout type="info">
+  Built for production operators: legible decisions, policy-backed control, and fast remediation.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Start Here" icon="compass" href="/getting-started/overview">
+    Understand how Xenovia fits your production stack.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    Configure your first governed agent workflow.
+  </Card>
+  <Card title="Platform Model" icon="diagram-project" href="/platform/overview">
+    Learn how runtime governance is organized in Xenovia.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Integrate Xenovia directly into your internal systems.
+  </Card>
+</CardGroup>
+
+## At a glance
+
+<CardGroup cols={2}>
+  <Card title="One runtime surface" icon="grid-2">
+    Agents, policies, tools, traces, and ownership in one shared view.
+  </Card>
+  <Card title="Reviewable decisions" icon="clipboard-check">
+    Every allow, block, and escalation includes policy rationale.
+  </Card>
+  <Card title="End-to-end traceability" icon="timeline">
+    Follow actions from request through downstream effects.
+  </Card>
+  <Card title="Actionable remediation" icon="wrench">
+    Resolve drift without losing historical evidence.
+  </Card>
+</CardGroup>
+
+## Core lifecycle
+
+<Steps>
+  <Step title="Intent">
+    An agent requests a tool action or workflow change.
+  </Step>
+  <Step title="Comparison">
+    Xenovia compares the request against scope, ownership, and policy.
+  </Step>
+  <Step title="Decision">
+    Runtime enforcement allows, blocks, or escalates the action.
+  </Step>
+  <Step title="Trace">
+    Xenovia records decision evidence and execution details.
+  </Step>
+  <Step title="Operator action">
+    Teams review, approve, reroute, or remediate with full context.
+  </Step>
+</Steps>

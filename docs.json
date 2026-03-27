@@ -1,43 +1,34 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Xenovia Docs",
+  "name": "Xenovia",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#5D8FF3",
+    "light": "#5D8FF3",
+    "dark": "#0E111A"
   },
   "favicon": "/favicon.png",
   "navigation": {
     "tabs": [
       {
-        "tab": "Home",
+        "tab": "Docs",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Start Here",
             "pages": [
-              "xenovia-platform/introduction",
-              "xenovia-platform/components/overview"
+              "introduction",
+              "getting-started/overview",
+              "getting-started/quickstart"
             ]
           },
           {
-            "group": "Features",
+            "group": "Platform",
             "pages": [
-              "xenovia-platform/components/agent-creation",
-              "xenovia-platform/components/agent-execution",
-              "xenovia-platform/components/analytics",
-              "xenovia-platform/components/collaboration",
-              "xenovia-platform/components/dashboard",
-              "xenovia-platform/components/deployment",
-              "xenovia-platform/components/fine-tuning",
-              "xenovia-platform/components/integrations",
-              "xenovia-platform/components/knowledge-management",
-              "xenovia-platform/components/marketplace",
-              "xenovia-platform/components/memory-management",
-              "xenovia-platform/components/prompts",
-              "xenovia-platform/components/security",
-              "xenovia-platform/components/testing",
-              "xenovia-platform/components/tools"
+              "platform/overview",
+              "platform/runtime-architecture",
+              "platform/policies-and-approvals",
+              "platform/tools-and-access",
+              "platform/traces-and-remediation"
             ]
           }
         ]
@@ -46,14 +37,15 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "API Documentation",
+            "group": "Core API",
             "pages": [
               "api-reference/introduction",
-              "api-reference/authentication"
+              "api-reference/authentication",
+              "api-reference/errors-and-limits"
             ]
           },
           {
-            "group": "Endpoint Examples",
+            "group": "Endpoints",
             "openapi": {
               "source": "https://carbon-api-806155479073.us-central1.run.app/openapi.json",
               "directory": "api-reference"
@@ -68,32 +60,32 @@
           "anchor": "Website",
           "href": "https://xenovia.io",
           "icon": "globe"
+        },
+        {
+          "anchor": "Platform Story",
+          "href": "https://xenovia.io/platform",
+          "icon": "compass"
         }
       ]
     }
-  },
-  "logo": {
-    "light": "/logo/xenovia-dark.svg",
-    "dark": "/logo/xenovia-light.svg"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:richard.loomis@xenovia.com"
+        "href": "mailto:richard.loomis@xenovia.io"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Contact Us",
+      "label": "Book Demo",
       "href": "https://xenovia.io"
     }
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/xenovia_io",
+      "linkedin": "https://www.linkedin.com/company/xenovia"
     }
   }
 }

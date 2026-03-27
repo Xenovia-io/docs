@@ -1,23 +1,54 @@
 ---
-title: 'API Reference'
-icon: 'code'
+title: "API Introduction"
+description: "Integrate Xenovia runtime governance into your platform."
+icon: "code"
 ---
 
-> The Xenovia API provides programmatic access to the Xenovia platform, allowing developers to integrate AI agent capabilities into their applications and workflows.
+The Xenovia API provides programmatic access to runtime governance workflows, including agent metadata, policy checks, trace retrieval, and review operations.
 
-## Overview
-
-Xenovia's API is designed with the following principles:
-
-- **RESTful Design** - Follows REST principles with resource-oriented URLs
-- **JSON Formatted** - Uses JSON for all data exchange
-- **Secure by Default** - All requests are made over HTTPS with authentication
-- **Versioned** - Maintains backward compatibility through versioning
+<CardGroup cols={2}>
+  <Card title="Runtime enforcement" icon="shield-check">
+    Evaluate and enforce policy decisions from your systems.
+  </Card>
+  <Card title="Trace retrieval" icon="file-chart-column">
+    Pull evidence for audits, debugging, and incident response.
+  </Card>
+  <Card title="Approval workflows" icon="user-check">
+    Integrate operator approvals into existing review pipelines.
+  </Card>
+  <Card title="Operational automation" icon="bot">
+    Automate safe actions while escalating risky behavior.
+  </Card>
+</CardGroup>
 
 ## Base URL
-
-All API requests should be made to:
 
 ```bash
 https://api.staging.xenovia.io/api/v1
 ```
+
+## Design principles
+
+<Tabs>
+  <Tab title="REST">
+    Resource-oriented endpoints with predictable behavior.
+  </Tab>
+  <Tab title="JSON">
+    Structured request and response payloads.
+  </Tab>
+  <Tab title="Secure">
+    Token-based access control for protected operations.
+  </Tab>
+  <Tab title="Traceable">
+    Decisions tied to policy and execution evidence.
+  </Tab>
+</Tabs>
+
+## Common use cases
+
+- Registering and managing agent inventory.
+- Enforcing and testing policy outcomes programmatically.
+- Reviewing trace details for incident response workflows.
+- Automating approval or remediation paths in internal systems.
+
+See [Authentication](/api-reference/authentication) and [Errors and Limits](/api-reference/errors-and-limits) before integrating endpoint-level operations.
