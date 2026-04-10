@@ -47,7 +47,7 @@
           {
             "group": "Endpoints",
             "openapi": {
-              "source": "https://carbon-api-806155479073.us-central1.run.app/openapi.json",
+              "source": "https://ap-3ff3b40ebc434499b60924ee10f9304e.ecs.us-west-2.on.aws/openapi.json",
               "directory": "api-reference"
             }
           }

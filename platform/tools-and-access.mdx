@@ -1,6 +1,6 @@
 ---
 title: "Tools and Access"
-description: "Govern downstream system access for each agent."
+description: "Govern downstream system access derived under each proxy."
 icon: "toolbox"
 ---
 
@@ -11,15 +11,16 @@ Most agent risk comes from tool access, not text generation. Xenovia keeps tool 
 ## Access model
 
 <Steps>
-  <Step title="Register">Attach tool metadata: owner, environment, criticality.</Step>
-  <Step title="Scope">Define allowed operations per agent.</Step>
+  <Step title="Discover">Runtime traffic registers agent/tool identities under a proxy.</Step>
+  <Step title="Classify">Annotate owner, environment, and criticality.</Step>
+  <Step title="Scope">Define allowed operations per proxy and runtime identity.</Step>
   <Step title="Enforce">Run checks before every tool call.</Step>
   <Step title="Record">Persist allowed, denied, and escalated outcomes.</Step>
 </Steps>
 
 ## Recommended controls
 
-- Least-privilege credentials per agent.
+- Least-privilege credentials per proxy and environment.
 - Separate permissions by environment (`dev`, `staging`, `prod`).
 - Approval requirement for destructive operations.
 - Periodic review of unused or high-risk grants.
@@ -28,7 +29,7 @@ Most agent risk comes from tool access, not text generation. Xenovia keeps tool 
 
 Each tool interaction should retain:
 
-- Caller identity
+- Proxy identity + runtime-derived caller identity
 - Requested operation
 - Scope and policy comparison result
 - Final decision, timestamp, and operator involvement (if escalated)

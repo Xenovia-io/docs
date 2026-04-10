@@ -22,7 +22,7 @@ Every action resolves into one of three outcomes:
 
 ## Policy design guidelines
 
-- Use clear ownership boundaries per agent and environment.
+- Use clear ownership boundaries per proxy and environment.
 - Separate read-safe operations from state-changing operations.
 - Require approval for cross-environment writes and privileged tool calls.
 - Prefer explicit exceptions over broad allowlists.
@@ -31,7 +31,7 @@ Every action resolves into one of three outcomes:
 
 For escalated actions, reviewers should see:
 
-- Requesting agent identity and owner.
+- Requesting proxy identity plus runtime-derived agent identity and owner.
 - Requested tool action and inferred intent.
 - Relevant policy clauses and risk rationale.
 - Proposed blast radius and downstream impact.

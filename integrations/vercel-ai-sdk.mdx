@@ -1,0 +1,103 @@
+---
+title: "Vercel AI SDK"
+description: "Use Xenovia with the Vercel AI SDK in Next.js and edge environments."
+icon: "triangle"
+---
+
+## Setup
+
+```bash
+npm install ai @ai-sdk/openai
+```
+
+```typescript
+import { createOpenAI } from "@ai-sdk/openai"
+
+const xenovia = createOpenAI({
+  apiKey: process.env.XENOVIA_API_KEY,
+  baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+})
+
+const model = xenovia("gpt-4o-mini")
+```
+
+## Streaming text
+
+```typescript
+import { streamText } from "ai"
+
+const { textStream } = streamText({
+  model,
+  messages: [{ role: "user", content: "Explain AI governance" }]
+})
+
+for await (const chunk of textStream) {
+  process.stdout.write(chunk)
+}
+```
+
+## Next.js App Router route handler
+
+```typescript
+// app/api/chat/route.ts
+import { streamText } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
+
+const xenovia = createOpenAI({
+  apiKey: process.env.XENOVIA_API_KEY,
+  baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+})
+
+export async function POST(req: Request) {
+  const { messages } = await req.json()
+
+  const result = streamText({
+    model: xenovia("gpt-4o-mini"),
+    messages
+  })
+
+  return result.toDataStreamResponse()
+}
+```
+
+## Tool calling
+
+```typescript
+import { streamText, tool } from "ai"
+import { z } from "zod"
+
+const result = streamText({
+  model,
+  messages: [{ role: "user", content: "What is the weather in London?" }],
+  tools: {
+    getWeather: tool({
+      description: "Get the weather for a location",
+      parameters: z.object({ location: z.string() }),
+      execute: async ({ location }) => ({ temperature: "15°C", location })
+    })
+  }
+})
+```
+
+## Policy blocks
+
+When a request is blocked, the runtime returns a `403`. Handle it at the route level:
+
+```typescript
+try {
+  const result = streamText({ model, messages })
+  return result.toDataStreamResponse()
+} catch (error) {
+  if (error.status === 403) {
+    return new Response(
+      JSON.stringify({ error: "Request blocked by policy" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    )
+  }
+  throw error
+}
+```
+
+<Callout type="info">
+  The Vercel AI SDK uses keep-alive connections by default, so subsequent requests within the same server instance will have significantly lower latency.
+</Callout>

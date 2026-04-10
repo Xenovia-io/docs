@@ -1,0 +1,64 @@
+---
+title: "Integrations Overview"
+description: "Connect any LLM framework to Xenovia in two lines of code."
+icon: "plug"
+---
+
+Xenovia Runtime is an OpenAI-compatible proxy. Any framework that accepts a custom `base_url` works without additional configuration — your existing code stays the same, and every call passes through Xenovia's policy and trace layer.
+
+## How it works
+
+Replace your LLM provider's base URL with your Xenovia proxy URL. The runtime handles:
+
+- API key verification
+- Policy evaluation (allow / block / redact)
+- Trace recording
+- Provider credential forwarding
+
+<Callout type="info">
+  Your Xenovia API key (`xe_...`) is used to authenticate with the runtime. The runtime resolves the correct provider credentials (OpenAI, Anthropic, etc.) from the proxy configuration — your application never needs to hold provider keys directly.
+</Callout>
+
+## Your proxy URL
+
+Every proxy has a unique URL:
+
+```
+https://runtime.xenovia.io/a/{proxy_id}/openai/v1
+```
+
+Find your `proxy_id` in the Xenovia platform under **Proxies**.
+
+## Supported frameworks
+
+<CardGroup cols={2}>
+  <Card title="OpenAI SDK" icon="python" href="/integrations/openai-sdk">
+    Python and Node.js — the most common path.
+  </Card>
+  <Card title="LangChain" icon="link" href="/integrations/langchain">
+    Python and JS chains, agents, and tools.
+  </Card>
+  <Card title="LlamaIndex" icon="database" href="/integrations/llamaindex">
+    RAG pipelines and agentic query engines.
+  </Card>
+  <Card title="OpenAI Agents SDK" icon="robot" href="/integrations/openai-agents-sdk">
+    Multi-agent orchestration with the Responses API.
+  </Card>
+  <Card title="Vercel AI SDK" icon="triangle" href="/integrations/vercel-ai-sdk">
+    Next.js and edge-compatible streaming.
+  </Card>
+  <Card title="AutoGen / CrewAI" icon="users" href="/integrations/autogen-crewai">
+    Multi-agent frameworks built on OpenAI.
+  </Card>
+</CardGroup>
+
+## Supported endpoints
+
+| Endpoint | Use case |
+|----------|----------|
+| `POST /v1/chat/completions` | Chat, agents, tool calling |
+| `POST /v1/responses` | OpenAI Agents SDK (Responses API) |
+| `POST /v1/embeddings` | RAG, vector search |
+| `POST /v1/completions` | Legacy text completions |
+| `POST /v1/audio/speech` | Text-to-speech |
+| `POST /v1/images/generations` | Image generation |

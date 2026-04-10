@@ -1,0 +1,171 @@
+---
+title: "OpenAI SDK"
+description: "Route Python and Node.js OpenAI SDK calls through Xenovia."
+icon: "python"
+---
+
+## Setup
+
+Set two environment variables and change one line in your code.
+
+```bash
+export XENOVIA_API_KEY=xe_...
+export XENOVIA_PROXY_ID=your-proxy-id
+```
+
+<Tabs>
+  <Tab title="Python">
+    ```bash
+    pip install openai
+    ```
+
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=os.environ["XENOVIA_API_KEY"],
+        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```bash
+    npm install openai
+    ```
+
+    ```typescript
+    import OpenAI from "openai"
+
+    const client = new OpenAI({
+      apiKey: process.env.XENOVIA_API_KEY,
+      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+    })
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "Hello" }]
+    })
+    console.log(response.choices[0].message.content)
+    ```
+  </Tab>
+</Tabs>
+
+## Streaming
+
+Streaming works without any changes.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    stream = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Count to 5"}],
+        stream=True
+    )
+    for chunk in stream:
+        print(chunk.choices[0].delta.content or "", end="")
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    const stream = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "Count to 5" }],
+      stream: true
+    })
+    for await (const chunk of stream) {
+      process.stdout.write(chunk.choices[0]?.delta?.content ?? "")
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Tool calling
+
+Tool calling passes through unchanged.
+
+```python
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get the current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {"type": "string"}
+                },
+                "required": ["location"]
+            }
+        }
+    }
+]
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "What's the weather in London?"}],
+    tools=tools
+)
+```
+
+## Sessions
+
+Pass `X-Xenovia-Session-Id` to group related calls into a session visible in Traces.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    client = OpenAI(
+        api_key=os.environ["XENOVIA_API_KEY"],
+        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+        default_headers={"X-Xenovia-Session-Id": "session-abc123"}
+    )
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    const client = new OpenAI({
+      apiKey: process.env.XENOVIA_API_KEY,
+      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+      defaultHeaders: { "X-Xenovia-Session-Id": "session-abc123" }
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Policy blocks
+
+When a request is blocked by policy, the runtime returns a `403` with a structured error. Handle it like any other API error.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import PermissionDeniedError
+
+    try:
+        response = client.chat.completions.create(...)
+    except PermissionDeniedError as e:
+        print(f"Blocked by policy: {e.message}")
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    import { PermissionDeniedError } from "openai"
+
+    try {
+      const response = await client.chat.completions.create(...)
+    } catch (e) {
+      if (e instanceof PermissionDeniedError) {
+        console.log("Blocked by policy:", e.message)
+      }
+    }
+    ```
+  </Tab>
+</Tabs>

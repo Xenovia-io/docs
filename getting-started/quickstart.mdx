@@ -7,11 +7,11 @@ icon: "bolt"
 ## Quickstart goals
 
 <CardGroup cols={2}>
-  <Card title="Onboard one agent" icon="robot">
-    Register ownership, environment, and declared scope.
+  <Card title="Create one proxy" icon="robot">
+    Define ownership, environment, and declared scope.
   </Card>
-  <Card title="Connect one tool" icon="plug">
-    Apply least-privilege access before first execution.
+  <Card title="Observe one runtime tool" icon="plug">
+    Derive runtime agent/tool metadata from live proxy traffic.
   </Card>
   <Card title="Enforce one policy" icon="shield-check">
     Add a rule that requires approval for risky writes.
@@ -21,21 +21,24 @@ icon: "bolt"
   </Card>
 </CardGroup>
 
-## 1) Register an agent
+## 1) Create a proxy
 
-Create an agent record in Xenovia with:
+Create a proxy in Xenovia with:
 
-- `agent_id`
 - `owner`
 - `environment`
 - `declared_scope` (high-level allowed actions)
 
-## 2) Attach tool access
+<Callout type="info">
+  Proxies are created in the platform. Runtime agents and runtime tools are derived from requests that hit the runtime proxy.
+</Callout>
 
-Connect at least one tool your agent can call (for example, a ticketing API, data system, or workflow endpoint). Scope permissions to minimum required operations.
+## 2) Route runtime traffic and discover metadata
+
+Point your runtime repo to the Xenovia runtime proxy and execute a known workflow. As traffic arrives, Xenovia registers runtime-derived agent/tool identities under the selected proxy for tracing and policy evaluation.
 
 <Callout type="warn">
-  Avoid broad wildcard permissions during initial rollout. Start narrow and expand based on observed behavior.
+  Avoid broad wildcard permissions during initial rollout. Start narrow and expand using observed runtime behavior.
 </Callout>
 
 ## 3) Add a runtime policy
@@ -62,6 +65,7 @@ Define a baseline policy:
 
 Execute a known workflow and inspect:
 
+- Proxy + runtime-derived identity.
 - Requested action and inferred intent.
 - Scope and policy comparison.
 - Final runtime decision.

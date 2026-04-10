@@ -1,0 +1,70 @@
+---
+title: "LlamaIndex"
+description: "Use Xenovia as the LLM backend for LlamaIndex RAG and agent pipelines."
+icon: "database"
+---
+
+## Setup
+
+```bash
+pip install llama-index-llms-openai llama-index-embeddings-openai
+```
+
+```python
+from llama_index.llms.openai import OpenAI
+from llama_index.core import Settings
+
+llm = OpenAI(
+    model="gpt-4o-mini",
+    api_key=os.environ["XENOVIA_API_KEY"],
+    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+)
+
+Settings.llm = llm
+```
+
+## Embeddings
+
+```python
+from llama_index.embeddings.openai import OpenAIEmbedding
+
+embed_model = OpenAIEmbedding(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+)
+
+Settings.embed_model = embed_model
+```
+
+## RAG pipeline
+
+```python
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader("./docs").load_data()
+index = VectorStoreIndex.from_documents(documents)
+
+query_engine = index.as_query_engine()
+response = query_engine.query("What are the main topics covered?")
+print(response)
+```
+
+## Agentic query engine
+
+```python
+from llama_index.core.agent import ReActAgent
+from llama_index.core.tools import QueryEngineTool
+
+tool = QueryEngineTool.from_defaults(
+    query_engine=query_engine,
+    name="docs_search",
+    description="Search internal documentation"
+)
+
+agent = ReActAgent.from_tools([tool], llm=llm, verbose=True)
+response = agent.chat("Find information about policies")
+```
+
+<Callout type="info">
+  Set `Settings.llm` and `Settings.embed_model` globally so all LlamaIndex components in your application route through Xenovia automatically.
+</Callout>

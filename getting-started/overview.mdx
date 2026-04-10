@@ -1,6 +1,6 @@
 ---
 title: "Getting Started"
-description: "Roll out Xenovia as the governance layer for agent runtime."
+description: "Roll out Xenovia as the governance layer for runtime proxies."
 icon: "flag-checkered"
 ---
 
@@ -14,16 +14,16 @@ Treat Xenovia as a runtime control plane, not only as an observability tool. You
 
 ## Prerequisites
 
-- A working agent runtime with identifiable agents or workflows.
-- Defined owners for each agent or service account.
-- Tool inventory with environment boundaries (dev, staging, prod).
+- A working runtime that can route traffic through a Xenovia proxy.
+- Defined owners for each proxy or service account.
+- Known downstream systems and environment boundaries (dev, staging, prod).
 - Initial policy assumptions for allowed actions, approvals, and escalation.
 
 ## First rollout targets
 
 <CardGroup cols={3}>
   <Card title="Visibility" icon="eye">
-    Track agent inventory, ownership, and current runtime status.
+    Track proxy inventory, ownership, and current runtime status.
   </Card>
   <Card title="Control" icon="shield-check">
     Evaluate every requested tool action against policy scope.
@@ -36,8 +36,8 @@ Treat Xenovia as a runtime control plane, not only as an observability tool. You
 ## Recommended sequence
 
 <Steps>
-  <Step title="Map inventory">Register agents, owners, and environment boundaries.</Step>
-  <Step title="Connect tools">Attach downstream systems with minimum required permissions.</Step>
+  <Step title="Map inventory">Create proxies, owners, and environment boundaries.</Step>
+  <Step title="Route traffic">Send runtime calls through the proxy to derive agent/tool metadata.</Step>
   <Step title="Enable policy baseline">Set allow, block, and approval conditions.</Step>
   <Step title="Review traces">Validate decisions and tune controls using evidence.</Step>
   <Step title="Harden production">Expand coverage and automate escalations.</Step>

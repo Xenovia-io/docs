@@ -1,6 +1,6 @@
 ---
 title: "Runtime Architecture"
-description: "From agent request to policy decision and operator action."
+description: "From proxy ingress to policy decision and operator action."
 icon: "sitemap"
 ---
 
@@ -9,7 +9,8 @@ icon: "sitemap"
 Xenovia applies deterministic runtime stages so every action is inspectable.
 
 <Steps>
-  <Step title="Request captured">Agent requests a tool action.</Step>
+  <Step title="Request captured">Runtime call reaches the Xenovia proxy.</Step>
+  <Step title="Identity resolved">Runtime-derived agent/tool identity is mapped under that proxy.</Step>
   <Step title="Intent inferred">Runtime infers operational objective.</Step>
   <Step title="Scope compared">Request is evaluated against ownership and boundaries.</Step>
   <Step title="Policy evaluated">Rules and approval requirements are applied.</Step>
@@ -27,7 +28,7 @@ Xenovia applies deterministic runtime stages so every action is inspectable.
 
 Xenovia typically integrates with:
 
-- Agent orchestration runtimes
+- Runtime proxies and agent orchestration runtimes
 - Identity and ownership systems
 - Approval and change-management workflows
 - Logging, alerting, and incident response stacks

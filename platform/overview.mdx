@@ -1,17 +1,17 @@
 ---
 title: "Platform Overview"
-description: "How Xenovia organizes runtime governance across operators and agents."
+description: "How Xenovia organizes runtime governance across proxies and runtime-derived identities."
 icon: "layer-group"
 ---
 
 ## One surface across runtime operations
 
-Xenovia keeps agents, policies, tools, traces, and remediation in one operational surface so teams can reason from shared context instead of fragmented logs.
+Xenovia keeps proxies, runtime-derived agents/tools, policies, traces, and remediation in one operational surface so teams can reason from shared context instead of fragmented logs.
 
 <CardGroup cols={3}>
-  <Card title="Agents" icon="hexagon-nodes">Inventory, owners, and live runtime state.</Card>
+  <Card title="Proxies" icon="hexagon-nodes">Operator-created inventory, owners, and live runtime state.</Card>
+  <Card title="Runtime Identities" icon="fingerprint">Agents and tools derived from runtime proxy traffic.</Card>
   <Card title="Policies" icon="gavel">Enforcement logic with approval routing.</Card>
-  <Card title="Tools" icon="toolbox">Scoped downstream system access.</Card>
   <Card title="Traces" icon="file-waveform">Evidence from request to outcome.</Card>
   <Card title="Remediation" icon="screwdriver-wrench">Guided operator response workflows.</Card>
   <Card title="Governance" icon="shield">Shared context across security and ops teams.</Card>
@@ -19,16 +19,17 @@ Xenovia keeps agents, policies, tools, traces, and remediation in one operationa
 
 ## Core entities
 
-- **Agents**: Inventory, ownership, status, and scope declarations.
+- **Proxies**: Platform-created runtime entry points with ownership and scope.
+- **Runtime agents/tools**: Derived from runtime traffic under each proxy.
 - **Policies**: Rules, approvals, and escalation thresholds.
-- **Tools**: Controlled access to downstream systems.
 - **Traces**: Decision evidence and execution history.
 - **Operators**: Reviewers responsible for approvals and incident response.
 
 ## Runtime flow
 
 <Steps>
-  <Step title="Action request">Agent proposes a tool call or workflow step.</Step>
+  <Step title="Action request">Runtime call reaches a Xenovia proxy.</Step>
+  <Step title="Identity mapping">Runtime-derived agent/tool identity is associated to that proxy.</Step>
   <Step title="Intent reasoning">Xenovia interprets requested intent and risk.</Step>
   <Step title="Scope comparison">Request is checked against allowed boundaries.</Step>
   <Step title="Policy decision">Action is allowed, blocked, or escalated.</Step>

@@ -4,9 +4,9 @@ description: "Runtime governance documentation for agentic AI teams."
 icon: "sparkles"
 ---
 
-# Govern agent runtime
+# Govern runtime through proxies
 
-Xenovia is an operator-first control plane for agentic systems. It helps teams see what agents are doing, control what tools they can access, enforce policy decisions with approvals, and preserve evidence for review and remediation.
+Xenovia is an operator-first control plane for agentic systems. Teams create proxies in the platform, route runtime traffic through those proxies, and use derived agent/tool telemetry for policy decisions, approvals, and trace-backed remediation.
 
 <Callout type="info">
   Built for production operators: legible decisions, policy-backed control, and fast remediation.
@@ -17,7 +17,7 @@ Xenovia is an operator-first control plane for agentic systems. It helps teams s
     Understand how Xenovia fits your production stack.
   </Card>
   <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
-    Configure your first governed agent workflow.
+    Configure your first governed proxy workflow.
   </Card>
   <Card title="Platform Model" icon="diagram-project" href="/platform/overview">
     Learn how runtime governance is organized in Xenovia.
@@ -31,7 +31,7 @@ Xenovia is an operator-first control plane for agentic systems. It helps teams s
 
 <CardGroup cols={2}>
   <Card title="One runtime surface" icon="grid-2">
-    Agents, policies, tools, traces, and ownership in one shared view.
+    Proxies, runtime-derived agents/tools, policies, traces, and ownership in one shared view.
   </Card>
   <Card title="Reviewable decisions" icon="clipboard-check">
     Every allow, block, and escalation includes policy rationale.
@@ -48,7 +48,7 @@ Xenovia is an operator-first control plane for agentic systems. It helps teams s
 
 <Steps>
   <Step title="Intent">
-    An agent requests a tool action or workflow change.
+    A runtime call hits a Xenovia proxy with agent/tool context.
   </Step>
   <Step title="Comparison">
     Xenovia compares the request against scope, ownership, and policy.

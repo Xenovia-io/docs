@@ -1,0 +1,97 @@
+---
+title: "LangChain"
+description: "Use Xenovia as the LLM backend for LangChain chains and agents."
+icon: "link"
+---
+
+## Setup
+
+<Tabs>
+  <Tab title="Python">
+    ```bash
+    pip install langchain-openai
+    ```
+
+    ```python
+    from langchain_openai import ChatOpenAI
+
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        api_key=os.environ["XENOVIA_API_KEY"],
+        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    )
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```bash
+    npm install @langchain/openai
+    ```
+
+    ```typescript
+    import { ChatOpenAI } from "@langchain/openai"
+
+    const llm = new ChatOpenAI({
+      model: "gpt-4o-mini",
+      apiKey: process.env.XENOVIA_API_KEY,
+      configuration: {
+        baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+      }
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Chains
+
+Use the configured `llm` anywhere in a LangChain pipeline.
+
+```python
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    ("user", "{input}")
+])
+
+chain = prompt | llm
+response = chain.invoke({"input": "What is LangChain?"})
+print(response.content)
+```
+
+## Agents with tools
+
+```python
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain_core.tools import tool
+
+@tool
+def search(query: str) -> str:
+    """Search the web for information."""
+    return f"Results for: {query}"
+
+agent = create_tool_calling_agent(llm, [search], prompt)
+executor = AgentExecutor(agent=agent, tools=[search])
+result = executor.invoke({"input": "Search for recent AI news"})
+```
+
+## RAG pipeline
+
+```python
+from langchain_openai import OpenAIEmbeddings
+from langchain_core.vectorstores import InMemoryVectorStore
+
+embeddings = OpenAIEmbeddings(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+)
+
+vectorstore = InMemoryVectorStore.from_texts(
+    ["Xenovia provides runtime governance for AI agents"],
+    embedding=embeddings
+)
+retriever = vectorstore.as_retriever()
+```
+
+<Callout type="info">
+  Every LLM and embedding call routes through Xenovia — policies and traces apply to the full chain, not just the final response.
+</Callout>

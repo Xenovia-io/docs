@@ -1,0 +1,99 @@
+---
+title: "OpenAI Agents SDK"
+description: "Use Xenovia with the OpenAI Agents SDK and Responses API."
+icon: "robot"
+---
+
+The OpenAI Agents SDK uses the **Responses API** (`POST /v1/responses`) for multi-agent orchestration. Xenovia supports this endpoint natively.
+
+## Setup
+
+```bash
+pip install openai-agents
+```
+
+```python
+from openai import AsyncOpenAI
+from agents import Agent, Runner, OpenAIChatCompletionsModel
+
+client = AsyncOpenAI(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+)
+
+model = OpenAIChatCompletionsModel(
+    model="gpt-4o-mini",
+    openai_client=client
+)
+```
+
+## Single agent
+
+```python
+agent = Agent(
+    name="Assistant",
+    instructions="You are a helpful assistant.",
+    model=model
+)
+
+result = await Runner.run(agent, "What is the capital of France?")
+print(result.final_output)
+```
+
+## Multi-agent handoff
+
+```python
+research_agent = Agent(
+    name="Researcher",
+    instructions="Search and summarise information on the given topic.",
+    model=model
+)
+
+writer_agent = Agent(
+    name="Writer",
+    instructions="Write a clear report based on provided research.",
+    model=model,
+    handoffs=[research_agent]
+)
+
+result = await Runner.run(writer_agent, "Write a report on AI governance")
+print(result.final_output)
+```
+
+## Agents with tools
+
+```python
+from agents import function_tool
+
+@function_tool
+def get_policy_status(proxy_id: str) -> str:
+    """Check the current policy status for a proxy."""
+    return f"Policy active for proxy {proxy_id}"
+
+agent = Agent(
+    name="PolicyChecker",
+    instructions="Check policy status when asked.",
+    tools=[get_policy_status],
+    model=model
+)
+```
+
+<Callout type="info">
+  Each agent turn is a separate call to the Responses API. All turns are traced independently in Xenovia — you can filter by session ID to see the full conversation flow.
+</Callout>
+
+## Sessions
+
+Group all turns of an agent run under one session:
+
+```python
+import uuid
+
+session_id = str(uuid.uuid4())
+
+client = AsyncOpenAI(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={"X-Xenovia-Session-Id": session_id}
+)
+```
