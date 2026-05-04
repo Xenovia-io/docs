@@ -1,0 +1,241 @@
+---
+title: "Xenovia Python SDK"
+description: "Gate arbitrary agent actions against Xenovia policy using execute() and @guard()."
+icon: "python"
+---
+
+The Xenovia Python SDK (`xenovia-sdk`) gates agent tool calls, database writes, API requests, and any other action against Xenovia policy — without proxying an LLM call. Use it alongside proxy mode for end-to-end governance.
+
+**Install:**
+
+```bash
+pip install xenovia-sdk
+```
+
+**Requirements:** Python ≥ 3.9. Zero runtime dependencies (stdlib only).
+
+## How it works
+
+The SDK sends an action intent — a capability string plus a payload — to the Xenovia backend via `POST /v1/execute`. The backend evaluates your Rego policy and returns a typed decision. Your function executes locally if allowed. No LLM is involved.
+
+```
+agent code
+  → xenovia.execute(capability, payload)
+    → POST /v1/execute (Xenovia backend)
+      → Rego policy evaluation
+    ← XenoviaResponse (status, decision, trace_id)
+  → local execution (if allowed)
+```
+
+## Initialise the client
+
+```python
+import os
+from xenovia_sdk import Xenovia
+
+xenovia = Xenovia(
+    api_key=os.environ["XENOVIA_API_KEY"],   # xe_... key
+    identity_id="billing-agent",             # agent identity
+    identity_type="agent",                   # default
+    default_env="prod",                      # environment label
+    auto_session=True,                       # auto-generate session UUIDs
+    raise_on_block=False,                    # return response instead of raising
+    unreachable_mode="error",                # "error" | "allow" | "block"
+    timeout=5                                # HTTP timeout in seconds
+)
+```
+
+### Constructor parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `api_key` | `str` | required | Xenovia API key (`xe_...`) |
+| `endpoint` | `str` | `https://api.xenovia.io` | Xenovia API base URL |
+| `default_env` | `str` | `"prod"` | Environment label |
+| `raise_on_block` | `bool` | `False` | Raise `XenoviaBlockedError` on block |
+| `timeout` | `int` | `5` | HTTP request timeout (seconds) |
+| `auto_session` | `bool` | `False` | Auto-generate and reuse session UUIDs |
+| `debug` | `bool` | `False` | Print decision logs to stdout |
+| `identity_id` | `str` | env `XENOVIA_AGENT_ID` or `"default-agent"` | Actor identity |
+| `identity_type` | `str` | `"agent"` | Identity type label |
+| `unreachable_mode` | `str` | `"error"` | Behaviour when backend unreachable |
+| `allow_insecure_http` | `bool` | `False` | Allow HTTP (localhost/loopback only) |
+
+**`unreachable_mode` values:**
+
+| Mode | Behaviour |
+|------|-----------|
+| `"error"` | Raise `XenoviaUnreachableError` (fail closed) |
+| `"allow"` | Return a synthetic `success` response (fail open) |
+| `"block"` | Return a synthetic `blocked` response |
+
+## `execute()` — one-off policy check
+
+```python
+response = xenovia.execute(
+    payload={"amount": 500, "to": "acct_123"},
+    capability="payments.transfer",          # optional — inferred from caller if omitted
+    session_id="sess_abc",                   # optional — auto-generated if auto_session=True
+    env="prod"                               # optional — overrides default_env
+)
+
+if response.is_blocked():
+    print(f"Blocked: {response.decision['reason']}")
+elif response.is_success():
+    print(f"Allowed. Trace: {response.trace_id}")
+```
+
+**Capability inference:** if `capability` is omitted, the SDK infers it from the caller's module and function name (`module.function_name`) using frame inspection.
+
+## `@guard()` — decorator
+
+Wraps a function with policy-aware gating. In `enforce` mode (default), the function body does not execute if the policy denies the action.
+
+```python
+@xenovia.guard(capability="payments.transfer", mode="enforce")
+def transfer_funds(payload: dict) -> dict:
+    return run_transfer(payload["amount"], payload["to"])
+
+result = transfer_funds({"amount": 500, "to": "acct_123"})
+```
+
+The decorator returns a `XenoviaResponse`. Access `.result` for the function's return value when allowed:
+
+```python
+response = transfer_funds({"amount": 500, "to": "acct_123"})
+
+if response.is_blocked():
+    handle_block(response.decision["reason"])
+else:
+    data = response.result  # return value from transfer_funds
+```
+
+**Guard modes:**
+
+| Mode | Behaviour |
+|------|-----------|
+| `"enforce"` | Function body does not execute if denied or if the backend call fails |
+| `"observe"` | Function always executes locally; would-block decisions are logged |
+
+**Payload extraction:** the decorator extracts the payload from the function call in this order:
+1. Explicit `payload` keyword argument
+2. Single `dict` positional argument
+3. Scalar argument → `{"value": arg}`
+4. Multiple args → all args as a dict
+5. No args → `{}`
+
+## `XenoviaResponse` — response object
+
+```python
+@dataclass(frozen=True)
+class XenoviaResponse:
+    status:   str        # "success" | "blocked" | "failed"
+    result:   Any        # local function output (guard) or None (execute)
+    error:    str | None
+    decision: dict       # {"outcome": str, "rule_id": str, "reason": str}
+    trace_id: str | None # trace UUID for correlation
+    raw:      dict       # original backend response
+
+    def is_blocked(self) -> bool: ...
+    def is_success(self) -> bool: ...
+    def is_failed(self)  -> bool: ...
+```
+
+## Session handling
+
+With `auto_session=True`, the SDK generates a session UUID on the first call and reuses it for subsequent calls on the same client instance:
+
+```python
+xenovia = Xenovia(api_key="xe_...", auto_session=True)
+
+xenovia.execute({"step": 1}, capability="workflow.step")  # new session
+xenovia.execute({"step": 2}, capability="workflow.step")  # same session
+```
+
+Pass an explicit `session_id` to override auto-session:
+
+```python
+xenovia.execute({"step": 3}, capability="workflow.step", session_id="my-session-id")
+```
+
+## Error handling
+
+```python
+from xenovia_sdk import (
+    XenoviaBlockedError,
+    XenoviaUnreachableError,
+    XenoviaExecutionError,
+)
+
+# Raise on block (requires raise_on_block=True)
+xenovia_strict = Xenovia(api_key="xe_...", raise_on_block=True)
+
+try:
+    response = xenovia_strict.execute(payload, capability="payments.transfer")
+except XenoviaBlockedError as e:
+    print(f"Blocked: {e}")
+except XenoviaUnreachableError as e:
+    # unreachable_mode="error" (default) raises this on network failure
+    print(f"Backend unreachable: {e}")
+except XenoviaExecutionError as e:
+    # Non-JSON or invalid HTTP response
+    print(f"Execution error: {e}")
+```
+
+## Wire format
+
+The SDK sends `POST /v1/execute` with:
+
+```json
+{
+  "capability": "payments.transfer",
+  "payload": { "amount": 500, "to": "acct_123" },
+  "session_id": "sess_abc",
+  "identity": { "type": "agent", "id": "billing-agent" },
+  "env": "prod",
+  "sdk": { "version": "0.1.2", "language": "python" }
+}
+```
+
+## Security
+
+- HTTPS is enforced unless `allow_insecure_http=True` (restricted to localhost/loopback only).
+- The API key is sent only in the `Authorization: Bearer xe_...` header — never in payloads or logs.
+- No payload logging in debug mode; only the decision outcome and trace ID are printed.
+
+## Full example: governed tool call
+
+```python
+import os
+from xenovia_sdk import Xenovia
+
+xenovia = Xenovia(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    identity_id="data-pipeline-agent",
+    auto_session=True,
+    raise_on_block=False,
+    unreachable_mode="allow"  # fail open if Xenovia is unreachable
+)
+
+@xenovia.guard(capability="database.write", mode="enforce")
+def write_record(payload: dict) -> dict:
+    return db.insert("records", payload)
+
+@xenovia.guard(capability="database.read", mode="observe")
+def read_records(payload: dict) -> list:
+    return db.select("records", payload["filters"])
+
+# write_record executes only if policy allows
+result = write_record({"table": "orders", "data": {"amount": 100}})
+
+if result.is_blocked():
+    logger.warning("Write blocked by policy", extra={
+        "reason": result.decision.get("reason"),
+        "rule_id": result.decision.get("rule_id"),
+        "trace_id": result.trace_id
+    })
+
+# read_records always executes; policy violations are logged only
+result = read_records({"filters": {"status": "pending"}})
+records = result.result
+```

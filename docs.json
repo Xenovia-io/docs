@@ -2,12 +2,17 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Xenovia",
-  "colors": {
-    "primary": "#5D8FF3",
-    "light": "#5D8FF3",
-    "dark": "#0E111A"
+  "logo": {
+    "light": "/logo/icon.png",
+    "dark": "/logo/icon.png",
+    "href": "https://xenovia.io"
   },
-  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#7C3AED",
+    "light": "#A78BFA",
+    "dark": "#1B1033"
+  },
+  "favicon": "/logo/icon.png",
   "navigation": {
     "tabs": [
       {
@@ -19,6 +24,19 @@
               "introduction",
               "getting-started/overview",
               "getting-started/quickstart"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/overview",
+              "integrations/xenovia-sdk",
+              "integrations/openai-sdk",
+              "integrations/langchain",
+              "integrations/llamaindex",
+              "integrations/openai-agents-sdk",
+              "integrations/vercel-ai-sdk",
+              "integrations/autogen-crewai"
             ]
           },
           {
@@ -47,7 +65,7 @@
           {
             "group": "Endpoints",
             "openapi": {
-              "source": "https://ap-3ff3b40ebc434499b60924ee10f9304e.ecs.us-west-2.on.aws/openapi.json",
+              "source": "https://cp.xenovia.io/openapi.json",
               "directory": "api-reference"
             }
           }
@@ -55,31 +73,20 @@
       }
     ],
     "global": {
-      "anchors": [
-        {
-          "anchor": "Website",
-          "href": "https://xenovia.io",
-          "icon": "globe"
-        },
-        {
-          "anchor": "Platform Story",
-          "href": "https://xenovia.io/platform",
-          "icon": "compass"
-        }
-      ]
+      "anchors": []
     }
   },
   "navbar": {
     "links": [
       {
-        "label": "Support",
+        "label": "Contact",
         "href": "mailto:richard.loomis@xenovia.io"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Book Demo",
-      "href": "https://xenovia.io"
+      "label": "Open Platform",
+      "href": "https://app.xenovia.io/"
     }
   },
   "footer": {

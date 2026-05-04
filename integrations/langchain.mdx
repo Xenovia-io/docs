@@ -1,6 +1,6 @@
 ---
 title: "LangChain"
-description: "Use Xenovia as the LLM backend for LangChain chains and agents."
+description: "Use Xenovia as the LLM backend for LangChain chains, agents, and RAG pipelines."
 icon: "link"
 ---
 
@@ -13,6 +13,7 @@ icon: "link"
     ```
 
     ```python
+    import os
     from langchain_openai import ChatOpenAI
 
     llm = ChatOpenAI(
@@ -43,7 +44,7 @@ icon: "link"
 
 ## Chains
 
-Use the configured `llm` anywhere in a LangChain pipeline.
+Use the configured `llm` in any LangChain chain. Every LLM call in the chain routes through Xenovia individually — each call gets its own trace.
 
 ```python
 from langchain_core.prompts import ChatPromptTemplate
@@ -59,6 +60,8 @@ print(response.content)
 ```
 
 ## Agents with tools
+
+Tool definitions are passed to the upstream LLM through Xenovia. The request-stage Rego policy evaluates `input.tool_names` before the call reaches the model — a blocked tool returns `403` before the LLM is called.
 
 ```python
 from langchain.agents import create_tool_calling_agent, AgentExecutor
@@ -76,6 +79,8 @@ result = executor.invoke({"input": "Search for recent AI news"})
 
 ## RAG pipeline
 
+Both LLM and embedding calls route through Xenovia. Policies and traces apply to the full pipeline, not only the final generation step.
+
 ```python
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -90,8 +95,51 @@ vectorstore = InMemoryVectorStore.from_texts(
     embedding=embeddings
 )
 retriever = vectorstore.as_retriever()
+
+# Combine retriever with LLM
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+
+rag_chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+answer = rag_chain.invoke("What does Xenovia provide?")
+```
+
+## Session tracking
+
+To group all LLM calls in a multi-step chain under one session, pass `X-Xenovia-Session-Id` as a default header on the client.
+
+```python
+import uuid
+from langchain_openai import ChatOpenAI
+
+session_id = str(uuid.uuid4())
+
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={"X-Xenovia-Session-Id": session_id}
+)
+```
+
+## Handling policy blocks
+
+LangChain propagates the upstream `403` as an `openai.PermissionDeniedError`. Catch it in your chain's error handler.
+
+```python
+from openai import PermissionDeniedError
+
+try:
+    result = executor.invoke({"input": "Delete all records"})
+except PermissionDeniedError as e:
+    print(f"Blocked by policy: {e.message}")
 ```
 
 <Callout type="info">
-  Every LLM and embedding call routes through Xenovia — policies and traces apply to the full chain, not just the final response.
+  If your LangChain workflow also uses `OpenAIEmbeddings`, configure that client with the same Xenovia `base_url` and the same session header so retrieval and generation traces stay correlated.
 </Callout>

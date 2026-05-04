@@ -4,7 +4,7 @@ description: "Use Xenovia with the OpenAI Agents SDK and Responses API."
 icon: "robot"
 ---
 
-The OpenAI Agents SDK uses the **Responses API** (`POST /v1/responses`) for multi-agent orchestration. Xenovia supports this endpoint natively.
+The OpenAI Agents SDK is best paired with Xenovia through the **Responses API** (`POST /v1/responses`). Xenovia supports that endpoint natively, so each agent turn is traced and policy-checked without changing your orchestration flow.
 
 ## Setup
 
@@ -13,15 +13,16 @@ pip install openai-agents
 ```
 
 ```python
+import os
 from openai import AsyncOpenAI
-from agents import Agent, Runner, OpenAIChatCompletionsModel
+from agents import Agent, Runner, OpenAIResponsesModel
 
 client = AsyncOpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
     base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
 )
 
-model = OpenAIChatCompletionsModel(
+model = OpenAIResponsesModel(
     model="gpt-4o-mini",
     openai_client=client
 )
@@ -39,6 +40,28 @@ agent = Agent(
 result = await Runner.run(agent, "What is the capital of France?")
 print(result.final_output)
 ```
+
+Each `Runner.run` call may produce multiple Responses API turns. Each turn creates an independent trace in Xenovia. Use a session ID to group them.
+
+## Sessions via `previous_response_id`
+
+The Responses API natively chains turns using `previous_response_id`. Xenovia's session plugin recognises this field and automatically resolves sessions across chained calls, so you do not need an explicit session ID header if the SDK manages `previous_response_id` for you.
+
+To also group runs explicitly:
+
+```python
+import uuid
+
+session_id = str(uuid.uuid4())
+
+client = AsyncOpenAI(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={"X-Xenovia-Session-Id": session_id}
+)
+```
+
+Explicit `X-Xenovia-Session-Id` takes priority over the `previous_response_id` chain. Use explicit IDs when you need grouping across separate `Runner.run` calls.
 
 ## Multi-agent handoff
 
@@ -60,6 +83,8 @@ result = await Runner.run(writer_agent, "Write a report on AI governance")
 print(result.final_output)
 ```
 
+Each agent in the handoff chain calls the Responses API independently. All calls are traced individually. Filter by `session_id` in the Traces view to see the full conversation in order.
+
 ## Agents with tools
 
 ```python
@@ -78,22 +103,17 @@ agent = Agent(
 )
 ```
 
-<Callout type="info">
-  Each agent turn is a separate call to the Responses API. All turns are traced independently in Xenovia — you can filter by session ID to see the full conversation flow.
-</Callout>
+Tool names defined in the agent are included in `input.tool_names` in the Rego policy. A block rule matching the tool name returns `403` before the model is called.
 
-## Sessions
-
-Group all turns of an agent run under one session:
+## Handling policy blocks
 
 ```python
-import uuid
+from openai import PermissionDeniedError
 
-session_id = str(uuid.uuid4())
-
-client = AsyncOpenAI(
-    api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
-    default_headers={"X-Xenovia-Session-Id": session_id}
-)
+try:
+    result = await Runner.run(agent, "Delete all user records")
+except PermissionDeniedError as e:
+    print(f"Blocked by policy: {e.message}")
 ```
+
+The `X-Xenovia-Trace-Id` header on the `403` response identifies the blocking trace in the platform.

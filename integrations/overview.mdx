@@ -1,64 +1,105 @@
 ---
 title: "Integrations Overview"
-description: "Connect any LLM framework to Xenovia in two lines of code."
+description: "Choose the right Xenovia integration for your SDK, framework, or OpenAI-compatible runtime."
 icon: "plug"
 ---
 
-Xenovia Runtime is an OpenAI-compatible proxy. Any framework that accepts a custom `base_url` works without additional configuration — your existing code stays the same, and every call passes through Xenovia's policy and trace layer.
+If your stack can speak the OpenAI API, Xenovia usually fits with a `base_url` change. Start there unless you need to govern actions that happen outside the model call itself.
 
-## How it works
+## Recommended order
 
-Replace your LLM provider's base URL with your Xenovia proxy URL. The runtime handles:
+1. Start with the framework your production workload already uses.
+2. If you are unsure, use the [OpenAI SDK](/integrations/openai-sdk) guide because it maps cleanly to most OpenAI-compatible clients.
+3. Add the [Xenovia Python SDK](/integrations/xenovia-sdk) when you need policy checks around downstream actions.
 
-- API key verification
-- Policy evaluation (allow / block / redact)
-- Trace recording
-- Provider credential forwarding
+## Proxy mode integrations
 
-<Callout type="info">
-  Your Xenovia API key (`xe_...`) is used to authenticate with the runtime. The runtime resolves the correct provider credentials (OpenAI, Anthropic, etc.) from the proxy configuration — your application never needs to hold provider keys directly.
-</Callout>
+Xenovia Runtime is an OpenAI-compatible proxy. Any client that accepts a custom `base_url` works without further changes, and every call passes through Xenovia's policy and trace pipeline.
 
-## Your proxy URL
-
-Every proxy has a unique URL:
-
-```
+```text
 https://runtime.xenovia.io/a/{proxy_id}/openai/v1
 ```
 
-Find your `proxy_id` in the Xenovia platform under **Proxies**.
-
-## Supported frameworks
+Provider credentials are configured in the proxy and resolved server-side.
 
 <CardGroup cols={2}>
   <Card title="OpenAI SDK" icon="python" href="/integrations/openai-sdk">
-    Python and Node.js — the most common path.
+    ![OpenAI SDK badge](/images/integrations/openai.svg)
+
+    Python and Node.js. Best default starting point for any OpenAI-compatible client.
   </Card>
   <Card title="LangChain" icon="link" href="/integrations/langchain">
-    Python and JS chains, agents, and tools.
+    ![LangChain badge](/images/integrations/langchain.svg)
+
+    Python and JS chains, agents, and RAG pipelines.
   </Card>
   <Card title="LlamaIndex" icon="database" href="/integrations/llamaindex">
+    ![LlamaIndex badge](/images/integrations/llamaindex.svg)
+
     RAG pipelines and agentic query engines.
   </Card>
   <Card title="OpenAI Agents SDK" icon="robot" href="/integrations/openai-agents-sdk">
+    ![OpenAI Agents badge](/images/integrations/openai-agents.svg)
+
     Multi-agent orchestration with the Responses API.
   </Card>
   <Card title="Vercel AI SDK" icon="triangle" href="/integrations/vercel-ai-sdk">
-    Next.js and edge-compatible streaming.
+    ![Vercel AI SDK badge](/images/integrations/vercel.svg)
+
+    Next.js and edge streaming.
   </Card>
   <Card title="AutoGen / CrewAI" icon="users" href="/integrations/autogen-crewai">
-    Multi-agent frameworks built on OpenAI.
+    ![AutoGen and CrewAI badge](/images/integrations/autogen-crewai.svg)
+
+    Multi-agent frameworks that can sit on top of an OpenAI-compatible endpoint.
   </Card>
 </CardGroup>
 
-## Supported endpoints
+## SDK mode
+
+The [Xenovia Python SDK](/integrations/xenovia-sdk) (`pip install xenovia-sdk`) gates arbitrary agent actions such as tool calls, database writes, API requests, and file operations without proxying an LLM call.
+
+```python
+from xenovia_sdk import Xenovia
+
+xenovia = Xenovia(api_key="xe_...", identity_id="billing-agent")
+
+@xenovia.guard(capability="payments.transfer")
+def transfer_funds(payload: dict) -> dict:
+    return run_transfer(payload["amount"], payload["to"])
+
+result = transfer_funds({"amount": 500, "to": "acct_123"})
+```
+
+<Card title="Xenovia Python SDK" icon="python" href="/integrations/xenovia-sdk">
+  ![Xenovia SDK badge](/images/integrations/xenovia-sdk.svg)
+
+  Full SDK reference for `execute()`, `@guard()`, session handling, and error behavior.
+</Card>
+
+## Choose the right guide
+
+| | Proxy mode | SDK mode |
+|--|-----------|----------|
+| **What is governed** | Every LLM call through the proxy | Arbitrary agent actions such as tools, writes, and APIs |
+| **Code change required** | `base_url` swap only | `execute()` call or `@guard()` decorator |
+| **Policy input** | Full LLM request context | Capability string plus payload |
+| **Trace contains** | LLM request and response, tokens, latency, tool calls | Capability, payload, decision, and session |
+| **Session tracking** | Automatic via Xenovia session resolution | Explicit `session_id` or `auto_session=True` |
+
+Use both together: proxy mode for LLM governance, SDK mode for downstream tool governance.
+
+## If your framework is not listed
+
+- If it accepts an OpenAI-compatible `base_url`, start from the [OpenAI SDK](/integrations/openai-sdk) guide.
+- If it only needs HTTP access, point it at `https://runtime.xenovia.io/a/{proxy_id}/openai/v1`.
+- If the framework makes risky local calls after the model response, add the [Xenovia Python SDK](/integrations/xenovia-sdk) alongside it.
+
+## Supported proxy endpoints
 
 | Endpoint | Use case |
 |----------|----------|
 | `POST /v1/chat/completions` | Chat, agents, tool calling |
-| `POST /v1/responses` | OpenAI Agents SDK (Responses API) |
-| `POST /v1/embeddings` | RAG, vector search |
+| `POST /v1/responses` | OpenAI Agents SDK and multi-step runs |
+| `POST /v1/embeddings` | RAG and vector search |
 | `POST /v1/completions` | Legacy text completions |
-| `POST /v1/audio/speech` | Text-to-speech |
-| `POST /v1/images/generations` | Image generation |

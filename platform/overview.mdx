@@ -1,39 +1,89 @@
 ---
 title: "Platform Overview"
-description: "How Xenovia organizes runtime governance across proxies and runtime-derived identities."
+description: "The core entities in Xenovia and how they relate."
 icon: "layer-group"
 ---
 
-## One surface across runtime operations
-
-Xenovia keeps proxies, runtime-derived agents/tools, policies, traces, and remediation in one operational surface so teams can reason from shared context instead of fragmented logs.
-
-<CardGroup cols={3}>
-  <Card title="Proxies" icon="hexagon-nodes">Operator-created inventory, owners, and live runtime state.</Card>
-  <Card title="Runtime Identities" icon="fingerprint">Agents and tools derived from runtime proxy traffic.</Card>
-  <Card title="Policies" icon="gavel">Enforcement logic with approval routing.</Card>
-  <Card title="Traces" icon="file-waveform">Evidence from request to outcome.</Card>
-  <Card title="Remediation" icon="screwdriver-wrench">Guided operator response workflows.</Card>
-  <Card title="Governance" icon="shield">Shared context across security and ops teams.</Card>
-</CardGroup>
-
 ## Core entities
 
-- **Proxies**: Platform-created runtime entry points with ownership and scope.
-- **Runtime agents/tools**: Derived from runtime traffic under each proxy.
-- **Policies**: Rules, approvals, and escalation thresholds.
-- **Traces**: Decision evidence and execution history.
-- **Operators**: Reviewers responsible for approvals and incident response.
+Xenovia organises runtime governance around five entities that exist in a strict hierarchy.
 
-## Runtime flow
+<CardGroup cols={3}>
+  <Card title="Proxies" icon="hexagon-nodes">
+    Operator-created entry points. Each proxy has an owner, environment label, declared scope, provider configuration, and attached policies. All traffic governance is scoped to a proxy.
+  </Card>
+  <Card title="Sessions" icon="fingerprint">
+    Groups of related LLM calls. Xenovia resolves a session for every request using a five-strategy chain. Sessions track turn counts and carry custom path labels.
+  </Card>
+  <Card title="Policies" icon="gavel">
+    Rego rules evaluated by OPA. Each proxy can have independent request-stage and response-stage policies. Decisions are `allow`, `block`, or `redact`.
+  </Card>
+  <Card title="Traces" icon="file-waveform">
+    Structured records of every call: request/response bodies, token counts, latency, policy decision, intent score, tool calls, and custom properties.
+  </Card>
+  <Card title="Intents" icon="brain">
+    Semantic capability definitions attached to a proxy. Xenovia scores each request against the declared intent and can `allow`, `block`, or `escalate` based on the score.
+  </Card>
+  <Card title="Operators" icon="shield">
+    Reviewers responsible for approvals and incident response. Escalated actions notify operators asynchronously with full trace context.
+  </Card>
+</CardGroup>
+
+## Entity relationships
+
+```
+Proxy
+ ├── Provider configuration (OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
+ ├── Request-stage Rego policy
+ ├── Response-stage Rego policy
+ ├── Intent definition + trigger
+ └── Sessions
+      └── Traces (one per LLM call)
+           ├── Policy decision (outcome, rule_id, reason)
+           ├── Intent score + action
+           ├── Tool call records
+           └── Custom properties (X-Xenovia-Property-*)
+```
+
+## Request lifecycle
+
+Every proxied request passes through six plugins in order:
 
 <Steps>
-  <Step title="Action request">Runtime call reaches a Xenovia proxy.</Step>
-  <Step title="Identity mapping">Runtime-derived agent/tool identity is associated to that proxy.</Step>
-  <Step title="Intent reasoning">Xenovia interprets requested intent and risk.</Step>
-  <Step title="Scope comparison">Request is checked against allowed boundaries.</Step>
-  <Step title="Policy decision">Action is allowed, blocked, or escalated.</Step>
-  <Step title="Evidence and response">Trace is stored and operator workflow is triggered when needed.</Step>
+  <Step title="Auth">
+    The `xe_...` API key is verified against Redis (5-minute cache). The key resolves a proxy identity containing `proxy_id` and `org_id`. A path hint header (`X-Xenovia-Agent-Path`) is validated to prevent cross-proxy key use.
+  </Step>
+  <Step title="Provider routing">
+    The request's target provider is rewritten based on the proxy's configuration. OpenAI-format requests can be transparently routed to Anthropic, Gemini, Azure, Bedrock, Groq, or a self-hosted vLLM endpoint.
+  </Step>
+  <Step title="Session resolution">
+    A session UUID is resolved using the five-strategy chain: explicit header → Responses API chain → user field → message fingerprint → new UUID. Turn count is incremented atomically.
+  </Step>
+  <Step title="Trace initialisation">
+    A trace record is opened with the session context. `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` are stamped into the response headers before the first byte (required for streaming).
+  </Step>
+  <Step title="Policy evaluation">
+    The request is compiled and evaluated against the Rego policy using OPA (eval timeout: 200ms). For `redact` decisions, PII patterns (email, SSN) are removed from messages and tool arguments before forwarding.
+  </Step>
+  <Step title="Intent scoring">
+    If an intent definition is configured and the trigger conditions are met, the request is sent to the guardrail service for semantic scoring. Actions above threshold are blocked or escalated.
+  </Step>
 </Steps>
 
-Use the next pages for architecture, policy controls, tool governance, and remediation details.
+After the LLM responds, the response-stage policy runs (outcome: `allow`, `block_response`, `redact_response`) and the completed trace is persisted asynchronously.
+
+## Proxy URL
+
+Every proxy exposes an OpenAI-compatible base URL:
+
+```
+https://runtime.xenovia.io/a/{proxy_id}/openai/v1
+```
+
+The `/openai/v1` suffix routes through standard routes (`/v1/chat/completions`, `/v1/responses`, `/v1/embeddings`, `/v1/completions`). The runtime also supports per-provider paths for non-OpenAI formats.
+
+## What the platform does not see
+
+- Upstream provider credentials — these are held in the proxy configuration, not in your application.
+- Raw API keys — only the SHA-256 prefix (8 hex chars) is logged.
+- Intent block reasons — the reason is logged server-side only and never forwarded to the agent.

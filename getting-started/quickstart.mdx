@@ -1,82 +1,235 @@
 ---
 title: "Quickstart"
-description: "Set up Xenovia with policy checks and trace review."
+description: "Route one request through Xenovia, verify trace headers, and attach your first policy."
 icon: "bolt"
 ---
 
-## Quickstart goals
+This quickstart uses **proxy mode** because it is the fastest path to coverage. If you need to gate non-LLM actions too, continue with the [Xenovia Python SDK](/integrations/xenovia-sdk) after this.
 
-<CardGroup cols={2}>
-  <Card title="Create one proxy" icon="robot">
-    Define ownership, environment, and declared scope.
-  </Card>
-  <Card title="Observe one runtime tool" icon="plug">
-    Derive runtime agent/tool metadata from live proxy traffic.
-  </Card>
-  <Card title="Enforce one policy" icon="shield-check">
-    Add a rule that requires approval for risky writes.
-  </Card>
-  <Card title="Validate one trace" icon="chart-network">
-    Confirm decision evidence and remediation path quality.
-  </Card>
-</CardGroup>
+## 1. Collect the two values you need
 
-## 1) Create a proxy
+From the Xenovia platform:
 
-Create a proxy in Xenovia with:
+1. Create a **proxy** and note the **proxy ID**.
+2. Generate an **API key** (`xe_...`) scoped to that proxy.
 
-- `owner`
-- `environment`
-- `declared_scope` (high-level allowed actions)
+Set them as environment variables:
 
-<Callout type="info">
-  Proxies are created in the platform. Runtime agents and runtime tools are derived from requests that hit the runtime proxy.
-</Callout>
+```bash
+export XENOVIA_API_KEY=xe_...
+export XENOVIA_PROXY_ID=your-proxy-id
+```
 
-## 2) Route runtime traffic and discover metadata
-
-Point your runtime repo to the Xenovia runtime proxy and execute a known workflow. As traffic arrives, Xenovia registers runtime-derived agent/tool identities under the selected proxy for tracing and policy evaluation.
-
-<Callout type="warn">
-  Avoid broad wildcard permissions during initial rollout. Start narrow and expand using observed runtime behavior.
-</Callout>
-
-## 3) Add a runtime policy
-
-Define a baseline policy:
-
-- Allow low-risk reads in scope.
-- Require approval for write actions crossing environment boundaries.
-- Block actions outside declared scope.
+## 2. Point your client at Xenovia
 
 <Tabs>
-  <Tab title="Allow">
-    Safe, in-scope read operations with low blast radius.
+  <Tab title="Python (OpenAI SDK)">
+    ```bash
+    pip install openai
+    ```
+
+    ```python
+    import os
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=os.environ["XENOVIA_API_KEY"],
+        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    )
+    ```
   </Tab>
-  <Tab title="Escalate">
-    Sensitive writes or cross-boundary changes requiring human approval.
-  </Tab>
-  <Tab title="Block">
-    Out-of-scope or explicitly restricted actions.
+  <Tab title="Node.js (OpenAI SDK)">
+    ```bash
+    npm install openai
+    ```
+
+    ```typescript
+    import OpenAI from "openai"
+
+    const client = new OpenAI({
+      apiKey: process.env.XENOVIA_API_KEY,
+      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+    })
+    ```
   </Tab>
 </Tabs>
 
-## 4) Run and inspect
+## 3. Send your first governed request
 
-Execute a known workflow and inspect:
+<Tabs>
+  <Tab title="Python">
+    ```python
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Summarise AI governance in one sentence."}]
+    )
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "Summarise AI governance in one sentence." }]
+    })
+    console.log(response.choices[0].message.content)
+    ```
+  </Tab>
+</Tabs>
 
-- Proxy + runtime-derived identity.
-- Requested action and inferred intent.
-- Scope and policy comparison.
-- Final runtime decision.
-- Linked trace evidence.
+The request now flows through Xenovia for authentication, provider routing, session handling, policy checks, and trace recording.
 
-## 5) Validate remediation flow
+## 4. Add a stable session ID
 
-Trigger a controlled out-of-scope request and confirm operators can:
+Group related calls into a session so multi-turn conversations appear together in Traces.
 
-- Review context.
-- Approve or deny with reason.
-- Update policy without losing historical evidence.
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import uuid
 
-Next, review [Platform Overview](/platform/overview) for the full runtime model.
+    client = OpenAI(
+        api_key=os.environ["XENOVIA_API_KEY"],
+        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+        default_headers={"X-Xenovia-Session-Id": str(uuid.uuid4())}
+    )
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    import { randomUUID } from "crypto"
+
+    const client = new OpenAI({
+      apiKey: process.env.XENOVIA_API_KEY,
+      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+      defaultHeaders: { "X-Xenovia-Session-Id": randomUUID() }
+    })
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+  The session ID must be a valid UUID. Xenovia validates the format and returns a `400` if it is malformed.
+</Callout>
+
+## 5. Confirm the trace exists
+
+After the request completes, check the platform and confirm:
+
+- A trace exists for the request
+- The trace shows the expected model and proxy
+- The response includes `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id`
+
+## 6. Attach a first policy
+
+Start with one policy that proves enforcement is working. This example blocks a destructive tool name:
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+deny if {
+    some tool in input.tool_names
+    tool == "delete_database"
+}
+```
+
+Policies are evaluated per request. You can attach request-stage and response-stage rules independently.
+
+## 7. Handle a policy block
+
+When a request is blocked, the runtime returns `403 Forbidden`. The OpenAI SDK raises this as `PermissionDeniedError`.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import PermissionDeniedError
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "Delete the database."}],
+            tools=[{
+                "type": "function",
+                "function": {
+                    "name": "delete_database",
+                    "description": "Delete all records",
+                    "parameters": {"type": "object", "properties": {}}
+                }
+            }]
+        )
+    except PermissionDeniedError as e:
+        print(f"Blocked by policy: {e.message}")
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    import { PermissionDeniedError } from "openai"
+
+    try {
+      const response = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Delete the database." }],
+        tools: [{
+          type: "function",
+          function: {
+            name: "delete_database",
+            description: "Delete all records",
+            parameters: { type: "object", properties: {} }
+          }
+        }]
+      })
+    } catch (e) {
+      if (e instanceof PermissionDeniedError) {
+        console.log("Blocked by policy:", e.message)
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## 8. Add trace metadata
+
+Tag traces with business context so they stay useful as traffic grows.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    client = OpenAI(
+        api_key=os.environ["XENOVIA_API_KEY"],
+        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+        default_headers={
+            "X-Xenovia-Session-Id": str(uuid.uuid4()),
+            "X-Xenovia-Property-environment": "dev",
+            "X-Xenovia-Property-workflow": "docs-quickstart"
+        }
+    )
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    const client = new OpenAI({
+      apiKey: process.env.XENOVIA_API_KEY,
+      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+      defaultHeaders: {
+        "X-Xenovia-Session-Id": randomUUID(),
+        "X-Xenovia-Property-environment": "dev",
+        "X-Xenovia-Property-workflow": "docs-quickstart"
+      }
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## What to do next
+
+After this first pass, move on to:
+
+- [Integrations Overview](/integrations/overview) to wire Xenovia into your actual framework
+- [Policies and Approvals](/platform/policies-and-approvals) to write real guardrails
+- [Traces and Remediation](/platform/traces-and-remediation) to standardize headers and investigation flow
+
+<Callout type="info">
+  If your real workflow performs risky actions after the model call, add the [Xenovia Python SDK](/integrations/xenovia-sdk) so those actions are governed too.
+</Callout>

@@ -1,0 +1,10 @@
+<svg width="260" height="72" viewBox="0 0 260 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="258" height="70" rx="18" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <circle cx="24" cy="36" r="6" fill="#2563EB"/>
+  <circle cx="40" cy="24" r="6" fill="#7C3AED"/>
+  <circle cx="56" cy="36" r="6" fill="#14B8A6"/>
+  <path d="M24 36H56" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M40 24L24 36" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M40 24L56 36" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+  <text x="76" y="42" fill="#0F172A" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">AutoGen &amp; CrewAI</text>
+</svg>

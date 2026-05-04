@@ -6,8 +6,6 @@ icon: "python"
 
 ## Setup
 
-Set two environment variables and change one line in your code.
-
 ```bash
 export XENOVIA_API_KEY=xe_...
 export XENOVIA_PROXY_ID=your-proxy-id
@@ -20,6 +18,7 @@ export XENOVIA_PROXY_ID=your-proxy-id
     ```
 
     ```python
+    import os
     from openai import OpenAI
 
     client = OpenAI(
@@ -58,7 +57,7 @@ export XENOVIA_PROXY_ID=your-proxy-id
 
 ## Streaming
 
-Streaming works without any changes.
+Streaming works without any additional configuration. The runtime stamps `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` into the response headers before the first byte.
 
 <Tabs>
   <Tab title="Python">
@@ -88,7 +87,7 @@ Streaming works without any changes.
 
 ## Tool calling
 
-Tool calling passes through unchanged.
+Tool definitions pass through unchanged. Xenovia records tool call names and arguments in the trace and evaluates them against your request-stage Rego policy before forwarding.
 
 ```python
 tools = [
@@ -115,34 +114,59 @@ response = client.chat.completions.create(
 )
 ```
 
+If a tool name matches a block rule in your Rego policy, the request returns `403` before reaching the upstream LLM.
+
 ## Sessions
 
-Pass `X-Xenovia-Session-Id` to group related calls into a session visible in Traces.
+Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session. All turns under that session ID appear together in Traces with a per-session turn counter.
 
 <Tabs>
   <Tab title="Python">
     ```python
+    import uuid
+
     client = OpenAI(
         api_key=os.environ["XENOVIA_API_KEY"],
         base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
-        default_headers={"X-Xenovia-Session-Id": "session-abc123"}
+        default_headers={"X-Xenovia-Session-Id": str(uuid.uuid4())}
     )
     ```
   </Tab>
   <Tab title="Node.js">
     ```typescript
+    import { randomUUID } from "crypto"
+
     const client = new OpenAI({
       apiKey: process.env.XENOVIA_API_KEY,
       baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
-      defaultHeaders: { "X-Xenovia-Session-Id": "session-abc123" }
+      defaultHeaders: { "X-Xenovia-Session-Id": randomUUID() }
     })
     ```
   </Tab>
 </Tabs>
 
+If you omit the header, Xenovia resolves a session automatically using message fingerprinting or the `user` field. See [Runtime Architecture](/platform/runtime-architecture) for the full five-strategy chain.
+
+## Custom trace properties
+
+Attach up to 20 `X-Xenovia-Property-*` headers to tag traces with application context. Keys must be ≤ 64 chars; values ≤ 512 chars; the `policy_` prefix is reserved.
+
+```python
+client = OpenAI(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={
+        "X-Xenovia-Session-Id": str(uuid.uuid4()),
+        "X-Xenovia-Property-user-tier": "enterprise",
+        "X-Xenovia-Property-feature": "document-summary",
+        "X-Xenovia-Session-Path": "workflows/summarise"
+    }
+)
+```
+
 ## Policy blocks
 
-When a request is blocked by policy, the runtime returns a `403` with a structured error. Handle it like any other API error.
+When a request is blocked by policy, the runtime returns `403 Forbidden`. The OpenAI SDK raises this as `PermissionDeniedError`. The `X-Xenovia-Trace-Id` response header identifies the blocking trace.
 
 <Tabs>
   <Tab title="Python">
@@ -150,7 +174,11 @@ When a request is blocked by policy, the runtime returns a `403` with a structur
     from openai import PermissionDeniedError
 
     try:
-        response = client.chat.completions.create(...)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "Delete everything"}],
+            tools=tools
+        )
     except PermissionDeniedError as e:
         print(f"Blocked by policy: {e.message}")
     ```
@@ -160,7 +188,11 @@ When a request is blocked by policy, the runtime returns a `403` with a structur
     import { PermissionDeniedError } from "openai"
 
     try {
-      const response = await client.chat.completions.create(...)
+      const response = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Delete everything" }],
+        tools
+      })
     } catch (e) {
       if (e instanceof PermissionDeniedError) {
         console.log("Blocked by policy:", e.message)
@@ -169,3 +201,29 @@ When a request is blocked by policy, the runtime returns a `403` with a structur
     ```
   </Tab>
 </Tabs>
+
+## Reading trace headers
+
+The response always includes trace headers you can log for correlation:
+
+```python
+import httpx
+from openai import OpenAI
+
+# Use httpx to access response headers
+with httpx.Client() as http:
+    resp = http.post(
+        f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.environ['XENOVIA_API_KEY']}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": "Hello"}]
+        }
+    )
+    trace_id = resp.headers.get("X-Xenovia-Trace-Id")
+    session_id = resp.headers.get("X-Xenovia-Session-Id")
+    print(f"Trace: {trace_id}, Session: {session_id}")
+```

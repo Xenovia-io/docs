@@ -1,46 +1,72 @@
 ---
 title: "Getting Started"
-description: "Roll out Xenovia as the governance layer for runtime proxies."
+description: "Choose the right Xenovia integration path and prepare your first governed workflow."
 icon: "flag-checkered"
 ---
 
-## Deployment mindset
+Most teams start in **proxy mode** because it gives immediate coverage with the smallest code change. Use **SDK mode** when you also need policy enforcement around actions that happen after the model call.
 
-Treat Xenovia as a runtime control plane, not only as an observability tool. Your initial rollout should focus on high-risk tool interactions and operator review paths.
+## Choose your integration path
 
-<Callout type="tip">
-  Start narrow: onboard one critical workflow first, then expand coverage from real trace data.
-</Callout>
+| Path | Best for | First change |
+|------|----------|--------------|
+| **Proxy mode** | OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, Agents SDK, CrewAI, and most OpenAI-compatible clients | Change `base_url` to your Xenovia proxy URL |
+| **SDK mode** | Tool calls, API requests, writes, file operations, or business actions outside the LLM request | Add `xenovia.execute()` or `@xenovia.guard()` |
+
+You can use both together: proxy mode for the model layer, SDK mode for downstream side effects.
 
 ## Prerequisites
 
-- A working runtime that can route traffic through a Xenovia proxy.
-- Defined owners for each proxy or service account.
-- Known downstream systems and environment boundaries (dev, staging, prod).
-- Initial policy assumptions for allowed actions, approvals, and escalation.
+**For proxy mode**
+- A Xenovia account and workspace with at least one proxy created.
+- Your proxy ID (found under **Proxies** in the platform).
+- A Xenovia API key (`xe_...`) scoped to that proxy.
+- An LLM client or framework (OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, etc.).
 
-## First rollout targets
+**For SDK mode**
+- Python ≥ 3.9.
+- A Xenovia API key.
+- Your agent or tool functions that need policy gating.
 
-<CardGroup cols={3}>
-  <Card title="Visibility" icon="eye">
-    Track proxy inventory, ownership, and current runtime status.
-  </Card>
-  <Card title="Control" icon="shield-check">
-    Evaluate every requested tool action against policy scope.
-  </Card>
-  <Card title="Response" icon="siren-on">
-    Route unsafe or out-of-scope behavior to operator review.
-  </Card>
-</CardGroup>
+## What to decide before rollout
 
-## Recommended sequence
+- Which workflow should be governed first
+- Which environment to start in `dev` or `staging`, not production
+- What should be blocked, redacted, or escalated first
+- Which metadata you want attached to traces: environment, user tier, feature, or workflow ID
+
+## Proxy URL format
+
+Every proxy exposes an OpenAI-compatible base URL:
+
+```text
+https://runtime.xenovia.io/a/{proxy_id}/openai/v1
+```
+
+Point your client here and pass the `xe_...` key as the API key. Xenovia resolves the upstream provider credentials server-side.
+
+## Recommended rollout
 
 <Steps>
-  <Step title="Map inventory">Create proxies, owners, and environment boundaries.</Step>
-  <Step title="Route traffic">Send runtime calls through the proxy to derive agent/tool metadata.</Step>
-  <Step title="Enable policy baseline">Set allow, block, and approval conditions.</Step>
-  <Step title="Review traces">Validate decisions and tune controls using evidence.</Step>
-  <Step title="Harden production">Expand coverage and automate escalations.</Step>
+  <Step title="Create one proxy">
+    Give it a clear owner, environment label, and scope so the traces mean something on day one.
+  </Step>
+  <Step title="Route one workflow">
+    Start with a narrow path such as one chat endpoint, one agent runner, or one background job.
+  </Step>
+  <Step title="Verify trace headers">
+    Confirm `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` show up in responses and traces land in the platform.
+  </Step>
+  <Step title="Attach one simple policy">
+    Begin with a concrete rule such as blocking a destructive tool or redacting email addresses.
+  </Step>
+  <Step title="Expand based on evidence">
+    Use real traces to add stricter rules, intent checks, and downstream SDK guards.
+  </Step>
 </Steps>
 
-Continue to the [Quickstart](/getting-started/quickstart) to stand up the first governed path.
+## Session tracking
+
+Xenovia resolves a session automatically, but for multi-turn agents you should usually pass an explicit `X-Xenovia-Session-Id` header so related calls stay grouped in Traces.
+
+Continue to [Quickstart](/getting-started/quickstart) to run your first proxied call with policy enforcement.

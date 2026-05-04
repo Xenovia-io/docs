@@ -1,12 +1,12 @@
 ---
 title: "Errors and Limits"
-description: "Error response format, status codes, and rate limit behavior."
+description: "Error response format, status codes, policy block format, and rate limit behavior."
 icon: "triangle-exclamation"
 ---
 
 ## Error payload shape
 
-When a request fails, Xenovia returns a structured error body:
+All non-2xx responses return a structured JSON body:
 
 ```json
 {
@@ -20,47 +20,76 @@ When a request fails, Xenovia returns a structured error body:
 
 Use `request_id` to correlate API failures with platform traces and internal logs.
 
-## Common status codes
+## Policy block format
+
+When a request is blocked by a Rego policy, the runtime returns `403` with a policy-specific error body:
+
+```json
+{
+  "error": {
+    "message": "request blocked by policy",
+    "type": "policy_violation",
+    "code": "policy_block"
+  }
+}
+```
+
+The `X-Xenovia-Trace-Id` header is present on blocked responses. Look up that trace ID in the platform to see the full request context, the Rego rule that fired, and the policy reason string.
+
+When an intent check blocks or escalates a request, the runtime returns `403` with a generic message. The reason is **never** forwarded to the agent — it is logged server-side only.
+
+## Status codes
 
 <CardGroup cols={2}>
   <Card title="400 Bad Request" icon="circle-exclamation">
-    Invalid payload, params, or schema mismatch.
+    Invalid payload, malformed parameters, or schema mismatch. Check the `message` field for specifics.
   </Card>
   <Card title="401 Unauthorized" icon="key">
-    Missing or malformed token.
+    Missing, malformed, or non-`xe_`-prefixed token.
   </Card>
   <Card title="403 Forbidden" icon="lock">
-    Authenticated but lacking required scope.
+    Valid token but insufficient access — or request blocked by policy or intent check.
   </Card>
   <Card title="404 Not Found" icon="magnifying-glass">
-    Resource missing or not visible in scope.
+    Resource does not exist or is not visible to the requesting key's scope.
   </Card>
   <Card title="409 Conflict" icon="code-compare">
-    State conflict (for example, stale resource version).
+    State conflict — for example, concurrent updates to the same resource.
   </Card>
   <Card title="429 Too Many Requests" icon="gauge-high">
-    Rate limit exceeded.
+    Rate limit exceeded. Back off and retry with jitter.
   </Card>
 </CardGroup>
 
-`500 Internal Server Error` indicates an unexpected platform failure.
+`500 Internal Server Error` indicates an unexpected platform failure. Include `request_id` when contacting support.
+
+`503 Service Unavailable` from the runtime indicates an intent scoring failure with `XENOVIA_INTENT_FAIL_MODE=closed`. Default mode (`open`) returns `200` instead.
 
 ## Rate limits
 
-Default baseline: **100 requests per minute per user**.
+Default baseline: **100 requests per minute per API key**.
 
-If rate limited:
+If rate limited (`429`):
 
-1. Back off and retry with jitter.
-2. Respect any retry guidance returned by the API.
-3. Reduce bursty polling where possible.
+1. Read the `Retry-After` header if present.
+2. Back off with exponential jitter — do not retry immediately.
+3. Reduce bursty polling; prefer event-driven patterns.
 
-<Callout type="info">
-  Include `request_id` in your logs for every non-2xx response to speed up support and incident triage.
-</Callout>
+## Retry policy
+
+| Status | Retry? | Notes |
+|--------|--------|-------|
+| `429` | Yes | Respect `Retry-After`; exponential backoff with jitter |
+| `500` | Yes | Transient; retry with backoff |
+| `503` | Yes | Transient; retry with backoff |
+| `400` | No | Fix the request before retrying |
+| `401` | No | Fix authentication before retrying |
+| `403` | No | Policy block or scope issue — do not retry the same request |
+| `404` | No | Resource does not exist |
 
 ## Reliability practices
 
-- Add idempotency to write operations where supported.
-- Log request and response metadata (without sensitive payloads).
-- Implement retries only for transient classes (`429`, selected `5xx`).
+- Log `request_id` and `X-Xenovia-Trace-Id` for every non-2xx response.
+- Add idempotency keys to write operations where supported.
+- Implement retries only for transient classes (`429`, `5xx`).
+- Do not retry `403` responses — they indicate a policy decision or an auth scope issue, not a transient error.

@@ -28,7 +28,7 @@ import { streamText } from "ai"
 
 const { textStream } = streamText({
   model,
-  messages: [{ role: "user", content: "Explain AI governance" }]
+  messages: [{ role: "user", content: "Explain AI governance in plain English" }]
 })
 
 for await (const chunk of textStream) {
@@ -36,20 +36,29 @@ for await (const chunk of textStream) {
 }
 ```
 
+Xenovia stamps `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` into the response headers before the first token, so streaming traces are always correlated correctly.
+
 ## Next.js App Router route handler
 
 ```typescript
 // app/api/chat/route.ts
 import { streamText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
-
-const xenovia = createOpenAI({
-  apiKey: process.env.XENOVIA_API_KEY,
-  baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
-})
+import { randomUUID } from "crypto"
 
 export async function POST(req: Request) {
-  const { messages } = await req.json()
+  const { messages, sessionId } = await req.json()
+
+  const xenovia = createOpenAI({
+    apiKey: process.env.XENOVIA_API_KEY,
+    baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+    headers: {
+      // Use a stable session ID from the client to group conversation turns
+      "X-Xenovia-Session-Id": sessionId ?? randomUUID(),
+      // Tag traces with application context
+      "X-Xenovia-Property-route": "chat",
+    }
+  })
 
   const result = streamText({
     model: xenovia("gpt-4o-mini"),
@@ -61,6 +70,8 @@ export async function POST(req: Request) {
 ```
 
 ## Tool calling
+
+Tool schemas are forwarded to the upstream LLM. The Xenovia request-stage policy evaluates `input.tool_names` before the call reaches the model.
 
 ```typescript
 import { streamText, tool } from "ai"
@@ -79,16 +90,31 @@ const result = streamText({
 })
 ```
 
-## Policy blocks
+## Session tracking
 
-When a request is blocked, the runtime returns a `403`. Handle it at the route level:
+Pass a stable session ID to group all turns of a chat conversation. The Vercel AI SDK does not add session IDs automatically — provide one per conversation from your application layer.
+
+```typescript
+const xenovia = createOpenAI({
+  apiKey: process.env.XENOVIA_API_KEY,
+  baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+  headers: {
+    "X-Xenovia-Session-Id": conversationId,  // stable ID from your DB or cookie
+    "X-Xenovia-Session-Path": `users/${userId}/conversations`
+  }
+})
+```
+
+## Handling policy blocks
+
+When a request is blocked, the runtime returns `403`. Handle it at the route level before returning the stream response.
 
 ```typescript
 try {
   const result = streamText({ model, messages })
   return result.toDataStreamResponse()
-} catch (error) {
-  if (error.status === 403) {
+} catch (error: any) {
+  if (error?.status === 403) {
     return new Response(
       JSON.stringify({ error: "Request blocked by policy" }),
       { status: 403, headers: { "Content-Type": "application/json" } }
@@ -99,5 +125,5 @@ try {
 ```
 
 <Callout type="info">
-  The Vercel AI SDK uses keep-alive connections by default, so subsequent requests within the same server instance will have significantly lower latency.
+  The Vercel AI SDK uses persistent connections by default. Subsequent requests within the same server instance have lower latency because the TCP connection to Xenovia is reused.
 </Callout>

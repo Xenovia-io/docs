@@ -1,56 +1,70 @@
 ---
 title: "Authentication"
-description: "Secure access patterns for Xenovia API requests."
+description: "API key format, token handling, and environment separation."
 icon: "key"
 ---
 
 All API requests must include a bearer token in the `Authorization` header:
 
 ```bash
-Authorization: Bearer <your-token>
+Authorization: Bearer xe_...
 ```
 
+Xenovia API keys are prefixed with `xe_`. The runtime validates the prefix before attempting key lookup — requests with malformed or unprefixed tokens are rejected immediately.
+
 <Callout type="warn">
-  Do not send API tokens from browser clients. Keep all privileged requests server-side.
+  Never send API keys from browser clients or include them in client-side bundles. All requests must originate server-side.
 </Callout>
+
+## Token scopes
+
+Each `xe_...` key is scoped to one or more proxies and an environment. The key resolves an HMAC-signed identity blob containing the `proxy_id` and `org_id`. A key issued for proxy `abc` cannot be used to access proxy `xyz`.
+
+Tokens used with the runtime proxy are also validated against the `X-Xenovia-Agent-Path` header — the path segment in the proxy URL must match the resolved proxy ID. This prevents cross-proxy key misuse.
 
 ## Token handling
 
-- Issue tokens through your Xenovia workspace or approved service integration.
-- Keep tokens server-side and never expose them in client-side bundles.
-- Rotate tokens on a scheduled cadence and after role changes.
-
-## Service-to-service recommendation
-
-For backend integrations:
-
-- Store tokens in a secure secret manager.
-- Attach tokens at request time.
-- Scope each token to the smallest required API surface.
+- Issue tokens through the Xenovia platform under **Settings → API Keys**.
+- Store tokens in a secret manager (AWS Secrets Manager, GCP Secret Manager, HashiCorp Vault, etc.).
+- Inject at request time from the secret manager — never hardcode in source.
+- Rotate on a scheduled cadence (recommended: 90 days) and immediately after any suspected exposure or team member offboarding.
 
 ## Environment separation
 
-Use different credentials for each environment:
+Use separate tokens per environment. Never reuse production credentials in non-production systems.
 
-- `dev`
-- `staging`
-- `production`
+```bash
+# .env.dev
+XENOVIA_API_KEY=xe_dev_...
 
-Never reuse production credentials in non-production pipelines.
+# .env.prod
+XENOVIA_API_KEY=xe_prod_...
+```
 
-## Recommended auth flow
+## Service-to-service pattern
 
-<Steps>
-  <Step title="Issue">Create scoped credentials for one environment.</Step>
-  <Step title="Store">Save token in your secrets manager.</Step>
-  <Step title="Inject">Attach token server-side at request time.</Step>
-  <Step title="Rotate">Rotate on schedule and after role changes.</Step>
-</Steps>
+```python
+import os
+import boto3  # or your secret manager client
+
+def get_api_key() -> str:
+    client = boto3.client("secretsmanager")
+    secret = client.get_secret_value(SecretId="xenovia/api-key")
+    return secret["SecretString"]
+
+api_key = get_api_key()
+
+# Use the key server-side only
+headers = {"Authorization": f"Bearer {api_key}"}
+```
 
 ## Authentication failures
 
-If authentication fails, the API returns `401 Unauthorized` or `403 Forbidden` depending on token validity and access scope.
+| Status | Meaning |
+|--------|---------|
+| `401 Unauthorized` | Key is missing, malformed, or not prefixed with `xe_` |
+| `403 Forbidden` | Key is valid but does not have access to the requested proxy or resource |
 
-## Rate Limiting
+## Rate limiting
 
-See [Errors and Limits](/api-reference/errors-and-limits) for response behavior and retry guidance.
+See [Errors and Limits](/api-reference/errors-and-limits) for rate limit behavior and retry guidance.

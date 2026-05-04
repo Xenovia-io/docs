@@ -1,44 +1,129 @@
 ---
 title: "Traces and Remediation"
-description: "Investigate behavior drift and remediate with context."
+description: "What Xenovia records per request, how to enrich traces, and how to investigate and remediate drift."
 icon: "route"
 ---
 
-## Traces as operational evidence
+## What a trace contains
 
-Traces should answer three questions quickly:
+Every proxied request produces a structured trace with the following fields:
 
-1. What did the runtime identity attempt under this proxy?
-2. Why did runtime decide this outcome?
-3. What changed downstream?
+| Field | Description |
+|-------|-------------|
+| `trace_id` | Unique UUID for this request |
+| `session_id` | Session UUID resolved for this call |
+| `session_turn` | Turn number within the session (atomic counter) |
+| `session_path` | Hierarchical path label from `X-Xenovia-Session-Path` |
+| `proxy_id` | Proxy identity |
+| `org_id` | Organisation identity |
+| `provider` | Upstream provider used |
+| `model` | Model name |
+| `request_type` | `chat_completions`, `responses`, `embeddings`, `completions` |
+| `messages` | Request messages (truncated) |
+| `tools` | Tool schemas requested |
+| `response_content` | LLM response content (truncated) |
+| `tokens_in` | Prompt token count |
+| `tokens_out` | Completion token count |
+| `latency_ms` | Total request latency |
+| `ttft_ms` | Time to first token (streaming only) |
+| `policy_outcome` | `allow`, `block`, `redact`, `block_response`, `redact_response` |
+| `policy_rule_id` | Rule identifier from the Rego policy |
+| `policy_reason` | Human-readable reason string |
+| `intent_score` | Semantic similarity score (0.0–1.0) |
+| `intent_action` | `allow`, `block`, `escalate` |
+| `custom_properties` | Key-value pairs from `X-Xenovia-Property-*` headers |
+| `parent_trace_id` | Parent trace UUID (for linked requests) |
+| `flow_id` | Flow grouping UUID from `X-Xenovia-Trace-Flow-Id` |
 
-<Callout type="tip">
-  Treat traces as operator tooling, not passive logs. They should enable decisions in minutes, not hours.
-</Callout>
+Tool call traces are child steps under the parent trace:
 
-## Drift and incident handling
+| Field | Description |
+|-------|-------------|
+| `step_type` | `tool_call` or `tool_result` |
+| `tool_name` | Function name |
+| `tool_args` | Argument object |
+| `tool_result` | Return value |
+| `call_id` | Model-assigned tool call ID |
+| `status` | `success` or `error` |
+| `latency_ms` | Call-to-result latency |
 
-When behavior drifts, teams need a repeatable path:
+## Request headers for trace enrichment
+
+Attach these headers to any proxied request to enrich the trace:
+
+```python
+client = OpenAI(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={
+        # Group all calls in this workflow under one session
+        "X-Xenovia-Session-Id": "550e8400-e29b-41d4-a716-446655440000",
+        # Tag this session with a path for hierarchical filtering
+        "X-Xenovia-Session-Path": "onboarding/step-3",
+        # Link to a parent trace from a different system
+        "X-Xenovia-Parent-Trace-Id": "parent-trace-uuid",
+        # Group multiple sessions into one flow
+        "X-Xenovia-Trace-Flow-Id": "flow-uuid",
+        # Custom properties (up to 20 per request)
+        "X-Xenovia-Property-user-tier": "enterprise",
+        "X-Xenovia-Property-feature-flag": "v2-agent",
+    }
+)
+```
+
+**Custom property constraints:**
+- Maximum 20 properties per request.
+- Key length ≤ 64 characters.
+- Value length ≤ 512 characters.
+- The `policy_` key prefix is reserved for internal use.
+
+## Response headers
+
+Every response includes:
+
+| Header | Value |
+|--------|-------|
+| `X-Xenovia-Session-Id` | Resolved session UUID |
+| `X-Xenovia-Trace-Id` | Per-request trace UUID |
+
+Use `X-Xenovia-Trace-Id` to correlate a specific call with its trace in the platform.
+
+## Trace step flow
+
+Xenovia emits trace steps as a request progresses:
+
+```
+request_received → [policy step] → [intent step] → llm → [escalation step] → [tool steps] → request_finished
+```
+
+Each step is a child trace with its own UUID, linked via `parent_trace_id`. This allows filtering the full lifecycle of a single request.
+
+## Drift detection and remediation
+
+When agent behaviour drifts from expected patterns:
 
 <Steps>
   <Step title="Detect">
-    Flag policy misses, unusual tool patterns, or repeated escalations.
+    Policy blocks increase, intent scores drop, or escalation volume spikes. The platform surfaces these as aggregate signals over sessions and proxies.
   </Step>
-  <Step title="Review">
-    Analyze trace evidence with ownership and policy context.
+  <Step title="Investigate">
+    Drill into traces filtered by session, policy outcome, or intent action. Each trace includes the full request context — messages, tools, model, session turn, and custom properties — so the cause is visible without reconstructing state from separate logs.
   </Step>
   <Step title="Decide">
-    Approve, block, reroute, or update policy controls.
+    Approve a pending escalation, update the Rego policy, adjust the intent definition, or revoke a proxy key. Changes take effect within the 5-minute Redis cache TTL.
   </Step>
   <Step title="Remediate">
-    Apply fixes without breaking historical trace continuity.
+    Apply the fix. Historical traces are immutable — prior decisions remain intact as evidence even after a policy update. This preserves audit continuity.
+  </Step>
+  <Step title="Tune">
+    Use trace data to refine policy rules. Avoid over-blocking by reviewing traces where `intent_score` is borderline or `policy_outcome` is `redact`.
   </Step>
 </Steps>
 
 ## Response readiness checklist
 
-- Incident owners mapped per critical proxy/runtime identity.
-- Escalation thresholds aligned with policy severity.
-- Trace retention period meets internal compliance needs.
-- Runbook links attached to major policy classes.
-- Post-incident updates feed back into policy tuning.
+- Incident owners mapped per critical proxy.
+- Escalation thresholds set in the intent configuration.
+- Trace retention period meets compliance requirements.
+- `X-Xenovia-Property-*` headers used to tag requests with environment, user tier, or feature context.
+- Post-incident policy updates are committed with a change reason for audit trail.

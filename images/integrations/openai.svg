@@ -1,0 +1,6 @@
+<svg width="260" height="72" viewBox="0 0 260 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="258" height="70" rx="18" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <circle cx="32" cy="36" r="14" fill="#111827"/>
+  <path d="M24 36C24 31.5817 27.5817 28 32 28C36.4183 28 40 31.5817 40 36C40 40.4183 36.4183 44 32 44C27.5817 44 24 40.4183 24 36Z" stroke="white" stroke-width="2.5"/>
+  <text x="58" y="42" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">OpenAI SDK</text>
+</svg>

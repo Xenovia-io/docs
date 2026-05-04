@@ -1,6 +1,6 @@
 ---
 title: "LlamaIndex"
-description: "Use Xenovia as the LLM backend for LlamaIndex RAG and agent pipelines."
+description: "Use Xenovia as the LLM backend for LlamaIndex RAG and agentic query pipelines."
 icon: "database"
 ---
 
@@ -11,6 +11,7 @@ pip install llama-index-llms-openai llama-index-embeddings-openai
 ```
 
 ```python
+import os
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
 
@@ -22,6 +23,8 @@ llm = OpenAI(
 
 Settings.llm = llm
 ```
+
+Setting `Settings.llm` globally applies to all LlamaIndex components that use an LLM — query engines, chat engines, agents — without further configuration.
 
 ## Embeddings
 
@@ -35,6 +38,8 @@ embed_model = OpenAIEmbedding(
 
 Settings.embed_model = embed_model
 ```
+
+Every embedding call routes through Xenovia independently. Policies and traces apply to both LLM and embedding calls — the full RAG pipeline is governed, not just the generation step.
 
 ## RAG pipeline
 
@@ -62,9 +67,43 @@ tool = QueryEngineTool.from_defaults(
 )
 
 agent = ReActAgent.from_tools([tool], llm=llm, verbose=True)
-response = agent.chat("Find information about policies")
+response = agent.chat("Find information about governance policies")
 ```
 
-<Callout type="info">
-  Set `Settings.llm` and `Settings.embed_model` globally so all LlamaIndex components in your application route through Xenovia automatically.
-</Callout>
+Each reasoning step (think, act, observe) is a separate LLM call. All calls route through Xenovia and produce individual traces. Use a consistent `X-Xenovia-Session-Id` to group the full agent run in Traces.
+
+## Session tracking
+
+Pass the same session header into both the LLM and embedding clients so the full workflow stays grouped in Traces:
+
+```python
+import uuid
+
+session_id = str(uuid.uuid4())
+
+llm = OpenAI(
+    model="gpt-4o-mini",
+    api_key=os.environ["XENOVIA_API_KEY"],
+    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={"X-Xenovia-Session-Id": session_id}
+)
+
+embed_model = OpenAIEmbedding(
+    api_key=os.environ["XENOVIA_API_KEY"],
+    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    default_headers={"X-Xenovia-Session-Id": session_id}
+)
+```
+
+## Handling policy blocks
+
+When a request is blocked, LlamaIndex propagates the upstream `403` as an `openai.PermissionDeniedError`.
+
+```python
+from openai import PermissionDeniedError
+
+try:
+    response = query_engine.query("Drop the database")
+except PermissionDeniedError as e:
+    print(f"Blocked by policy: {e.message}")
+```

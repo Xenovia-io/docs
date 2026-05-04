@@ -1,45 +1,195 @@
 ---
 title: "Policies and Approvals"
-description: "Reviewable enforcement for risky or out-of-scope actions."
+description: "Write Rego policies evaluated by OPA against the full request context."
 icon: "scale-balanced"
 ---
 
-## Policy outcomes
+## Policy engine
 
-Every action resolves into one of three outcomes:
+Xenovia uses [Open Policy Agent (OPA)](https://www.openpolicyagent.org/) to evaluate Rego policies. Policies are attached per proxy and evaluated synchronously on every request. There are two independent policies per proxy:
 
-<CardGroup cols={3}>
-  <Card title="Allow" icon="circle-check">
-    Action is in scope and policy-safe.
-  </Card>
-  <Card title="Block" icon="ban">
-    Action violates hard constraints.
-  </Card>
-  <Card title="Escalate" icon="triangle-exclamation">
-    Action requires explicit operator approval.
-  </Card>
-</CardGroup>
+- **Request-stage policy** — evaluated before the request is forwarded to the upstream LLM.
+- **Response-stage policy** — evaluated after the LLM responds, before the response is returned to the agent.
 
-## Policy design guidelines
+Policies are fetched from the control plane and cached in Redis for 5 minutes. Compile results are cached by `(proxy_id, policy_hash)`. Eval timeout is **200ms**; compile timeout is **2s**.
 
-- Use clear ownership boundaries per proxy and environment.
-- Separate read-safe operations from state-changing operations.
-- Require approval for cross-environment writes and privileged tool calls.
-- Prefer explicit exceptions over broad allowlists.
+## Decision actions
 
-## Approval workflow basics
+### Request stage
 
-For escalated actions, reviewers should see:
+| Action | HTTP status | Effect |
+|--------|-------------|--------|
+| `allow` | — | Request forwarded to upstream |
+| `block` | `403 Forbidden` | Request terminated, trace recorded |
+| `redact` | — | PII removed from messages/tools before forwarding |
 
-- Requesting proxy identity plus runtime-derived agent identity and owner.
-- Requested tool action and inferred intent.
-- Relevant policy clauses and risk rationale.
-- Proposed blast radius and downstream impact.
+### Response stage
 
-<Callout type="info">
-  Good approvals are evidence-first: reviewers should never approve without clear scope comparison and policy context.
-</Callout>
+| Action | HTTP status | Effect |
+|--------|-------------|--------|
+| `allow` | — | Response returned to agent |
+| `block_response` | `403 Forbidden` | Response suppressed, trace recorded |
+| `redact_response` | — | PII removed from response content before returning |
 
-## Operating model
+For `redact` and `redact_response`, specify which fields to redact with the `redact_fields` set. Supported patterns:
 
-Start with conservative defaults and tune from trace feedback. Good policy systems evolve from observed behavior rather than fixed one-time rules.
+| Field | Pattern |
+|-------|---------|
+| `email` | Standard email regex |
+| `ssn` | US Social Security Number format |
+
+## Policy input schema
+
+Both request-stage and response-stage policies receive the same base input. The policy engine exposes `input` with the following fields:
+
+### Request-stage input
+
+```json
+{
+  "agent_id":     "string — proxy ID",
+  "org_id":       "string — organisation ID",
+  "request_type": "chat_completions | responses | embeddings | completions",
+  "provider":     "openai | anthropic | gemini | azure | bedrock | groq | vllm",
+  "model":        "string — model name as sent by the agent",
+  "stream":       "boolean",
+  "messages":     "[{ role, content }]",
+  "tools":        "[{ type, function: { name, description, parameters } }]",
+  "tool_names":   "[]string — extracted tool names for convenience",
+  "system_prompt":"string — first system message content, if present",
+  "request":      "object — full request body (nested)",
+  "request_flat": "object — full request body (flattened, single depth)",
+  "http_headers": "object — request headers (secret values redacted)",
+  "intent_action":"string — allow | block | escalate (from intent plugin)",
+  "intent_score": "float — 0.0–1.0 semantic similarity score"
+}
+```
+
+### Response-stage additional fields
+
+```json
+{
+  "stage":          "response",
+  "output": {
+    "content":      "string — full response text"
+  }
+}
+```
+
+## Writing policies
+
+Policies are written in Rego under the package `xenovia.policy`. The policy engine reads the `deny` set and the `redact_fields` set.
+
+### Minimal allow-all policy
+
+```rego
+package xenovia.policy
+
+default allow = true
+```
+
+### Block a specific tool
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+deny[reason] {
+    some tool in input.tool_names
+    tool == "delete_database"
+    reason := "delete_database is not permitted"
+}
+```
+
+### Require approval for production writes
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+deny[reason] {
+    input.request_type == "chat_completions"
+    some tool in input.tool_names
+    startswith(tool, "write_")
+    reason := "write tools require operator approval in production"
+}
+```
+
+### Redact PII from requests
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+redact_fields := {"email", "ssn"}
+```
+
+### Block based on intent score
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+deny[reason] {
+    input.intent_score < 0.4
+    reason := "request does not match declared proxy intent"
+}
+```
+
+### Response-stage: block low-confidence outputs
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+deny[reason] {
+    input.stage == "response"
+    contains(input.output.content, "I cannot help")
+    reason := "model refused to respond"
+}
+```
+
+### Allowlist specific models
+
+```rego
+package xenovia.policy
+
+default allow = true
+
+approved_models := {"gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet-20241022"}
+
+deny[reason] {
+    not approved_models[input.model]
+    reason := sprintf("model %v is not on the approved list", [input.model])
+}
+```
+
+## Policy blocks in your application
+
+When a request is blocked, the runtime returns `403 Forbidden`. The response body follows the standard error format:
+
+```json
+{
+  "error": {
+    "message": "request blocked by policy",
+    "type": "policy_violation",
+    "code": "policy_block"
+  }
+}
+```
+
+The OpenAI SDK raises this as `PermissionDeniedError`. The `X-Xenovia-Trace-Id` header is present on blocked responses — use it to look up the full trace.
+
+## Approval workflow
+
+For actions that require human review rather than automatic blocking, use the intent plugin's `escalate` action (configured per proxy in the platform). When an escalation fires:
+
+1. The request is blocked with `403`.
+2. An async notification is sent to the control plane with the full request context.
+3. Operators review the trace — including the session, turn number, messages, tools, and intent score — and approve or deny.
+
+The escalation reason is logged server-side only and is not returned to the agent. A bounded pool of 32 goroutines handles escalation notifications to prevent backpressure during traffic spikes.

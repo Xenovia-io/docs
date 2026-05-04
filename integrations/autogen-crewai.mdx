@@ -1,0 +1,108 @@
+---
+title: "AutoGen & CrewAI"
+description: "Route AutoGen and CrewAI through Xenovia using OpenAI-compatible model settings."
+icon: "users"
+---
+
+Both AutoGen and CrewAI can target OpenAI-compatible endpoints, which makes Xenovia a good fit. The main job is to point the framework at your Xenovia proxy URL and keep a stable session header for the whole run.
+
+<Callout type="info">
+  AutoGen has multiple major-package eras in the wild. The example below uses the current `autogen-agentchat` and `autogen-ext[openai]` packages rather than the older `pyautogen` setup.
+</Callout>
+
+## AutoGen
+
+```bash
+pip install -U "autogen-agentchat" "autogen-ext[openai]"
+```
+
+```python
+import asyncio
+import os
+from autogen_agentchat.agents import AssistantAgent
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+
+model_client = OpenAIChatCompletionClient(
+    model="gpt-4o-mini",
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+)
+
+assistant = AssistantAgent(
+    "assistant",
+    model_client=model_client,
+    system_message="You are a helpful assistant."
+)
+
+async def main() -> None:
+    result = await assistant.run(task="Summarise the key principles of AI governance.")
+    print(result.messages[-1].content)
+
+asyncio.run(main())
+```
+
+If your AutoGen client version exposes default request headers, add a stable `X-Xenovia-Session-Id` there so every turn lands in the same Xenovia session.
+
+## CrewAI
+
+```bash
+pip install crewai
+```
+
+```python
+import os, uuid
+from crewai import Agent, Task, Crew, LLM
+
+session_id = str(uuid.uuid4())
+
+llm = LLM(
+    model="openai/gpt-4o-mini",
+    api_key=os.environ["XENOVIA_API_KEY"],
+    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    extra_headers={"X-Xenovia-Session-Id": session_id}
+)
+
+researcher = Agent(
+    role="Researcher",
+    goal="Find accurate information on the given topic",
+    backstory="You are an expert researcher with strong analytical skills.",
+    llm=llm
+)
+
+writer = Agent(
+    role="Writer",
+    goal="Write clear and concise reports",
+    backstory="You are an experienced technical writer.",
+    llm=llm
+)
+
+research_task = Task(
+    description="Research AI governance frameworks",
+    expected_output="A summary of key AI governance principles",
+    agent=researcher
+)
+
+write_task = Task(
+    description="Write a report based on the research",
+    expected_output="A structured report on AI governance",
+    agent=writer
+)
+
+crew = Crew(agents=[researcher, writer], tasks=[research_task, write_task])
+result = crew.kickoff()
+print(result)
+```
+
+## How multi-agent traces work
+
+In multi-agent setups, each agent turn is a separate call through the proxy. Each call:
+
+- Gets its own `X-Xenovia-Trace-Id`
+- Is evaluated independently by the request-stage Rego policy
+- Is grouped under the shared `X-Xenovia-Session-Id`
+
+Filter by `session_id` in the Traces view to reconstruct the full agent conversation in order, with per-turn policy decisions and intent scores.
+
+## Handling policy blocks
+
+When a request is blocked by policy, AutoGen and CrewAI surface the upstream `403`. Add framework-level error handling around the top-level run call so you can log the failure and trace ID cleanly.

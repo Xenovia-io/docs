@@ -1,65 +1,68 @@
 ---
 title: "Xenovia Docs"
-description: "Runtime governance documentation for agentic AI teams."
+description: "Runtime governance for AI agents with policy enforcement, session-linked traces, and approval-aware controls."
 icon: "sparkles"
 ---
 
-# Govern runtime through proxies
+# Govern agent behavior without rebuilding your stack
 
-Xenovia is an operator-first control plane for agentic systems. Teams create proxies in the platform, route runtime traffic through those proxies, and use derived agent/tool telemetry for policy decisions, approvals, and trace-backed remediation.
-
-<Callout type="info">
-  Built for production operators: legible decisions, policy-backed control, and fast remediation.
-</Callout>
+Xenovia gives you a control layer for agent runtimes. Route model traffic through an OpenAI-compatible proxy, or gate non-LLM actions with the Xenovia SDK, and enforce policy without rewriting your application architecture.
 
 <CardGroup cols={2}>
-  <Card title="Start Here" icon="compass" href="/getting-started/overview">
-    Understand how Xenovia fits your production stack.
-  </Card>
   <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
-    Configure your first governed proxy workflow.
+    Route one request through Xenovia, confirm trace headers, and add your first policy.
   </Card>
-  <Card title="Platform Model" icon="diagram-project" href="/platform/overview">
-    Learn how runtime governance is organized in Xenovia.
+  <Card title="Choose an integration" icon="plug" href="/integrations/overview">
+    Pick the right path for OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, Agents SDK, or the Xenovia SDK.
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/introduction">
-    Integrate Xenovia directly into your internal systems.
+  <Card title="Policies and Approvals" icon="scale-balanced" href="/platform/policies-and-approvals">
+    Write request and response policies in Rego, then decide when to block, redact, or escalate.
+  </Card>
+  <Card title="Trace and investigate" icon="route" href="/platform/traces-and-remediation">
+    Track each call with session IDs, tool activity, policy outcomes, and remediation context.
   </Card>
 </CardGroup>
 
-## At a glance
+## Two ways to integrate
 
 <CardGroup cols={2}>
-  <Card title="One runtime surface" icon="grid-2">
-    Proxies, runtime-derived agents/tools, policies, traces, and ownership in one shared view.
+  <Card title="Proxy mode" icon="shuffle" href="/getting-started/quickstart">
+    Point any OpenAI-compatible client at Xenovia. You keep your prompts, tools, and framework code, while Xenovia adds policy evaluation, provider routing, session tracking, and traces.
   </Card>
-  <Card title="Reviewable decisions" icon="clipboard-check">
-    Every allow, block, and escalation includes policy rationale.
-  </Card>
-  <Card title="End-to-end traceability" icon="timeline">
-    Follow actions from request through downstream effects.
-  </Card>
-  <Card title="Actionable remediation" icon="wrench">
-    Resolve drift without losing historical evidence.
+  <Card title="Python SDK" icon="python" href="/integrations/xenovia-sdk">
+    Gate tool calls, file writes, API requests, or database mutations that happen outside the model call itself. Use `execute()` for one-off checks or `@guard()` to wrap functions.
   </Card>
 </CardGroup>
 
-## Core lifecycle
+## What Xenovia adds
+
+- Request-stage and response-stage Rego policy enforcement
+- Session-linked traces with turn counts and request headers for correlation
+- Central provider credentials and upstream routing
+- Tool visibility, block reasons, and escalation handoff points
+- Optional semantic intent checks before risky requests proceed
+
+## Recommended reading order
 
 <Steps>
-  <Step title="Intent">
-    A runtime call hits a Xenovia proxy with agent/tool context.
+  <Step title="1. Pick your path">
+    Start with [Getting Started](/getting-started/overview) to decide between proxy mode and SDK mode.
   </Step>
-  <Step title="Comparison">
-    Xenovia compares the request against scope, ownership, and policy.
+  <Step title="2. Prove the plumbing">
+    Run the [Quickstart](/getting-started/quickstart) and confirm a trace appears for a known request.
   </Step>
-  <Step title="Decision">
-    Runtime enforcement allows, blocks, or escalates the action.
+  <Step title="3. Add controls">
+    Move to [Policies and Approvals](/platform/policies-and-approvals) and start with one rule that blocks or redacts something concrete.
   </Step>
-  <Step title="Trace">
-    Xenovia records decision evidence and execution details.
-  </Step>
-  <Step title="Operator action">
-    Teams review, approve, reroute, or remediate with full context.
+  <Step title="4. Expand observability">
+    Use [Traces and Remediation](/platform/traces-and-remediation) to group sessions, add custom properties, and investigate drift.
   </Step>
 </Steps>
+
+## What Xenovia records
+
+- Request and response bodies, token counts, latency, and TTFT
+- Session ID, session turn, session path, and trace linkage
+- Tool names, arguments, and results when present
+- Policy outcomes, reasons, and intent actions
+- Custom request metadata via `X-Xenovia-Property-*` headers

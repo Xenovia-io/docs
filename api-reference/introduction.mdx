@@ -1,55 +1,46 @@
 ---
 title: "API Introduction"
-description: "Integrate Xenovia runtime governance into your platform."
+description: "Programmatic access to proxy management, traces, policies, and approval workflows."
 icon: "code"
 ---
 
-The Xenovia API provides programmatic access to runtime governance workflows, including proxy management, runtime-derived identity metadata, policy checks, trace retrieval, and review operations.
+The Xenovia API provides programmatic access to runtime governance operations: creating and managing proxies, reading trace data, evaluating policies, and integrating operator approval workflows into external systems.
 
 <CardGroup cols={2}>
-  <Card title="Runtime enforcement" icon="shield-check">
-    Evaluate and enforce policy decisions from your systems.
+  <Card title="Proxy management" icon="hexagon-nodes">
+    Create proxies, configure providers, attach policies and intent definitions.
   </Card>
   <Card title="Trace retrieval" icon="file-chart-column">
-    Pull evidence for audits, debugging, and incident response.
+    Pull trace records for audits, debugging, and incident response. Filter by session, policy outcome, intent action, or time range.
   </Card>
   <Card title="Approval workflows" icon="user-check">
-    Integrate operator approvals into existing review pipelines.
+    Integrate operator approvals into existing review systems. Confirm or deny escalated actions programmatically.
   </Card>
-  <Card title="Operational automation" icon="bot">
-    Automate safe actions while escalating risky behavior.
+  <Card title="Policy management" icon="gavel">
+    Upload and update Rego policies per proxy. Policies take effect within the 5-minute Redis cache TTL.
   </Card>
 </CardGroup>
 
 ## Base URL
 
-```bash
-https://api.staging.xenovia.io/api/v1
+```
+https://api.xenovia.io/api/v1
 ```
 
-## Design principles
+## Design
 
-<Tabs>
-  <Tab title="REST">
-    Resource-oriented endpoints with predictable behavior.
-  </Tab>
-  <Tab title="JSON">
-    Structured request and response payloads.
-  </Tab>
-  <Tab title="Secure">
-    Token-based access control for protected operations.
-  </Tab>
-  <Tab title="Traceable">
-    Decisions tied to policy and execution evidence.
-  </Tab>
-</Tabs>
+- **REST** — resource-oriented endpoints with predictable HTTP semantics.
+- **JSON** — all request and response bodies are `application/json`.
+- **Bearer auth** — `Authorization: Bearer xe_...` on every request.
+- **Traceable** — every mutating operation produces an audit record tied to the acting API key.
 
-## Common use cases
+## Common operations
 
-- Creating and managing proxy inventory.
-- Reading runtime-derived agent/tool identities for tracing and controls.
-- Enforcing and testing policy outcomes programmatically.
-- Reviewing trace details for incident response workflows.
-- Automating approval or remediation paths in internal systems.
+- Create and manage proxy inventory with owners, environments, and declared scope.
+- Fetch runtime-derived agent and tool identities observed under a proxy.
+- Read trace details: policy decisions, intent scores, session turns, tool call records.
+- Upload or update Rego policies per proxy (request-stage and response-stage independently).
+- Confirm or deny pending escalations from the approval queue.
+- Query aggregate metrics: block rates, intent score distributions, session volumes.
 
-See [Authentication](/api-reference/authentication) and [Errors and Limits](/api-reference/errors-and-limits) before integrating endpoint-level operations.
+See [Authentication](/api-reference/authentication) for token handling and [Errors and Limits](/api-reference/errors-and-limits) for status codes and retry guidance.

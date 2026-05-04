@@ -1,35 +1,115 @@
 ---
 title: "Tools and Access"
-description: "Govern downstream system access derived under each proxy."
+description: "Tool call tracing, MCP hook support, and access control for downstream systems."
 icon: "toolbox"
 ---
 
-## Why tool governance matters
+## How Xenovia traces tool calls
 
-Most agent risk comes from tool access, not text generation. Xenovia keeps tool permissions close to runtime policy decisions.
+Most agent risk comes from tool use, not text generation. Xenovia captures tool calls at two levels:
 
-## Access model
+### 1. LLM-level tool tracing (proxy mode)
+
+When an agent requests a tool call via `chat/completions` or `responses`, Xenovia records:
+
+- Tool name, arguments, and the model's call ID
+- Tool result (from the subsequent `tool` role message)
+- Latency between call and result
+- Status (success / error)
+
+These records appear as child steps within the trace (`tool_call` and `tool_result` steps), linked to the parent trace via `parent_trace_id`.
+
+### 2. MCP tool tracing
+
+Xenovia Runtime implements `PreMCPHook` and `PostMCPHook` for Model Context Protocol tool tracing. When an MCP-enabled agent invokes a tool:
+
+- `PreMCPHook`: records tool name, arguments, and call ID.
+- `PostMCPHook`: records result, status, and latency.
+
+MCP tool traces are persisted as trace steps alongside LLM traces, giving a unified view of both LLM outputs and tool executions.
+
+### 3. SDK-level tool gating (SDK mode)
+
+For tools executed outside the LLM call — database writes, API calls, file operations — use the [Xenovia Python SDK](/integrations/xenovia-sdk):
+
+```python
+from xenovia_sdk import Xenovia
+
+xenovia = Xenovia(api_key="xe_...", identity_id="my-agent")
+
+@xenovia.guard(capability="payments.transfer")
+def transfer_funds(payload: dict) -> dict:
+    # Xenovia evaluates policy before this runs
+    return execute_transfer(payload)
+
+result = transfer_funds({"amount": 500, "to": "acct_123"})
+if result.is_blocked():
+    print(f"Blocked: {result.decision['reason']}")
+```
+
+## Access control model
 
 <Steps>
-  <Step title="Discover">Runtime traffic registers agent/tool identities under a proxy.</Step>
-  <Step title="Classify">Annotate owner, environment, and criticality.</Step>
-  <Step title="Scope">Define allowed operations per proxy and runtime identity.</Step>
-  <Step title="Enforce">Run checks before every tool call.</Step>
-  <Step title="Record">Persist allowed, denied, and escalated outcomes.</Step>
+  <Step title="Discover">
+    Proxy traffic registers which tools and models an agent is using. Tool names are extracted from every `chat/completions` request.
+  </Step>
+  <Step title="Classify">
+    In the platform, annotate observed tools with owner, environment, and criticality. This metadata feeds into policy evaluation via `input.tool_names` and `input.tools`.
+  </Step>
+  <Step title="Scope">
+    Write Rego policies that allowlist, blocklist, or redact based on tool identity. Policies can reference `input.tool_names` (a `[]string`), `input.tools` (full tool schemas), or `input.system_prompt` for context.
+  </Step>
+  <Step title="Enforce">
+    Policy runs before every LLM call (request-stage) and after every LLM response (response-stage). Tool names requested in the response can be evaluated in the response-stage policy.
+  </Step>
+  <Step title="Record">
+    Every tool call — whether allowed, blocked, or redacted — is recorded in the trace. Operator escalations include the full tool argument context.
+  </Step>
 </Steps>
 
 ## Recommended controls
 
-- Least-privilege credentials per proxy and environment.
-- Separate permissions by environment (`dev`, `staging`, `prod`).
-- Approval requirement for destructive operations.
-- Periodic review of unused or high-risk grants.
+- **Least-privilege by default.** Blocklist high-risk tools explicitly rather than relying on broad allowlists.
+- **Separate by environment.** Use different proxies (or different policies on the same proxy) for `dev`, `staging`, and `prod`. Never share production credentials.
+- **Require approval for destructive operations.** Use intent escalation for tools with irreversible effects (deletions, financial writes, cross-system state changes).
+- **Review unused grants periodically.** Traces show which tools are actually called. Remove policy permissions for tools that are no longer active.
 
-## Evidence requirements
+## Policy example: tool access control
 
-Each tool interaction should retain:
+```rego
+package xenovia.policy
 
-- Proxy identity + runtime-derived caller identity
-- Requested operation
-- Scope and policy comparison result
-- Final decision, timestamp, and operator involvement (if escalated)
+default allow = true
+
+# Block all database write tools
+deny[reason] {
+    some tool in input.tool_names
+    startswith(tool, "db_write_")
+    reason := sprintf("tool %v requires approval", [tool])
+}
+
+# Allowlist read-only tools unconditionally
+safe_tools := {"db_read", "get_user_profile", "list_records"}
+
+allow {
+    count(input.tool_names) > 0
+    every tool in input.tool_names {
+        safe_tools[tool]
+    }
+}
+```
+
+## Evidence per tool interaction
+
+Each tool call in the trace captures:
+
+| Field | Description |
+|-------|-------------|
+| `tool_name` | Function name |
+| `tool_args` | Argument object (may be redacted if policy fires) |
+| `tool_result` | Return value |
+| `call_id` | Model-assigned tool call ID |
+| `status` | `success` or `error` |
+| `latency_ms` | Time between call and result |
+| `trace_id` | Child trace UUID |
+| `parent_trace_id` | Parent request trace UUID |
