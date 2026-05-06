@@ -8,9 +8,9 @@
     "href": "https://xenovia.io"
   },
   "colors": {
-    "primary": "#7C3AED",
-    "light": "#A78BFA",
-    "dark": "#1B1033"
+    "primary": "#5E8FF3",
+    "light": "#7AA3F5",
+    "dark": "#0F111A"
   },
   "favicon": "/logo/icon.png",
   "navigation": {
