@@ -3,16 +3,16 @@
   "theme": "mint",
   "name": "Xenovia",
   "logo": {
-    "light": "/logo/icon.png",
-    "dark": "/logo/icon.png",
+    "light": "/logo/xenovia-logo.svg",
+    "dark": "/logo/xenovia-logo.svg",
     "href": "https://xenovia.io"
   },
   "colors": {
-    "primary": "#5E8FF3",
-    "light": "#7AA3F5",
-    "dark": "#0F111A"
+    "primary": "#37AEA0",
+    "light": "#37AEA0",
+    "dark": "#5CACA0"
   },
-  "favicon": "/logo/icon.png",
+  "favicon": "/logo/xenovia-logo.svg",
   "navigation": {
     "tabs": [
       {
