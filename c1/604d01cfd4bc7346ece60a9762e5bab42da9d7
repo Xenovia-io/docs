@@ -1,0 +1,24 @@
+logo/xenovia-logo.svg
+  s_596a404ecbf9a1::t_0576a2a58101a0 1-2,6
+  s_596a404ecbf9a1::t_36321dd23a5b81 3-5
+docs.json
+  s_596a404ecbf9a1::t_0e43d91f043e61 13
+  s_596a404ecbf9a1::t_0576a2a58101a0 6-7,15,98
+  s_596a404ecbf9a1::t_36321dd23a5b81 11-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c1604d01cfd4bc7346ece60a9762e5bab42da9d7",
+  "prompts": {},
+  "sessions": {
+    "s_596a404ecbf9a1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a072fb-8200-76e0-a8e3-745338882a1a",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}
