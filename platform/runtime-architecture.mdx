@@ -134,10 +134,8 @@ See [Policies and Approvals](/platform/policies-and-approvals) for the full inpu
 |----------|----------|
 | `POST /v1/chat/completions` | Chat, agents, tool calling |
 | `POST /v1/responses` | OpenAI Agents SDK (Responses API) |
-| `POST /v1/embeddings` | RAG, vector search |
-| `POST /v1/completions` | Legacy text completions |
 
-Audio, image, video, file, batch, and container endpoints are blocked at the routing layer. Only text inference and health endpoints are permitted.
+Embeddings, legacy completions, model listing, audio, image, video, file, batch, and container endpoints are not routed and return `404`. Only the two inference routes above and the health endpoints are exposed.
 
 ## Runtime environment variables
 

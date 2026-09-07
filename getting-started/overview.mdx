@@ -40,7 +40,7 @@ You can use both together: proxy mode for the model layer, SDK mode for downstre
 Every proxy exposes an OpenAI-compatible base URL:
 
 ```text
-https://runtime.xenovia.io/a/{proxy_id}/openai/v1
+https://runtime.xenovia.io/{proxy_id}/v1
 ```
 
 Point your client here and pass the `xe_...` key as the API key. Xenovia resolves the upstream provider credentials server-side.

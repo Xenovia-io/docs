@@ -8,6 +8,8 @@ icon: "database"
 
 ```bash
 pip install llama-index-llms-openai llama-index-embeddings-openai
+export XENOVIA_API_KEY=xe_...
+export XENOVIA_PROXY_ID=your-proxy-id
 ```
 
 ```python
@@ -18,7 +20,7 @@ from llama_index.core import Settings
 llm = OpenAI(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
 )
 
 Settings.llm = llm
@@ -28,18 +30,19 @@ Setting `Settings.llm` globally applies to all LlamaIndex components that use an
 
 ## Embeddings
 
+The runtime does not expose `/v1/embeddings` yet, so keep the embedding model pointed directly at your provider. An embeddings call sent to the proxy URL returns `404`.
+
 ```python
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 embed_model = OpenAIEmbedding(
-    api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    api_key=os.environ["OPENAI_API_KEY"]  # embeddings go straight to the provider
 )
 
 Settings.embed_model = embed_model
 ```
 
-Every embedding call routes through Xenovia independently. Policies and traces apply to both LLM and embedding calls — the full RAG pipeline is governed, not just the generation step.
+Only the LLM calls (query synthesis, chat, agent steps) are governed and traced by Xenovia today.
 
 ## RAG pipeline
 
@@ -74,7 +77,7 @@ Each reasoning step (think, act, observe) is a separate LLM call. All calls rout
 
 ## Session tracking
 
-Pass the same session header into both the LLM and embedding clients so the full workflow stays grouped in Traces:
+Pass a stable session header on the LLM client so every step of an agent run stays grouped in Traces:
 
 ```python
 import uuid
@@ -84,13 +87,7 @@ session_id = str(uuid.uuid4())
 llm = OpenAI(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
-    default_headers={"X-Xenovia-Session-Id": session_id}
-)
-
-embed_model = OpenAIEmbedding(
-    api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
     default_headers={"X-Xenovia-Session-Id": session_id}
 )
 ```

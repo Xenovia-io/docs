@@ -17,7 +17,7 @@ If your stack can speak the OpenAI API, Xenovia usually fits with a `base_url` c
 Xenovia Runtime is an OpenAI-compatible proxy. Any client that accepts a custom `base_url` works without further changes, and every call passes through Xenovia's policy and trace pipeline.
 
 ```text
-https://runtime.xenovia.io/a/{proxy_id}/openai/v1
+https://runtime.xenovia.io/{proxy_id}/v1
 ```
 
 Provider credentials are configured in the proxy and resolved server-side.
@@ -92,7 +92,7 @@ Use both together: proxy mode for LLM governance, SDK mode for downstream tool g
 ## If your framework is not listed
 
 - If it accepts an OpenAI-compatible `base_url`, start from the [OpenAI SDK](/integrations/openai-sdk) guide.
-- If it only needs HTTP access, point it at `https://runtime.xenovia.io/a/{proxy_id}/openai/v1`.
+- If it only needs HTTP access, point it at `https://runtime.xenovia.io/{proxy_id}/v1`.
 - If the framework makes risky local calls after the model response, add the [Xenovia Python SDK](/integrations/xenovia-sdk) alongside it.
 
 ## Supported proxy endpoints
@@ -101,5 +101,5 @@ Use both together: proxy mode for LLM governance, SDK mode for downstream tool g
 |----------|----------|
 | `POST /v1/chat/completions` | Chat, agents, tool calling |
 | `POST /v1/responses` | OpenAI Agents SDK and multi-step runs |
-| `POST /v1/embeddings` | RAG and vector search |
-| `POST /v1/completions` | Legacy text completions |
+
+Embeddings (`/v1/embeddings`), legacy completions (`/v1/completions`), and model listing (`/v1/models`) are not exposed by the runtime today and return `404`. Send embedding calls directly to your provider until they are supported.

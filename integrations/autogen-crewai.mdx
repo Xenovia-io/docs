@@ -25,7 +25,7 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 model_client = OpenAIChatCompletionClient(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
 )
 
 assistant = AssistantAgent(
@@ -58,7 +58,7 @@ session_id = str(uuid.uuid4())
 llm = LLM(
     model="openai/gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
     extra_headers={"X-Xenovia-Session-Id": session_id}
 )
 

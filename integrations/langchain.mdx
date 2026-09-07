@@ -19,7 +19,7 @@ icon: "link"
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
     )
     ```
   </Tab>
@@ -35,7 +35,7 @@ icon: "link"
       model: "gpt-4o-mini",
       apiKey: process.env.XENOVIA_API_KEY,
       configuration: {
-        baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+        baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`
       }
     })
     ```
@@ -79,15 +79,14 @@ result = executor.invoke({"input": "Search for recent AI news"})
 
 ## RAG pipeline
 
-Both LLM and embedding calls route through Xenovia. Policies and traces apply to the full pipeline, not only the final generation step.
+The generation step routes through Xenovia. The runtime does not expose `/v1/embeddings` yet, so point the embeddings client directly at your provider — an embeddings call sent to the proxy URL returns `404`.
 
 ```python
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
 embeddings = OpenAIEmbeddings(
-    api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    api_key=os.environ["OPENAI_API_KEY"]  # embeddings go straight to the provider
 )
 
 vectorstore = InMemoryVectorStore.from_texts(
@@ -122,7 +121,7 @@ session_id = str(uuid.uuid4())
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
     default_headers={"X-Xenovia-Session-Id": session_id}
 )
 ```
@@ -141,5 +140,5 @@ except PermissionDeniedError as e:
 ```
 
 <Callout type="info">
-  If your LangChain workflow also uses `OpenAIEmbeddings`, configure that client with the same Xenovia `base_url` and the same session header so retrieval and generation traces stay correlated.
+  Embedding calls are not governed by Xenovia today because the runtime does not expose `/v1/embeddings`. Keep `OpenAIEmbeddings` pointed at your provider and route only the chat model through the proxy.
 </Callout>
