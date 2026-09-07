@@ -1,95 +1,115 @@
 ---
 title: "Errors and Limits"
-description: "Error response format, status codes, policy block format, and rate limit behavior."
+description: "Error shapes for the management API and the runtime, status codes, and rate limits."
 icon: "triangle-exclamation"
 ---
 
-## Error payload shape
+Xenovia has two surfaces and they return errors in different shapes. Check which one you are calling.
 
-All non-2xx responses return a structured JSON body:
+## Management API errors (`cp.xenovia.io`)
+
+The management API returns FastAPI's error shape — a JSON object with a `detail` field:
+
+```json
+{ "detail": "Proxy not found" }
+```
+
+Validation errors (`422`) return `detail` as a list describing each invalid field:
 
 ```json
 {
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Invalid request parameters",
-    "request_id": "req_1234567890"
-  }
+  "detail": [
+    { "type": "string_type", "loc": ["body", "name"], "msg": "Input should be a valid string", "input": 42 }
+  ]
 }
 ```
 
-Use `request_id` to correlate API failures with platform traces and internal logs.
+Every response carries an `X-Request-ID` header. Send your own value to have it echoed and recorded in the audit log, or read the generated one and log it alongside failures.
 
-## Policy block format
-
-When a request is blocked by a Rego policy, the runtime returns `403` with a policy-specific error body:
-
-```json
-{
-  "error": {
-    "message": "request blocked by policy",
-    "type": "policy_violation",
-    "code": "policy_block"
-  }
-}
-```
-
-The `X-Xenovia-Trace-Id` header is present on blocked responses. Look up that trace ID in the platform to see the full request context, the Rego rule that fired, and the policy reason string.
-
-When an intent check blocks or escalates a request, the runtime returns `403` with a generic message. The reason is **never** forwarded to the agent — it is logged server-side only.
-
-## Status codes
+### Management API status codes
 
 <CardGroup cols={2}>
   <Card title="400 Bad Request" icon="circle-exclamation">
-    Invalid payload, malformed parameters, or schema mismatch. Check the `message` field for specifics.
+    A domain rule was violated — for example activating a proxy with no API key, or enabling a policy that is not attached to an active proxy.
   </Card>
   <Card title="401 Unauthorized" icon="key">
-    Missing, malformed, or non-`xe_`-prefixed token.
+    Missing, malformed, expired, or revoked credential — or a proxy `xe_` key used against the management API.
   </Card>
   <Card title="403 Forbidden" icon="lock">
-    Valid token but insufficient access — or request blocked by policy or intent check.
+    Valid credential without access: a `read`-scoped key on a write, an org key on a human-only endpoint, or a resource in another organization.
   </Card>
   <Card title="404 Not Found" icon="magnifying-glass">
-    Resource does not exist or is not visible to the requesting key's scope.
+    The resource does not exist or belongs to another organization. Cross-organization reads return `404`, not `403`.
   </Card>
   <Card title="409 Conflict" icon="code-compare">
-    State conflict — for example, concurrent updates to the same resource.
+    A uniqueness constraint — a duplicate proxy, provider, policy, or capability name, or the 20-key limit for organization keys.
   </Card>
-  <Card title="429 Too Many Requests" icon="gauge-high">
-    Rate limit exceeded. Back off and retry with jitter.
+  <Card title="422 Unprocessable" icon="list-check">
+    Schema validation failed, or a policy's Rego did not compile. The `detail` list names the problem.
   </Card>
 </CardGroup>
 
-`500 Internal Server Error` indicates an unexpected platform failure. Include `request_id` when contacting support.
+`500` is an unexpected failure (`{"detail": "Internal server error"}`); include the `X-Request-ID` when contacting support. `503` means a dependency (key verification, or the config write path) is briefly unavailable — retry with backoff.
 
-`503 Service Unavailable` from the runtime indicates an intent scoring failure with `XENOVIA_INTENT_FAIL_MODE=closed`. Default mode (`open`) returns `200` instead.
+## Runtime errors (`runtime.xenovia.io`)
+
+The runtime returns the gateway error envelope:
+
+```json
+{
+  "is_bifrost_error": false,
+  "status_code": 403,
+  "error": { "message": "request blocked by policy" },
+  "extra_fields": {}
+}
+```
+
+`is_bifrost_error` is `true` when the error came from the upstream provider (a timeout, say), in which case `extra_fields` names the provider, model, and request type. OpenAI-compatible SDKs raise these as their usual typed errors (`403` → `PermissionDeniedError`, `429` → `RateLimitError`, and so on).
+
+Two paths do not use this envelope: an invalid proxy ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`.
+
+### Runtime status codes
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid or empty JSON body, or an unsupported modality or content part |
+| `401` | Missing key, or a key that is not a valid proxy (`xe_`) key |
+| `403` | Blocked or escalated by policy or the intent guardrail |
+| `404` | Unknown proxy ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served) |
+| `405` | Wrong method on a supported path |
+| `429` | The proxy's per-minute rate limit was exceeded |
+| `502` | The proxy has no provider, or an ambiguous or invalid provider configuration |
+| `503` | A dependency (auth, policy, or intent scoring in fail-closed mode) was briefly unavailable |
+
+### Policy and intent blocks
+
+A policy block, an intent block, and an escalation all return `403` with a generic message. The specific reason is recorded server-side and is never returned to the caller. The `X-Xenovia-Trace-Id` header on the response identifies the trace — look it up in the platform to see the rule that fired.
 
 ## Rate limits
 
-Default baseline: **100 requests per minute per API key**.
+The **management API does not rate-limit** requests today.
 
-If rate limited (`429`):
+The **runtime** enforces a per-minute request limit only when one is set on the proxy (`rate_limit_rpm`). By default no limit is applied. When the limit is exceeded the runtime returns `429`:
 
-1. Read the `Retry-After` header if present.
-2. Back off with exponential jitter — do not retry immediately.
-3. Reduce bursty polling; prefer event-driven patterns.
+```json
+{
+  "is_bifrost_error": false,
+  "status_code": 429,
+  "error": { "message": "rate limit exceeded: proxy is limited to 60 requests/minute" },
+  "extra_fields": {}
+}
+```
 
-## Retry policy
+There is no `Retry-After` header. Back off with exponential jitter and retry.
+
+## Retry guidance
 
 | Status | Retry? | Notes |
 |--------|--------|-------|
-| `429` | Yes | Respect `Retry-After`; exponential backoff with jitter |
-| `500` | Yes | Transient; retry with backoff |
-| `503` | Yes | Transient; retry with backoff |
-| `400` | No | Fix the request before retrying |
-| `401` | No | Fix authentication before retrying |
-| `403` | No | Policy block or scope issue — do not retry the same request |
-| `404` | No | Resource does not exist |
+| `429` | Yes | Back off with jitter |
+| `500`, `502`, `503` | Yes | Transient; retry with backoff |
+| `400`, `422` | No | Fix the request |
+| `401` | No | Fix the credential |
+| `403`, `404` | No | A policy decision or a scope or resource problem, not transient |
 
-## Reliability practices
-
-- Log `request_id` and `X-Xenovia-Trace-Id` for every non-2xx response.
-- Add idempotency keys to write operations where supported.
-- Implement retries only for transient classes (`429`, `5xx`).
-- Do not retry `403` responses — they indicate a policy decision or an auth scope issue, not a transient error.
+Retries are not idempotent on the management API — no idempotency-key header is supported, so a retried `POST` can create a second resource (or return `409` where names are unique). Log `X-Request-ID` and `X-Xenovia-Trace-Id` for every non-2xx response.

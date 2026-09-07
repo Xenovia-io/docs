@@ -1,132 +1,102 @@
 ---
 title: "Runtime Architecture"
-description: "The six-plugin pipeline, provider routing, session strategies, and security controls."
+description: "How a request flows through the Xenovia runtime: routing, the plugin pipeline, sessions, and security."
 icon: "sitemap"
 ---
 
-## Plugin pipeline
+Xenovia Runtime is a high-performance Go proxy that speaks the OpenAI wire format. It exposes two routes per proxy and passes every request through a fixed pipeline before and after the upstream model call.
 
-Xenovia Runtime is a high performance Go-based LLM proxy. Every request passes through six plugins in sequence. Each plugin implements a `PreLLMHook` (before the upstream call) and a `PostLLMHook` (after the response).
+## Request flow
+
+Before any plugin runs, the router prepares the request: it validates the proxy ID, checks the path, method, and content modality, sets the internal `X-Xenovia-Agent-Path`, and resolves the proxy's provider — rewriting the request's `model` to the proxy's configured provider and model. Then the plugin pipeline runs.
 
 ```
 Request
+  │  router: validate proxy ID · check path/method/modality · resolve provider + rewrite model
+  ▼
+  1. Auth        verify the xe_ key, resolve the proxy identity (Redis, 5-min cache)
+  2. Session     resolve or create the session UUID, set the turn number
+  3. Trace       open the turn record, stamp session/trace response headers
+  4. Rate limit  enforce the proxy's per-minute limit, if one is set
+  5. Policy      evaluate the request-stage Rego (OPA, 200 ms eval timeout)
+  6. Intent      score against the proxy's intent, if the trigger fires
   │
-  ├─ 1. Auth           verify xe_... key, resolve proxy identity from Redis
-  ├─ 2. ProviderRoute  rewrite provider field based on proxy config
-  ├─ 3. Session        resolve or create session UUID, increment turn counter
-  ├─ 4. Trace          open trace record, stamp session/trace headers
-  ├─ 5. Policy         evaluate Rego against request context (OPA, 200ms timeout)
-  └─ 6. Intent         score against proxy intent definition if trigger fires
-         │
-         ▼
-    Upstream LLM (OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
-         │
-  ├─ 6. Intent         PostLLMHook (no-op for intent)
-  ├─ 5. Policy         response-stage Rego evaluation
-  ├─ 4. Trace          persist completed trace asynchronously
-  ├─ 3. Session        store chain fingerprint, response chain mapping
-  ├─ 2. ProviderRoute  (no-op)
-  └─ 1. Auth           (no-op)
-         │
-         ▼
-    Response to agent
+  ▼  Upstream model (OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
+  │
+  post-hooks (reverse order): intent (no-op) · response-stage policy · trace persist · session chain · rate limit (no-op) · auth (no-op)
+  ▼
+Response
 ```
 
-A session `Middleware` wraps the entire router at the fasthttp level and stamps `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` into the response headers before the first body byte. This is required for streaming responses — the headers must be sent before the stream opens.
+<Note>
+  Provider resolution and JSON parsing happen at the router, before authentication. An unauthenticated caller can therefore receive a `400` (bad body) or `502` (provider misconfiguration) from a proxy route.
+</Note>
+
+A session middleware wraps the whole router and stamps `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` into the response headers before the first body byte, so streaming responses still carry them.
 
 ## Plugin details
 
 ### 1. Auth
 
-- Accepts `Authorization: Bearer xe_...` or `X-Xenovia-Key: xe_...`.
-- Resolves the key against Redis (`apikey:{key}`, 5-minute TTL). On cache miss, calls the control plane `POST /api/v1/internal/auth/verify`.
-- The resolved identity is an HMAC-signed blob containing `proxy_id` and `org_id`.
-- `X-Xenovia-Agent-Path` header validation prevents cross-proxy key use: the resolved proxy ID must match the path segment.
-- Keys are never logged; only an 8-character SHA-256 hex prefix appears in logs.
+- Accepts `x-xenovia-key: xe_...` or `Authorization: Bearer xe_...`.
+- Resolves the key against Redis (`apikey:{sha256(key)}`, 5-minute TTL). On a miss it calls the control plane; a resolved identity is an HMAC-signed blob holding `proxy_id` and `org_id`.
+- The key's proxy must match the proxy ID in the URL, unless the request carries a workflow header for same-organization cross-proxy delegation.
+- Organization keys (`ak_...`) are rejected here — they authenticate the [management API](/api-reference/authentication), not the proxy.
+- Keys are never logged; only an 8-character SHA-256 prefix appears in logs.
 
-### 2. Provider routing
+### 2. Session
 
-- Rewrites the request's provider field to match the proxy's upstream configuration.
-- Two rewrite paths:
-  - **vLLM**: OpenAI-format request + `base_url` → vLLM provider with SSRF-safe endpoint validation.
-  - **Cloud**: OpenAI-format request → Anthropic, Gemini, Azure, or Bedrock with automatic format translation.
-- SSRF protection: link-local IPs and cloud metadata endpoints are blocked in vLLM `base_url` values.
-- Provider credentials are held in the proxy configuration and resolved from the control plane. Your application never needs provider API keys.
-
-### 3. Session
-
-Five-strategy resolution chain (evaluated in priority order):
+Five strategies, first match wins:
 
 | Priority | Source | Mechanism |
 |----------|--------|-----------|
-| 1 | `X-Xenovia-Session-Id` header | Must be a valid UUID; validated before use |
-| 2 | `previous_response_id` (Responses API) | Looked up via `respchain:{keyHash}:{resp_id}` in Redis |
-| 3 | `user` field (Chat Completions) | Looked up via `usersession:{keyHash}:{userHash}` in Redis |
-| 4 | Message fingerprint | SHA-256 of `messages[:-1]`; looked up via `chain:{keyHash}:{hash}` |
-| 5 | New session | Generates a fresh UUID |
+| 1 | `X-Xenovia-Session-Id` header | Must be a UUID; a malformed value is replaced with a fresh UUID (no error) |
+| 2 | `previous_response_id` (Responses API) | Looked up per API key |
+| 3 | `user` field (Chat Completions) | Looked up per API key; the value is stored only as a SHA-256 hash |
+| 4 | Message fingerprint | Hash of the messages up to the last assistant turn |
+| 5 | New session | A fresh UUID |
 
-Turn count is incremented atomically (`INCR sessionturn:{session_id}`) with a 30-minute sliding TTL. Sessions are proxy-scoped; cross-proxy session hijacking is prevented by ownership verification.
+Turn numbers increment per session (30-minute sliding TTL). Sessions are isolated per API key for strategies 2–4, and cross-organization reuse of an explicit session ID is rejected.
 
-### 4. Trace
+### 3. Trace
 
-- Opens a trace record with session context at `PreLLMHook`.
-- Emits child trace steps: `request_received`, `llm`, `policy`, `intent`, `escalation`, `tool` (call + result), `request_finished`.
-- Each step has its own trace ID linked to the parent via `parent_trace_id`.
-- Custom properties from `X-Xenovia-Property-*` headers are attached to the trace (max 20 properties; keys ≤ 64 chars; values ≤ 512 chars; `policy_` prefix is reserved).
-- Async persistence via a bounded goroutine pool (256 concurrent). A `sync.Once` dedup guard prevents duplicate rows under concurrent streaming hooks.
-- Captures: request/response bodies (truncated), tokens, latency, TTFT, tool calls/results, session turn, policy decision, intent score.
-- Optional direct ClickHouse write in addition to control plane persistence.
+- Opens a turn record and emits child runs: the model call, plus policy, intent, escalation, and runtime-executed tool runs.
+- Custom `X-Xenovia-Property-*` headers are attached to the turn (see [Traces and Remediation](/platform/traces-and-remediation)).
+- Persistence is asynchronous. Under sustained overload a record can be dropped rather than block the request.
 
-**Trace-related headers returned in every response:**
+### 4. Rate limit
 
-| Header | Value |
-|--------|-------|
-| `X-Xenovia-Session-Id` | Resolved session UUID |
-| `X-Xenovia-Trace-Id` | Per-request trace UUID |
-
-**Optional request headers for trace enrichment:**
-
-| Header | Description |
-|--------|-------------|
-| `X-Xenovia-Property-{key}` | Custom trace property (key ≤ 64, value ≤ 512, no `policy_` prefix) |
-| `X-Xenovia-Session-Path` | Hierarchical path tag for trace grouping |
-| `X-Xenovia-Parent-Trace-Id` | Parent trace UUID for cross-request linkage |
-| `X-Xenovia-Trace-Flow-Id` | Flow-level grouping UUID |
+Enforces the proxy's `rate_limit_rpm` when one is configured; by default there is no limit. Over the limit returns `429` (no `Retry-After`). This stage runs after tracing so rate-limited requests are still recorded.
 
 ### 5. Policy
 
-- Rego policies are fetched per proxy from the control plane (`GET /api/v1/internal/proxies/{id}/policies`) and cached in Redis for 5 minutes.
-- Two independent policies per proxy: **request-stage** and **response-stage**.
-- OPA evaluates policies with a 2-second compile timeout and a 200-millisecond eval timeout. Compile results are cached by `(agentID, policyHash)` using singleflight to prevent duplicate compiles under load.
-- Optional HMAC-signed policies: stored as `v1:<hmac_hex>:<rego>` in Redis; signature verified before use.
-- Response-stage policy failures fail open (logged, counted with an atomic counter).
-
-See [Policies and Approvals](/platform/policies-and-approvals) for the full input schema and Rego examples.
+Evaluates the request-stage Rego against the full request context, then the response-stage Rego after the model replies. See [Policies and Enforcement](/platform/policies-and-approvals) for the decision contract and the input schema. Policies are cached per proxy and revalidated about every five minutes.
 
 ### 6. Intent
 
-- Intent configuration fetched per proxy: intent text, capability list, and a semantic trigger.
-- Trigger axes:
-  - `turn_scope`: `first_only`, `first_n`, `all` (default)
-  - `on_tools`: `always` (default), `require`, `ignore`
-  - `min_content_chars`: minimum message length to score
-  - `sample_rate`: 0.0–1.0 for probabilistic scoring
-- Scoring request sent to guardrail service (`POST {GUARDRAIL_URL}/score`) or control plane fallback, with a 15-second timeout. Payloads are truncated to 4096 characters per field.
-- Actions: `allow` (pass through), `block` (403), `escalate` (403 + async operator notification).
-- The block/escalate reason is **never** forwarded to the agent — it is logged server-side only.
-- Fail mode: `XENOVIA_INTENT_FAIL_MODE=open` (default, fail open) or `closed` (503 on scoring errors).
+An optional semantic guardrail. When the proxy has an intent defined and the trigger fires, the request is scored against it:
+
+- **Trigger axes:** `turn_scope` (`all`, `first`, `first_n`), `on_tools` (`ignore`, `require`, `always`), `min_content_chars`, and `sample_rate`.
+- **Actions:** `allow`, `block` (`403`), or `escalate` (`403` plus an escalation signal).
+- The block or escalation reason is recorded server-side and never returned to the caller.
+- Fail mode is open by default (scoring failures allow the request); it can be set to fail closed, which returns `503` on a scoring error.
+
+<Note>
+  The dashboard and alerts label this feature **Guardrail**, while proxy configuration calls it **Intent**. They are the same thing.
+</Note>
 
 ## Supported providers
 
-| Provider | Format |
-|----------|--------|
+Xenovia speaks OpenAI format and translates to each provider upstream, so your app always uses an OpenAI-compatible client.
+
+| Provider | Handling |
+|----------|----------|
 | OpenAI | Native |
-| Anthropic | Auto-translated from OpenAI format |
-| Google Gemini | Auto-translated from OpenAI format |
-| Azure OpenAI | Auto-translated from OpenAI format |
-| Amazon Bedrock | Auto-translated from OpenAI format |
+| Anthropic, Google Gemini, Azure OpenAI, Amazon Bedrock | Translated from OpenAI format |
 | Groq | OpenAI-compatible |
-| vLLM (self-hosted) | OpenAI-compatible |
+| vLLM and other OpenAI-compatible endpoints | Routed by base URL |
+
+An OpenAI-typed provider configured with a base URL is routed as vLLM; one configured for Azure (an Azure endpoint or API version) is routed as Azure. The provider your policy sees in `input.provider` is this resolved value.
 
 ## Supported endpoints
 
@@ -135,19 +105,11 @@ See [Policies and Approvals](/platform/policies-and-approvals) for the full inpu
 | `POST /v1/chat/completions` | Chat, agents, tool calling |
 | `POST /v1/responses` | OpenAI Agents SDK (Responses API) |
 
-Embeddings, legacy completions, model listing, audio, image, video, file, batch, and container endpoints are not routed and return `404`. Only the two inference routes above and the health endpoints are exposed.
+Embeddings, legacy completions, model listing, and audio, image, video, batch, and container endpoints are not routed and return `404`. Only these two inference routes and the health endpoints are served. Text, image, and file **inputs** are accepted on both routes; audio output and other modalities are rejected with `400`.
 
-## Runtime environment variables
+## Security
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `CONTROL_PLANE_URL` | Yes | — | Control plane base URL |
-| `RUNTIME_SHARED_SECRET` | Yes | — | Sent as `X-Runtime-Secret` on internal CP calls |
-| `PORT` | No | `8080` | HTTP listen port |
-| `REDIS_URL` | No | `redis://localhost:6379` | Redis connection URL |
-| `CLICKHOUSE_URL` | No | unset | ClickHouse for direct trace writes |
-| `GUARDRAIL_URL` | No | unset | Guardrail scoring service URL |
-| `GUARDRAIL_SECRET` | No | unset | Guardrail service auth token |
-| `XENOVIA_INTENT_FAIL_MODE` | No | `open` | `open` or `closed` |
-| `XENOVIA_POLICY_SIGNING_KEY` | No | unset | HMAC key for signed Rego policies |
-| `XENOVIA_IDENTITY_SIGNING_KEY` | No | `RUNTIME_SHARED_SECRET` | HMAC key for identity blobs |
+- **Credential isolation.** Provider credentials live in the proxy configuration and are resolved server-side; your app never holds them. Secrets are fetched over an internal channel and kept in memory, never written to Redis or into telemetry.
+- **SSRF protection.** vLLM and Azure base URLs are validated; link-local and cloud-metadata addresses are rejected.
+- **Config integrity.** Config snapshots and identity blobs are HMAC-signed. A revoked proxy key stops working within about five minutes in the cloud.
+- **Deployment.** In the standard cloud deployment Xenovia operates the runtime. A hybrid data-plane option runs the runtime inside your own cluster; ask your Xenovia contact for the deployment guide.

@@ -100,7 +100,7 @@ const xenovia = createOpenAI({
   baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`,
   headers: {
     "X-Xenovia-Session-Id": conversationId,  // stable ID from your DB or cookie
-    "X-Xenovia-Session-Path": `users/${userId}/conversations`
+    "X-Xenovia-Property-user": userId
   }
 })
 ```

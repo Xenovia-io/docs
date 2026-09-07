@@ -125,17 +125,20 @@ After the request completes, check the platform and confirm:
 Start with one policy that proves enforcement is working. This example blocks a destructive tool name:
 
 ```rego
-package xenovia.policy
+package xenovia
 
-default allow = true
+import future.keywords.if
+import future.keywords.in
 
-deny if {
+default decision = {"action": "allow"}
+
+decision = {"action": "block", "rule": "no-delete-database"} if {
     some tool in input.tool_names
     tool == "delete_database"
 }
 ```
 
-Policies are evaluated per request. You can attach request-stage and response-stage rules independently.
+A policy returns a single `decision` object; `block` yields a `403`. Attach request-stage and response-stage policies independently. See [Policies and Enforcement](/platform/policies-and-approvals) for the full contract.
 
 ## 7. Handle a policy block
 

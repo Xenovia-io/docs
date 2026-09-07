@@ -1,70 +1,94 @@
 ---
 title: "Authentication"
-description: "API key format, token handling, and environment separation."
+description: "Organization API keys, dashboard sessions, scopes, and how the two key types differ."
 icon: "key"
 ---
 
-All API requests must include a bearer token in the `Authorization` header:
+Every management API request carries a bearer token:
 
 ```bash
-Authorization: Bearer xe_...
+Authorization: Bearer ak_...
 ```
 
-Xenovia API keys are prefixed with `xe_`. The runtime validates the prefix before attempting key lookup — requests with malformed or unprefixed tokens are rejected immediately.
+## Two kinds of key
 
-<Callout type="warn">
-  Never send API keys from browser clients or include them in client-side bundles. All requests must originate server-side.
-</Callout>
+| | Organization API key | Proxy API key |
+|--|----------------------|---------------|
+| Prefix | `ak_` | `xe_` |
+| Created in | Settings → API Keys (organization admins) | A proxy's **API keys** tab |
+| Accepted by | Management API (`cp.xenovia.io`) | Runtime (`runtime.xenovia.io`) only |
+| Scope | Whole organization, `read` or `write` | One proxy's inference traffic |
+| Expiry | 30, 60 or 90 days (default 90) | None until revoked |
+| Limit | 20 active keys per organization | No limit |
 
-## Token scopes
+The management API rejects proxy keys with `401 Invalid API key`; the runtime rejects organization keys. Use the proxy key in your application's `base_url` client and the organization key in scripts, CI and integrations that call this API.
 
-Each `xe_...` key is scoped to one or more proxies and an environment. The key resolves an HMAC-signed identity blob containing the `proxy_id` and `org_id`. A key issued for proxy `abc` cannot be used to access proxy `xyz`.
+Dashboard users authenticate with their sign-in session instead of a key. Some endpoints are only available to a signed-in user; see [Human-only endpoints](#human-only-endpoints).
 
-Tokens used with the runtime proxy are also validated against the `X-Xenovia-Agent-Path` header — the path segment in the proxy URL must match the resolved proxy ID. This prevents cross-proxy key misuse.
+## Scopes
 
-## Token handling
+An organization key is created with one of two scopes:
 
-- Issue tokens through the Xenovia platform under **Settings → API Keys**.
-- Store tokens in a secret manager (AWS Secrets Manager, GCP Secret Manager, HashiCorp Vault, etc.).
-- Inject at request time from the secret manager — never hardcode in source.
-- Rotate on a scheduled cadence (recommended: 90 days) and immediately after any suspected exposure or team member offboarding.
+| Scope | Allowed methods |
+|-------|-----------------|
+| `read` (default) | `GET`, `HEAD`, `OPTIONS` |
+| `write` | All methods |
 
-## Environment separation
+A `read` key calling a mutating endpoint receives:
 
-Use separate tokens per environment. Never reuse production credentials in non-production systems.
-
-```bash
-# .env.dev
-XENOVIA_API_KEY=xe_dev_...
-
-# .env.prod
-XENOVIA_API_KEY=xe_prod_...
+```json
+{ "detail": "API key scope does not allow POST requests; a 'write'-scoped key is required" }
 ```
 
-## Service-to-service pattern
+The scope is fixed at creation. To change it, create a new key and revoke the old one.
 
-```python
-import os
-import boto3  # or your secret manager client
+## Human-only endpoints
 
-def get_api_key() -> str:
-    client = boto3.client("secretsmanager")
-    secret = client.get_secret_value(SecretId="xenovia/api-key")
-    return secret["SecretString"]
+These endpoints require a signed-in dashboard session and return `403` for any organization key, because they manage credentials, membership or billing:
 
-api_key = get_api_key()
+- Proxy API keys: `GET`/`POST`/`DELETE /proxies/{proxy_id}/keys`
+- Organization API keys: `GET`/`POST`/`DELETE /orgs/{org_id}/keys` (admins)
+- Organization and members: `GET`/`PATCH /orgs/{org_id}`, `/orgs/{org_id}/users/...` (writes require an admin)
+- Alert rule writes and notification settings: `POST`/`PATCH`/`DELETE /alert-rules`, `PATCH /notification-settings`, `POST /notification-settings/test` (admins)
+- Hybrid deployments: everything under `/deployments` (admins, except `GET /deployments/health`)
 
-# Use the key server-side only
-headers = {"Authorization": f"Bearer {api_key}"}
-```
+Each endpoint page states which credential it accepts.
+
+## Creating an organization key
+
+1. In the dashboard, open **Settings → API Keys** and choose **Create API key**.
+2. Give it a label, an expiry (30, 60 or 90 days) and an access level (**Read only** or **Read and write**).
+3. Copy the secret. It is shown once; the list afterwards shows only the identifier (`ak_…`).
+
+The same flow is available to admins as `POST /orgs/{org_id}/keys`.
+
+## Revocation
+
+Deleting a key in the dashboard or via `DELETE /orgs/{org_id}/keys/{key}` takes effect immediately on every request. Keys revoked directly in Clerk, outside Xenovia, can remain valid for up to about 90 seconds while verification caches expire.
+
+Proxy keys are revoked from the proxy's **API keys** tab; the runtime rejects a revoked key within seconds.
 
 ## Authentication failures
 
-| Status | Meaning |
-|--------|---------|
-| `401 Unauthorized` | Key is missing, malformed, or not prefixed with `xe_` |
-| `403 Forbidden` | Key is valid but does not have access to the requested proxy or resource |
+| Status | `detail` | Cause |
+|--------|----------|-------|
+| `401` | `Missing Authorization header` | No header |
+| `401` | `Authorization header must use Bearer scheme` | Wrong scheme |
+| `401` | `Invalid API key` | Unknown, expired or revoked key, or a proxy key used here |
+| `401` | `Invalid or expired token` / `Token has been revoked` | Dashboard session problems |
+| `403` | `Org API keys are not accepted on this endpoint; a user session is required` | Human-only endpoint |
+| `403` | `API key scope does not allow POST requests; a 'write'-scoped key is required` | Read-scoped key on a write |
+| `403` | `Requested organization does not match the API key's organization` | Wrong `org_id` |
+| `403` | `Organization is pending activation. Please contact Xenovia to get started.` | New organization not yet activated |
+| `503` | `Authorization service unavailable` | Key verification backend unreachable; retry |
 
-## Rate limiting
+## Handling keys safely
 
-See [Errors and Limits](/api-reference/errors-and-limits) for rate limit behavior and retry guidance.
+- Store keys in a secret manager and inject them at runtime; never commit them.
+- Use separate organizations or at least separate keys per environment.
+- Prefer `read` keys for reporting and dashboards; reserve `write` keys for provisioning.
+- Rotate before the expiry date: create the replacement, deploy it, then revoke the old key.
+
+<Warning>
+  Never call the management API from a browser or mobile client. Organization keys grant access to every proxy, policy and trace in the organization.
+</Warning>

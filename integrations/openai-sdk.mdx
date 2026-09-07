@@ -158,8 +158,7 @@ client = OpenAI(
     default_headers={
         "X-Xenovia-Session-Id": str(uuid.uuid4()),
         "X-Xenovia-Property-user-tier": "enterprise",
-        "X-Xenovia-Property-feature": "document-summary",
-        "X-Xenovia-Session-Path": "workflows/summarise"
+        "X-Xenovia-Property-feature": "document-summary"
     }
 )
 ```

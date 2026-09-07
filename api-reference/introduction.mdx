@@ -1,25 +1,17 @@
 ---
 title: "API Introduction"
-description: "Programmatic access to proxy management, traces, policies, and approval workflows."
+description: "Programmatic access to proxies, providers, policies, telemetry, alerts and organization settings."
 icon: "code"
 ---
 
-The Xenovia API provides programmatic access to runtime governance operations: creating and managing proxies, reading trace data, evaluating policies, and integrating operator approval workflows into external systems.
+Xenovia exposes two HTTP surfaces. This reference covers the **management API** served by the control plane. Inference traffic goes to the **runtime** instead, at your proxy's base URL, and is documented under [Integrations](/integrations/overview).
 
-<CardGroup cols={2}>
-  <Card title="Proxy management" icon="hexagon-nodes">
-    Create proxies, configure providers, attach policies and intent definitions.
-  </Card>
-  <Card title="Trace retrieval" icon="file-chart-column">
-    Pull trace records for audits, debugging, and incident response. Filter by session, policy outcome, intent action, or time range.
-  </Card>
-  <Card title="Approval workflows" icon="user-check">
-    Integrate operator approvals into existing review systems. Confirm or deny escalated actions programmatically.
-  </Card>
-  <Card title="Policy management" icon="gavel">
-    Upload and update Rego policies per proxy. Policies take effect within the 5-minute Redis cache TTL.
-  </Card>
-</CardGroup>
+| Surface | Base URL | Credential | Used for |
+|---------|----------|------------|----------|
+| Management API (this reference) | `https://cp.xenovia.io/api/v1` | Organization API key `ak_…` or a dashboard session | Creating and configuring proxies, providers, policies and alerts; reading sessions, traces and audit logs |
+| Runtime (inference) | `https://runtime.xenovia.io/{proxy_id}/v1` | Proxy API key `xe_…` | `POST /chat/completions` and `POST /responses` from your application |
+
+The two credentials are not interchangeable: the management API rejects `xe_…` keys and the runtime rejects `ak_…` keys. See [Authentication](/api-reference/authentication).
 
 ## Base URL
 
@@ -27,20 +19,35 @@ The Xenovia API provides programmatic access to runtime governance operations: c
 https://cp.xenovia.io/api/v1
 ```
 
-## Design
+The OpenAPI document is published at `https://cp.xenovia.io/openapi.json`; the endpoint pages in this reference are generated from it.
 
-- **REST** — resource-oriented endpoints with predictable HTTP semantics.
-- **JSON** — all request and response bodies are `application/json`.
-- **Bearer auth** — `Authorization: Bearer xe_...` on every request.
-- **Traceable** — every mutating operation produces an audit record tied to the acting API key.
+## What you can do
 
-## Common operations
+<CardGroup cols={2}>
+  <Card title="Proxies" icon="hexagon-nodes">
+    Create proxies, attach a provider, define capabilities and role intents, activate them, and read the policy input schema observed in their traffic.
+  </Card>
+  <Card title="Policies and templates" icon="gavel">
+    Create Rego policies or instantiate one of the 55 templates, attach them to a proxy and enable them in monitor or enforce mode.
+  </Card>
+  <Card title="Sessions and traces" icon="route">
+    Read sessions, turns and steps, flat trace records with custom-property filters, aggregate stats and multi-proxy workflows.
+  </Card>
+  <Card title="Alerts" icon="bell">
+    Manage event and metric alert rules, notification channels and the alert episode history.
+  </Card>
+</CardGroup>
 
-- Create and manage proxy inventory with owners, environments, and declared scope.
-- Fetch runtime-derived agent and tool identities observed under a proxy.
-- Read trace details: policy decisions, intent scores, session turns, tool call records.
-- Upload or update Rego policies per proxy (request-stage and response-stage independently).
-- Confirm or deny pending escalations from the approval queue.
-- Query aggregate metrics: block rates, intent score distributions, session volumes.
+## Conventions
 
-See [Authentication](/api-reference/authentication) for token handling and [Errors and Limits](/api-reference/errors-and-limits) for status codes and retry guidance.
+- **JSON everywhere.** Request and response bodies are `application/json`.
+- **Identifiers.** Proxies, providers, policies, sessions and traces use UUIDs. The `org_id` path parameter is the Clerk organization id (`org_…`), visible under Settings in the dashboard.
+- **Status codes.** `201` on create and attach, `204` on delete and other empty responses, `200` otherwise. See [Errors and Limits](/api-reference/errors-and-limits).
+- **Pagination.** List endpoints take `limit` (default `20`, maximum `100`) and `offset` (default `0`) and return `{ "items": [...], "total": n, "limit": n, "offset": n }`. Alert events and notifications default to `50`, alert rules to `100`. Capabilities, role configs, deployments and policy templates return a bare array instead.
+- **Request ids.** Every response carries an `X-Request-ID` header. Send your own value to have it echoed and recorded in the audit log; otherwise one is generated.
+- **No idempotency keys.** Retrying a `POST` creates a second resource, or returns `409` where names are unique (proxies, providers, policies, capabilities).
+- **Propagation.** Configuration changes are written through to the runtime immediately and revalidated by each runtime instance about every five minutes. A change to a proxy, provider, policy, capability or intent trigger is live within that window.
+
+## Tenancy
+
+Every request is scoped to one organization: the organization that owns the API key, or the organization selected in the dashboard session. Resources that belong to another organization return `404`, not `403`.
