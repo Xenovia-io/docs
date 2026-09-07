@@ -28,6 +28,8 @@ Settings.llm = llm
 
 Setting `Settings.llm` globally applies to all LlamaIndex components that use an LLM — query engines, chat engines, agents — without further configuration.
 
+Use `llama_index.llms.openai.OpenAI` for every provider the proxy can route to, including Anthropic, Groq, Bedrock, and Gemini. The `model` argument is a placeholder that the runtime replaces with the proxy's configured model; provider-native LlamaIndex classes cannot target the proxy.
+
 ## Embeddings
 
 The runtime does not expose `/v1/embeddings` yet, so keep the embedding model pointed directly at your provider. An embeddings call sent to the proxy URL returns `404`.

@@ -20,7 +20,7 @@ Xenovia Runtime is an OpenAI-compatible proxy. Any client that accepts a custom 
 https://runtime.xenovia.io/{proxy_id}/v1
 ```
 
-Provider credentials are configured in the proxy and resolved server-side.
+Provider credentials are configured in the proxy and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the proxy. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the proxy.
 
 <CardGroup cols={2}>
   <Card title="OpenAI SDK" icon="python" href="/integrations/openai-sdk">
