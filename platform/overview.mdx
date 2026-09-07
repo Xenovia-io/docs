@@ -77,10 +77,10 @@ After the LLM responds, the response-stage policy runs (outcome: `allow`, `block
 Every proxy exposes an OpenAI-compatible base URL:
 
 ```
-https://runtime.xenovia.io/a/{proxy_id}/openai/v1
+https://runtime.xenovia.io/{proxy_id}/v1
 ```
 
-The `/openai/v1` suffix routes through standard routes (`/v1/chat/completions`, `/v1/responses`, `/v1/embeddings`, `/v1/completions`). The runtime also supports per-provider paths for non-OpenAI formats.
+The `/v1` suffix exposes the two OpenAI-compatible routes the runtime serves today: `/v1/chat/completions` and `/v1/responses`. Any other path under the proxy — `/v1/embeddings`, `/v1/completions`, `/v1/models`, provider-prefixed paths such as `/openai/v1/...`, and the legacy `/a/{proxy_id}/...` prefix — returns `404 Not Found`.
 
 ## What the platform does not see
 

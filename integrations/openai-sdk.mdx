@@ -23,7 +23,7 @@ export XENOVIA_PROXY_ID=your-proxy-id
 
     client = OpenAI(
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
     )
 
     response = client.chat.completions.create(
@@ -43,7 +43,7 @@ export XENOVIA_PROXY_ID=your-proxy-id
 
     const client = new OpenAI({
       apiKey: process.env.XENOVIA_API_KEY,
-      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`
     })
 
     const response = await client.chat.completions.create({
@@ -127,7 +127,7 @@ Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session
 
     client = OpenAI(
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
         default_headers={"X-Xenovia-Session-Id": str(uuid.uuid4())}
     )
     ```
@@ -138,7 +138,7 @@ Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session
 
     const client = new OpenAI({
       apiKey: process.env.XENOVIA_API_KEY,
-      baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`,
       defaultHeaders: { "X-Xenovia-Session-Id": randomUUID() }
     })
     ```
@@ -154,7 +154,7 @@ Attach up to 20 `X-Xenovia-Property-*` headers to tag traces with application co
 ```python
 client = OpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
     default_headers={
         "X-Xenovia-Session-Id": str(uuid.uuid4()),
         "X-Xenovia-Property-user-tier": "enterprise",
@@ -213,7 +213,7 @@ from openai import OpenAI
 # Use httpx to access response headers
 with httpx.Client() as http:
     resp = http.post(
-        f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1/chat/completions",
+        f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1/chat/completions",
         headers={
             "Authorization": f"Bearer {os.environ['XENOVIA_API_KEY']}",
             "Content-Type": "application/json"

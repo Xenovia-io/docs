@@ -15,7 +15,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 
 const xenovia = createOpenAI({
   apiKey: process.env.XENOVIA_API_KEY,
-  baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+  baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`
 })
 
 const model = xenovia("gpt-4o-mini")
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
   const xenovia = createOpenAI({
     apiKey: process.env.XENOVIA_API_KEY,
-    baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+    baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`,
     headers: {
       // Use a stable session ID from the client to group conversation turns
       "X-Xenovia-Session-Id": sessionId ?? randomUUID(),
@@ -97,7 +97,7 @@ Pass a stable session ID to group all turns of a chat conversation. The Vercel A
 ```typescript
 const xenovia = createOpenAI({
   apiKey: process.env.XENOVIA_API_KEY,
-  baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`,
+  baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`,
   headers: {
     "X-Xenovia-Session-Id": conversationId,  // stable ID from your DB or cookie
     "X-Xenovia-Session-Path": `users/${userId}/conversations`

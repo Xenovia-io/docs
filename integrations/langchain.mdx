@@ -4,12 +4,16 @@ description: "Use Xenovia as the LLM backend for LangChain chains, agents, and R
 icon: "link"
 ---
 
+Xenovia is an OpenAI-compatible endpoint, so `ChatOpenAI` is the client for every proxy, whichever provider the proxy routes to. The provider and model are configured on the proxy and resolved server-side; the `model` argument in your code is a placeholder that the runtime replaces with the proxy's configured model.
+
 ## Setup
 
 <Tabs>
   <Tab title="Python">
     ```bash
     pip install langchain-openai
+    export XENOVIA_API_KEY=xe_...
+    export XENOVIA_PROXY_ID=your-proxy-id
     ```
 
     ```python
@@ -17,9 +21,9 @@ icon: "link"
     from langchain_openai import ChatOpenAI
 
     llm = ChatOpenAI(
-        model="gpt-4o-mini",
+        model="gpt-4o-mini",  # placeholder: the proxy's configured model is used
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
     )
     ```
   </Tab>
@@ -32,15 +36,27 @@ icon: "link"
     import { ChatOpenAI } from "@langchain/openai"
 
     const llm = new ChatOpenAI({
-      model: "gpt-4o-mini",
+      model: "gpt-4o-mini", // placeholder: the proxy's configured model is used
       apiKey: process.env.XENOVIA_API_KEY,
       configuration: {
-        baseURL: `https://runtime.xenovia.io/a/${process.env.XENOVIA_PROXY_ID}/openai/v1`
+        baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`
       }
     })
     ```
   </Tab>
 </Tabs>
+
+## One client for every provider
+
+Use `ChatOpenAI` no matter which provider is attached to the proxy:
+
+| Provider configured on the proxy | LangChain class to use |
+|----------------------------------|------------------------|
+| OpenAI, Azure OpenAI, Groq, Amazon Bedrock, Google Gemini, Anthropic, vLLM | `ChatOpenAI` pointed at the proxy URL |
+
+Provider-native classes such as `ChatGroq`, `ChatAnthropic`, `ChatBedrock`, or `ChatGoogleGenerativeAI` use their own API paths and auth headers, so they cannot be pointed at the proxy; a request from them returns `404`. Pointed at the provider directly, they bypass Xenovia entirely, so those calls are neither traced nor policy-checked.
+
+The `model` argument is a placeholder. The runtime replaces it with the model configured on the proxy, and the `model` field in the response reports the model that actually served the request. To change models, update the proxy's provider configuration rather than your code.
 
 ## Chains
 
@@ -79,15 +95,14 @@ result = executor.invoke({"input": "Search for recent AI news"})
 
 ## RAG pipeline
 
-Both LLM and embedding calls route through Xenovia. Policies and traces apply to the full pipeline, not only the final generation step.
+The generation step routes through Xenovia. The runtime does not expose `/v1/embeddings` yet, so point the embeddings client directly at your provider — an embeddings call sent to the proxy URL returns `404`.
 
 ```python
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
 embeddings = OpenAIEmbeddings(
-    api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    api_key=os.environ["OPENAI_API_KEY"]  # embeddings go straight to the provider
 )
 
 vectorstore = InMemoryVectorStore.from_texts(
@@ -122,7 +137,7 @@ session_id = str(uuid.uuid4())
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
     default_headers={"X-Xenovia-Session-Id": session_id}
 )
 ```
@@ -141,5 +156,5 @@ except PermissionDeniedError as e:
 ```
 
 <Callout type="info">
-  If your LangChain workflow also uses `OpenAIEmbeddings`, configure that client with the same Xenovia `base_url` and the same session header so retrieval and generation traces stay correlated.
+  Embedding calls are not governed by Xenovia today because the runtime does not expose `/v1/embeddings`. Keep `OpenAIEmbeddings` pointed at your provider and route only the chat model through the proxy.
 </Callout>

@@ -10,6 +10,8 @@ The OpenAI Agents SDK is best paired with Xenovia through the **Responses API** 
 
 ```bash
 pip install openai-agents
+export XENOVIA_API_KEY=xe_...
+export XENOVIA_PROXY_ID=your-proxy-id
 ```
 
 ```python
@@ -19,7 +21,7 @@ from agents import Agent, Runner, OpenAIResponsesModel
 
 client = AsyncOpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1"
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
 )
 
 model = OpenAIResponsesModel(
@@ -56,7 +58,7 @@ session_id = str(uuid.uuid4())
 
 client = AsyncOpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/a/{os.environ['XENOVIA_PROXY_ID']}/openai/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
     default_headers={"X-Xenovia-Session-Id": session_id}
 )
 ```
