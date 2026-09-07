@@ -59,6 +59,10 @@ Provider credentials are configured in the proxy and resolved server-side.
 
 The [Xenovia Python SDK](/integrations/xenovia-sdk) (`pip install xenovia-sdk`) gates arbitrary agent actions such as tool calls, database writes, API requests, and file operations without proxying an LLM call.
 
+<Warning>
+The SDK's hosted decision endpoint (`POST /v1/execute`) is not live yet, so SDK mode cannot evaluate policy today. See the [SDK page](/integrations/xenovia-sdk) for the exact behaviour of each `unreachable_mode`.
+</Warning>
+
 ```python
 from xenovia_sdk import Xenovia
 

@@ -6,6 +6,10 @@ icon: "python"
 
 The Xenovia Python SDK (`xenovia-sdk`) gates agent tool calls, database writes, API requests, and any other action against Xenovia policy — without proxying an LLM call. Use it alongside proxy mode for end-to-end governance.
 
+<Warning>
+**Not available yet.** The hosted decision endpoint the SDK calls (`POST /v1/execute` on `https://api.xenovia.io`) is not live. Until it ships, no SDK call reaches Xenovia and no policy is evaluated: the default `unreachable_mode="error"` raises `XenoviaUnreachableError`, while `"allow"` and `"block"` return decisions generated inside the SDK. Use [proxy mode](/integrations/overview) to govern your agents today.
+</Warning>
+
 **Install:**
 
 ```bash
@@ -68,6 +72,10 @@ xenovia = Xenovia(
 | `"error"` | Raise `XenoviaUnreachableError` (fail closed) |
 | `"allow"` | Return a synthetic `success` response (fail open) |
 | `"block"` | Return a synthetic `blocked` response |
+
+<Note>
+The `"allow"` and `"block"` fallbacks are produced by the SDK on your machine, not by Xenovia. You can tell them apart from a real decision: `rule_id` is `SDK_UNREACHABLE_ALLOW` or `SDK_UNREACHABLE_BLOCK`, `trace_id` is `None`, and no trace appears in the platform. Read them as "Xenovia was not consulted", not as a policy outcome.
+</Note>
 
 ## `execute()` — one-off policy check
 
