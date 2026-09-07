@@ -6,7 +6,7 @@ icon: "sparkles"
 
 # Govern agent behavior without rebuilding your stack
 
-Xenovia gives you a control layer for agent runtimes. Route model traffic through an OpenAI-compatible proxy, or gate non-LLM actions with the Xenovia SDK, and enforce policy without rewriting your application architecture.
+Xenovia gives you a control layer for agent runtimes. Route model traffic through an OpenAI-compatible proxy and enforce policy without rewriting your application architecture.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
@@ -15,7 +15,7 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
   <Card title="Choose an integration" icon="plug" href="/integrations/overview">
     Pick the right path for OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, Agents SDK, or the Xenovia SDK.
   </Card>
-  <Card title="Policies and Approvals" icon="scale-balanced" href="/platform/policies-and-approvals">
+  <Card title="Policies and Enforcement" icon="scale-balanced" href="/platform/policies-and-approvals">
     Write request and response policies in Rego, then decide when to block, redact, or escalate.
   </Card>
   <Card title="Trace and investigate" icon="route" href="/platform/traces-and-remediation">
@@ -39,7 +39,7 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
 - Request-stage and response-stage Rego policy enforcement
 - Session-linked traces with turn counts and request headers for correlation
 - Central provider credentials and upstream routing
-- Tool visibility, block reasons, and escalation handoff points
+- Tool visibility and recorded block and escalation signals
 - Optional semantic intent checks before risky requests proceed
 
 ## Recommended reading order
@@ -52,7 +52,7 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
     Run the [Quickstart](/getting-started/quickstart) and confirm a trace appears for a known request.
   </Step>
   <Step title="3. Add controls">
-    Move to [Policies and Approvals](/platform/policies-and-approvals) and start with one rule that blocks or redacts something concrete.
+    Move to [Policies and Enforcement](/platform/policies-and-approvals) and start with one rule that blocks or redacts something concrete.
   </Step>
   <Step title="4. Expand observability">
     Use [Traces and Remediation](/platform/traces-and-remediation) to group sessions, add custom properties, and investigate drift.
@@ -62,7 +62,7 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
 ## What Xenovia records
 
 - Request and response bodies, token counts, latency, and TTFT
-- Session ID, session turn, session path, and trace linkage
+- Session ID, session turn, and trace linkage
 - Tool names, arguments, and results when present
 - Policy outcomes, reasons, and intent actions
 - Custom request metadata via `X-Xenovia-Property-*` headers

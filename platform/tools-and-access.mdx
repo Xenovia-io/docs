@@ -1,115 +1,89 @@
 ---
 title: "Tools and Access"
-description: "Tool call tracing, MCP hook support, and access control for downstream systems."
+description: "How Xenovia traces tool calls and how to govern them with policy."
 icon: "toolbox"
 ---
 
-## How Xenovia traces tool calls
+Most agent risk comes from tool use, not text generation. Xenovia sees the tools an agent declares and the calls a model makes, and lets you govern them with policy.
 
-Most agent risk comes from tool use, not text generation. Xenovia captures tool calls at two levels:
+## How tool calls appear in traces
 
-### 1. LLM-level tool tracing (proxy mode)
+### Tool definitions and model tool calls (proxy mode)
 
-When an agent requests a tool call via `chat/completions` or `responses`, Xenovia records:
+When your app sends a `chat/completions` or `responses` request, the tool **definitions** you pass are visible to policy as `input.tools` and `input.tool_names`, and are recorded on the trace. When the model decides to call a tool, the **tool calls** it returns are captured on the turn as `output.tool_calls` (name, arguments, and call ID).
 
-- Tool name, arguments, and the model's call ID
-- Tool result (from the subsequent `tool` role message)
-- Latency between call and result
-- Status (success / error)
+In the common pattern, your own code executes the tool and sends the result back as a `tool`-role message on the next request. That result is visible to the next request's policy as `input.tool_results` and is recorded on that turn. Client-executed tools are not separate child runs — they live in the turn's messages and output.
 
-These records appear as child steps within the trace (`tool_call` and `tool_result` steps), linked to the parent trace via `parent_trace_id`.
+### MCP tools executed by the runtime
 
-### 2. MCP tool tracing
+When a tool is executed through the Model Context Protocol by the runtime itself, Xenovia records it as its own child run with the tool name, arguments, result, status, and latency, alongside the model runs.
 
-Xenovia Runtime implements `PreMCPHook` and `PostMCPHook` for Model Context Protocol tool tracing. When an MCP-enabled agent invokes a tool:
+## Governing tools with policy
 
-- `PreMCPHook`: records tool name, arguments, and call ID.
-- `PostMCPHook`: records result, status, and latency.
+Tool governance is ordinary policy. The request-stage Rego sees the declared tools before the model is called, so a matching rule returns `403` before any tokens are spent. Read [Policies and Enforcement](/platform/policies-and-approvals) first for the decision contract.
 
-MCP tool traces are persisted as trace steps alongside LLM traces, giving a unified view of both LLM outputs and tool executions.
+<Note>
+  `input.tool_names` is a convenient lowercased list of the declared tool names. `input.tools` carries the full schemas, and its keys are **capitalised** — `input.tools[_].Name`, `.Description`, `.ParametersSchema`. Use `tool_names` for allow/deny lists.
+</Note>
 
-### 3. SDK-level tool gating (SDK mode)
+### Block a tool by name
 
-For tools executed outside the LLM call — database writes, API calls, file operations — use the [Xenovia Python SDK](/integrations/xenovia-sdk):
+```rego
+package xenovia
+import future.keywords.if
+import future.keywords.in
 
-```python
-from xenovia_sdk import Xenovia
+default decision = {"action": "allow"}
 
-xenovia = Xenovia(api_key="xe_...", identity_id="my-agent")
-
-@xenovia.guard(capability="payments.transfer")
-def transfer_funds(payload: dict) -> dict:
-    # Xenovia evaluates policy before this runs
-    return execute_transfer(payload)
-
-result = transfer_funds({"amount": 500, "to": "acct_123"})
-if result.is_blocked():
-    print(f"Blocked: {result.decision['reason']}")
+decision = {"action": "block", "rule": "no-db-writes"} if {
+    some tool in input.tool_names
+    startswith(tool, "db_write_")
+}
 ```
 
-## Access control model
+### Allow only known-safe tools
 
-<Steps>
-  <Step title="Discover">
-    Proxy traffic registers which tools and models an agent is using. Tool names are extracted from every `chat/completions` request.
-  </Step>
-  <Step title="Classify">
-    In the platform, annotate observed tools with owner, environment, and criticality. This metadata feeds into policy evaluation via `input.tool_names` and `input.tools`.
-  </Step>
-  <Step title="Scope">
-    Write Rego policies that allowlist, blocklist, or redact based on tool identity. Policies can reference `input.tool_names` (a `[]string`), `input.tools` (full tool schemas), or `input.system_prompt` for context.
-  </Step>
-  <Step title="Enforce">
-    Policy runs before every LLM call (request-stage) and after every LLM response (response-stage). Tool names requested in the response can be evaluated in the response-stage policy.
-  </Step>
-  <Step title="Record">
-    Every tool call — whether allowed, blocked, or redacted — is recorded in the trace. Operator escalations include the full tool argument context.
-  </Step>
-</Steps>
+```rego
+package xenovia
+import future.keywords.if
+import future.keywords.in
+
+default decision = {"action": "allow"}
+
+safe := {"db_read", "get_user_profile", "list_records"}
+
+decision = {"action": "block", "rule": "tool-allowlist"} if {
+    some tool in input.tool_names
+    not safe[tool]
+}
+```
+
+### Escalate a destructive tool for human attention
+
+```rego
+package xenovia
+import future.keywords.if
+import future.keywords.in
+
+default decision = {"action": "allow"}
+
+decision = {"action": "escalate", "rule": "destructive-tool-review"} if {
+    some tool in input.tool_names
+    tool == "delete_account"
+}
+```
 
 ## Recommended controls
 
-- **Least-privilege by default.** Blocklist high-risk tools explicitly rather than relying on broad allowlists.
-- **Separate by environment.** Use different proxies (or different policies on the same proxy) for `dev`, `staging`, and `prod`. Never share production credentials.
-- **Require approval for destructive operations.** Use intent escalation for tools with irreversible effects (deletions, financial writes, cross-system state changes).
-- **Review unused grants periodically.** Traces show which tools are actually called. Remove policy permissions for tools that are no longer active.
+- **Least privilege.** Blocklist high-risk tools explicitly rather than trusting a broad allowlist.
+- **Separate by environment.** Use different proxies, or different policies on one proxy, for `dev`, `staging`, and `prod`. Never share production credentials.
+- **Escalate irreversible actions.** Use `escalate` for deletions, financial writes, and cross-system state changes so they surface in Sessions and Alerts.
+- **Review from evidence.** Traces show which tools are actually called. Remove rules for tools that no longer appear.
 
-## Policy example: tool access control
+## Starting from a template
 
-```rego
-package xenovia.policy
+Several shipped policy templates cover tool access directly — for example an approved-tool allowlist, tool-argument PII blocking, tool-argument size caps, and human review for high-risk tools. Instantiate one from the dashboard or the [management API](/api-reference/introduction) rather than writing Rego from scratch.
 
-default allow = true
+## Governing actions outside the model call
 
-# Block all database write tools
-deny[reason] {
-    some tool in input.tool_names
-    startswith(tool, "db_write_")
-    reason := sprintf("tool %v requires approval", [tool])
-}
-
-# Allowlist read-only tools unconditionally
-safe_tools := {"db_read", "get_user_profile", "list_records"}
-
-allow {
-    count(input.tool_names) > 0
-    every tool in input.tool_names {
-        safe_tools[tool]
-    }
-}
-```
-
-## Evidence per tool interaction
-
-Each tool call in the trace captures:
-
-| Field | Description |
-|-------|-------------|
-| `tool_name` | Function name |
-| `tool_args` | Argument object (may be redacted if policy fires) |
-| `tool_result` | Return value |
-| `call_id` | Model-assigned tool call ID |
-| `status` | `success` or `error` |
-| `latency_ms` | Time between call and result |
-| `trace_id` | Child trace UUID |
-| `parent_trace_id` | Parent request trace UUID |
+Tool governance here covers tools the model requests through the proxy. To gate actions your code takes on its own — database writes, outbound API calls, file operations — the [Xenovia Python SDK](/integrations/xenovia-sdk) is the intended path. Its hosted decision endpoint is not live yet; see that page before adopting it.

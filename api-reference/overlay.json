@@ -1,0 +1,662 @@
+{
+  "overlay": "1.0.0",
+  "info": {
+    "title": "Xenovia docs adjustments",
+    "version": "1.0.0"
+  },
+  "actions": [
+    {
+      "target": "$",
+      "update": {
+        "info": {
+          "title": "Xenovia Control Plane API",
+          "description": "Management API for proxies, providers, policies, telemetry, alerts and organization settings."
+        },
+        "servers": [
+          {
+            "url": "https://cp.xenovia.io",
+            "description": "Production"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "components": {
+          "securitySchemes": {
+            "BearerAuth": {
+              "type": "http",
+              "scheme": "bearer",
+              "description": "Bearer token: an organization API key (`ak_\u2026`) created under Settings \u2192 API Keys, or a dashboard user session token. Proxy keys (`xe_\u2026`) are not accepted here. Endpoints marked as user-only in their description reject organization keys with `403`."
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": "$.paths[*][*].parameters[?(@.name == 'Authorization')]",
+      "remove": true
+    },
+    {
+      "target": "$.components.schemas.ProxyRead.properties.proxy_url.description",
+      "update": "Inference base URL for this proxy. Cloud proxies render `https://runtime.xenovia.io/{proxy_id}/v1`; hybrid proxies render their deployment's ingress URL plus `/{proxy_id}/v1`."
+    },
+    {
+      "target": "$.paths['/healthz'].get",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-rules'].get",
+      "update": {
+        "summary": "List alert rules",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-rules'].post",
+      "update": {
+        "summary": "Create alert rule",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nEvent rules fire per matching telemetry event; metric rules evaluate a windowed aggregate. At most 25 enabled rules per organization (`400`)."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-rules/{rule_id}'].patch",
+      "update": {
+        "summary": "Update alert rule",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nFilters are immutable after creation."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-rules/{rule_id}'].delete",
+      "update": {
+        "summary": "Delete alert rule",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alerts'].get",
+      "update": {
+        "summary": "List alert events",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nAlert episodes. Filter with `state`, `severity`, `rule_id`, `from` and `to`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alerts/{event_id}'].get",
+      "update": {
+        "summary": "Get alert event",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-notifications'].get",
+      "update": {
+        "summary": "List in-app notifications",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nSet `unread_only=true` to list unread notifications."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-notifications/read-all'].post",
+      "update": {
+        "summary": "Mark all notifications read",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/alert-notifications/{notification_id}/read'].patch",
+      "update": {
+        "summary": "Mark notification read",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/notification-settings'].get",
+      "update": {
+        "summary": "Get notification settings",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nOrganization API keys receive `slack_webhook_url: null` plus `slack_webhook_configured`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/notification-settings'].patch",
+      "update": {
+        "summary": "Update notification settings",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nPATCH semantics: omit a field to keep it, send `null` to clear it. Slack webhooks must be `https://hooks.slack.com/...` URLs."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/notification-settings/test'].post",
+      "update": {
+        "summary": "Send test notification",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nBody: `{\"channel\": \"slack\" | \"email\"}`. `400` if the channel is not configured, `502` if delivery fails."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/auth/logout'].post",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/auth/password-changed'].post",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/billing'].get",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs'].post",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}'].get",
+      "update": {
+        "summary": "Get organization",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`.\n\n`org_id` is the Clerk organization id (`org_\u2026`). Includes onboarding state and entitlements."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}'].patch",
+      "update": {
+        "summary": "Update onboarding state",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nBody: `{\"onboarding_action\": \"start\" | \"skip\"}`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/users'].get",
+      "update": {
+        "summary": "List members",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/users'].post",
+      "update": {
+        "summary": "Add member",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nAdds an existing Clerk user by `clerk_user_id`. Email invitations are sent from the dashboard."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/users/{user_id}'].get",
+      "update": {
+        "summary": "Get member",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/users/{user_id}'].patch",
+      "update": {
+        "summary": "Update member",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nChange `role` (`admin`, `member`) or `status`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/users/{user_id}'].delete",
+      "update": {
+        "summary": "Remove member",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/users/me'].patch",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies'].post",
+      "update": {
+        "summary": "Create proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nThe proxy starts in `draft`. Names are unique per organization; a duplicate returns `409`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies'].get",
+      "update": {
+        "summary": "List proxies",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFilter with `status` (`draft`, `active`), `source` (`auto`, `manual`) and `search`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}'].get",
+      "update": {
+        "summary": "Get proxy",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nA proxy that belongs to another organization returns `404`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}'].patch",
+      "update": {
+        "summary": "Update proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\n`owner_id` and `deployment_id` can only be changed by a signed-in organization admin. `rate_limit_rpm` is enforced by the runtime once the proxy's configuration refreshes."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}'].delete",
+      "update": {
+        "summary": "Delete proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nAlso evicts the proxy's API keys from the runtime cache; returns `503` if that eviction fails."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/activate'].post",
+      "update": {
+        "summary": "Activate proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nMoves the proxy from `draft` to `active`. Fails with `400` until the proxy has at least one API key."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/deactivate'].post",
+      "update": {
+        "summary": "Deactivate proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nMoves the proxy back to `draft`; the runtime stops serving it once its configuration refreshes."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/capabilities'].post",
+      "update": {
+        "summary": "Create capability",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nCapability names are unique per proxy and agent role."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/capabilities'].get",
+      "update": {
+        "summary": "List capabilities",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nOptionally filter by `role`. Returns a bare array."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/capabilities/{capability_id}'].patch",
+      "update": {
+        "summary": "Update capability",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/capabilities/{capability_id}'].delete",
+      "update": {
+        "summary": "Delete capability",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/role-configs'].get",
+      "update": {
+        "summary": "List role configs",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nPer-agent-role intent overrides. Returns a bare array."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/role-configs/{role}'].put",
+      "update": {
+        "summary": "Upsert role config",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRoles are 1\u201364 characters and match the `x-xenovia-agent-role` request header."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/role-configs/{role}'].delete",
+      "update": {
+        "summary": "Delete role config",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/intent-trigger'].get",
+      "update": {
+        "summary": "Get intent trigger",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nReturns the defaults (`turn_scope: all`, `on_tools: ignore`, `min_content_chars: 0`, `sample_rate: 1.0`) when nothing has been configured."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/intent-trigger'].put",
+      "update": {
+        "summary": "Upsert intent trigger",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/intent-trigger'].delete",
+      "update": {
+        "summary": "Delete intent trigger",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/schema/policy-input'].get",
+      "update": {
+        "summary": "Get policy input schema",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nThe curated policy field catalogue merged with fields observed in this proxy's traffic during the last 30 days. Each field carries its availability (`guaranteed`, `conditional`, `observed`) and a Rego snippet."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/providers'].post",
+      "update": {
+        "summary": "Create provider",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nPass the upstream API key as `params.api_token`; it is stored separately and never returned. Names are unique per organization (`409`). Azure providers must use an `https` endpoint on an Azure OpenAI domain."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/providers'].get",
+      "update": {
+        "summary": "List providers",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFilter with `provider` and `search`. Secret parameters are returned as `[REDACTED]`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/providers/{provider_id}'].get",
+      "update": {
+        "summary": "Get provider",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/providers/{provider_id}'].patch",
+      "update": {
+        "summary": "Update provider",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nSending a new `params.api_token` rotates the credential. Every proxy using the provider picks up the change on its next configuration refresh."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/providers/{provider_id}'].delete",
+      "update": {
+        "summary": "Delete provider",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nFails with `400` while the provider is attached to a proxy."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/providers'].get",
+      "update": {
+        "summary": "List proxy providers",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nA proxy has at most one provider, so this returns zero or one item."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/providers/{provider_id}'].post",
+      "update": {
+        "summary": "Attach provider to proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nReplaces any previously attached provider."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/providers/{provider_id}'].delete",
+      "update": {
+        "summary": "Detach provider from proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies'].post",
+      "update": {
+        "summary": "Create policy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nThe Rego is compiled with `opa check --strict`; compiler diagnostics come back as `422`. New policies are unattached and disabled; attach them to a proxy, then enable them. Names are unique per organization (`409`)."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies'].get",
+      "update": {
+        "summary": "List policies",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFilter with `enabled`, `category` and `search`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policy-templates'].get",
+      "update": {
+        "summary": "List policy templates",
+        "description": "**Auth:** none required.\n\nFilter with `framework`, `stage`, `category`, `status` and `search`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policy-templates/{template_id}'].get",
+      "update": {
+        "summary": "Get policy template",
+        "description": "**Auth:** none required.\n\nIncludes the `rego_template` source with `{{parameter}}` placeholders."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policy-templates/{template_id}/instantiate'].post",
+      "update": {
+        "summary": "Instantiate policy template",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRenders the template into an organization policy. `enabled` defaults to `false`; enabling at creation requires `proxy_id` to reference an active proxy."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies/inventory'].get",
+      "update": {
+        "summary": "List policy inventory",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nCompact rows (with the attached proxy name) and no Rego source."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies/{policy_id}'].get",
+      "update": {
+        "summary": "Get policy",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies/{policy_id}'].patch",
+      "update": {
+        "summary": "Update policy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\n`owner_id` can only be changed by a signed-in organization admin."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies/{policy_id}'].delete",
+      "update": {
+        "summary": "Delete policy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/policies'].get",
+      "update": {
+        "summary": "List proxy policies",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/policy-templates/recommended'].get",
+      "update": {
+        "summary": "List recommended templates",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nTemplates scored against the proxy's observed policy-input fields, capabilities and provider."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/policies/{policy_id}'].post",
+      "update": {
+        "summary": "Attach policy to proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nA policy is attached to at most one proxy. Returns the policy with `201`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/policies/{policy_id}'].delete",
+      "update": {
+        "summary": "Detach policy from proxy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies/{policy_id}/enable'].post",
+      "update": {
+        "summary": "Enable policy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRequires the policy to be attached to an **active** proxy (`400` otherwise). Only enabled policies reach the runtime."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/policies/{policy_id}/disable'].post",
+      "update": {
+        "summary": "Disable policy",
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/keys'].get",
+      "update": {
+        "summary": "List proxy API keys",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`.\n\nKeys are returned masked (`xe_****` plus the last four characters)."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/keys'].post",
+      "update": {
+        "summary": "Create proxy API key",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`.\n\nReturns the raw `xe_` key **once**, together with the proxy's inference `proxy_url`. It cannot be retrieved again."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/proxies/{proxy_id}/keys/{key}'].delete",
+      "update": {
+        "summary": "Revoke proxy API key",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`.\n\n`key` is the masked value shown by the list endpoint. The runtime rejects the key within seconds."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/keys'].get",
+      "update": {
+        "summary": "List organization API keys",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nReturns the key identifier (`ak_\u2026`), scopes, expiry and last use; never the secret."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/keys'].post",
+      "update": {
+        "summary": "Create organization API key",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nReturns the secret **once**. `scopes` defaults to `[\"read\"]`; `expires_in_days` must be 30, 60 or 90 (default 90). At most 20 active keys per organization (`409`)."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/keys/{key}'].delete",
+      "update": {
+        "summary": "Revoke organization API key",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nTakes effect immediately."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/traces'].get",
+      "update": {
+        "summary": "List trace records",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFlat run and turn records. Filter with `proxy_id`, `session_id`, `trace_flow_id`, `step_type`, `provider`, `decision`, `from`, `to`, and custom properties as `cp_<key>=<value>`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/traces/proxy-activity'].get",
+      "update": {
+        "summary": "Get proxy activity",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nTurn count and last-seen time per proxy."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/sessions'].get",
+      "update": {
+        "summary": "List sessions",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFilter with `proxy_id`, `status`, `search`, `from` and `to`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/sessions/{session_id}'].get",
+      "update": {
+        "summary": "Get session",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nTurns and steps for one session, with `detail_state` (`complete`, `partial`, `unavailable`, `live`)."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/traces/stats'].get",
+      "update": {
+        "summary": "Get trace stats",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nAggregate calls, tokens, latency and policy/guardrail counts for `proxy_id`, `from`, `to`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/traces/{trace_id}/flow'].get",
+      "update": {
+        "summary": "Get trace flow",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nAll steps of one turn. Accepts a turn id or a run id."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/workflows'].get",
+      "update": {
+        "summary": "List workflows",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nMulti-proxy runs grouped by `workflow_id`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/workflows/{workflow_id}'].get",
+      "update": {
+        "summary": "Get workflow",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/orgs/{org_id}/audit-logs'].get",
+      "update": {
+        "summary": "List audit logs",
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFilter with `user_id`, `event_id`, `resource_type`, `result`, `source_service`, `request_id`, `start_date` and `end_date`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments'].post",
+      "update": {
+        "summary": "Create deployment",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nReturns a one-time bootstrap token valid for 72 hours. Requires the `onprem` entitlement (`403` otherwise)."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments'].get",
+      "update": {
+        "summary": "List deployments",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nHybrid data-plane deployments. Requires the `onprem` entitlement."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments/health'].get",
+      "update": {
+        "summary": "Get deployment health",
+        "description": "**Auth:** signed-in user only (any active member). Organization API keys are rejected with `403`.\n\nConnection status and sync lag for every non-revoked deployment."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments/{deployment_id}'].get",
+      "update": {
+        "summary": "Get deployment",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments/{deployment_id}'].patch",
+      "update": {
+        "summary": "Update deployment",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nEditable fields: `name`, `ingress_url`, `data_plane_url`."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments/{deployment_id}/rotate'].post",
+      "update": {
+        "summary": "Rotate deployment credential",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nInvalidates the current credential and returns a new bootstrap token. `409` if the deployment is revoked."
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments/{deployment_id}/trace-grant'].post",
+      "update": {
+        "x-hidden": true
+      }
+    },
+    {
+      "target": "$.paths['/api/v1/deployments/{deployment_id}/revoke'].post",
+      "update": {
+        "summary": "Revoke deployment",
+        "description": "**Auth:** signed-in organization admin only. Organization API keys are rejected with `403`.\n\nPermanent."
+      }
+    }
+  ]
+}

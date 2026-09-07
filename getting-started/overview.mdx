@@ -4,16 +4,20 @@ description: "Choose the right Xenovia integration path and prepare your first g
 icon: "flag-checkered"
 ---
 
-Most teams start in **proxy mode** because it gives immediate coverage with the smallest code change. Use **SDK mode** when you also need policy enforcement around actions that happen after the model call.
+Most teams start in **proxy mode** because it gives immediate coverage with the smallest code change.
+
+<Warning>
+  SDK mode (the [Xenovia Python SDK](/integrations/xenovia-sdk)) is not available yet — its hosted decision endpoint is not live. Use proxy mode today.
+</Warning>
 
 ## Choose your integration path
 
 | Path | Best for | First change |
 |------|----------|--------------|
 | **Proxy mode** | OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, Agents SDK, CrewAI, and most OpenAI-compatible clients | Change `base_url` to your Xenovia proxy URL |
-| **SDK mode** | Tool calls, API requests, writes, file operations, or business actions outside the LLM request | Add `xenovia.execute()` or `@xenovia.guard()` |
+| **SDK mode** _(not available yet)_ | Actions outside the model call — tool calls, API requests, writes, file operations | Coming soon; the decision endpoint is not live |
 
-You can use both together: proxy mode for the model layer, SDK mode for downstream side effects.
+Proxy mode is the path available today. SDK mode, for governing actions that happen after the model call, is coming soon — see the [Xenovia Python SDK](/integrations/xenovia-sdk).
 
 ## Prerequisites
 
@@ -23,10 +27,8 @@ You can use both together: proxy mode for the model layer, SDK mode for downstre
 - A Xenovia API key (`xe_...`) scoped to that proxy.
 - An LLM client or framework (OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, etc.).
 
-**For SDK mode**
-- Python ≥ 3.9.
-- A Xenovia API key.
-- Your agent or tool functions that need policy gating.
+**For SDK mode** _(not available yet)_
+- Python ≥ 3.9 and your agent or tool functions that need gating, once the decision endpoint is live.
 
 ## What to decide before rollout
 
@@ -61,7 +63,7 @@ Point your client here and pass the `xe_...` key as the API key. Xenovia resolve
     Begin with a concrete rule such as blocking a destructive tool or redacting email addresses.
   </Step>
   <Step title="Expand based on evidence">
-    Use real traces to add stricter rules, intent checks, and downstream SDK guards.
+    Use real traces to add stricter rules and intent checks.
   </Step>
 </Steps>
 

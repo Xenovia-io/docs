@@ -63,13 +63,139 @@
             ]
           },
           {
-            "group": "Endpoints",
-            "openapi": {
-              "source": "https://cp.xenovia.io/openapi.json",
-              "directory": "api-reference"
-            }
+            "group": "Proxies",
+            "pages": [
+              "GET /api/v1/proxies",
+              "POST /api/v1/proxies",
+              "GET /api/v1/proxies/{proxy_id}",
+              "PATCH /api/v1/proxies/{proxy_id}",
+              "DELETE /api/v1/proxies/{proxy_id}",
+              "POST /api/v1/proxies/{proxy_id}/activate",
+              "GET /api/v1/proxies/{proxy_id}/capabilities",
+              "POST /api/v1/proxies/{proxy_id}/capabilities",
+              "POST /api/v1/proxies/{proxy_id}/deactivate",
+              "GET /api/v1/proxies/{proxy_id}/intent-trigger",
+              "PUT /api/v1/proxies/{proxy_id}/intent-trigger",
+              "DELETE /api/v1/proxies/{proxy_id}/intent-trigger",
+              "GET /api/v1/proxies/{proxy_id}/role-configs",
+              "PATCH /api/v1/proxies/{proxy_id}/capabilities/{capability_id}",
+              "DELETE /api/v1/proxies/{proxy_id}/capabilities/{capability_id}",
+              "PUT /api/v1/proxies/{proxy_id}/role-configs/{role}",
+              "DELETE /api/v1/proxies/{proxy_id}/role-configs/{role}",
+              "GET /api/v1/proxies/{proxy_id}/schema/policy-input"
+            ]
+          },
+          {
+            "group": "Providers",
+            "pages": [
+              "GET /api/v1/providers",
+              "POST /api/v1/providers",
+              "GET /api/v1/providers/{provider_id}",
+              "PATCH /api/v1/providers/{provider_id}",
+              "DELETE /api/v1/providers/{provider_id}",
+              "GET /api/v1/proxies/{proxy_id}/providers",
+              "POST /api/v1/proxies/{proxy_id}/providers/{provider_id}",
+              "DELETE /api/v1/proxies/{proxy_id}/providers/{provider_id}"
+            ]
+          },
+          {
+            "group": "Policies",
+            "pages": [
+              "GET /api/v1/policies",
+              "POST /api/v1/policies",
+              "GET /api/v1/policies/inventory",
+              "GET /api/v1/policies/{policy_id}",
+              "PATCH /api/v1/policies/{policy_id}",
+              "DELETE /api/v1/policies/{policy_id}",
+              "POST /api/v1/policies/{policy_id}/disable",
+              "POST /api/v1/policies/{policy_id}/enable",
+              "GET /api/v1/proxies/{proxy_id}/policies",
+              "POST /api/v1/proxies/{proxy_id}/policies/{policy_id}",
+              "DELETE /api/v1/proxies/{proxy_id}/policies/{policy_id}"
+            ]
+          },
+          {
+            "group": "Policy templates",
+            "pages": [
+              "GET /api/v1/policy-templates",
+              "GET /api/v1/policy-templates/{template_id}",
+              "POST /api/v1/policy-templates/{template_id}/instantiate",
+              "GET /api/v1/proxies/{proxy_id}/policy-templates/recommended"
+            ]
+          },
+          {
+            "group": "API keys",
+            "pages": [
+              "GET /api/v1/orgs/{org_id}/keys",
+              "POST /api/v1/orgs/{org_id}/keys",
+              "GET /api/v1/proxies/{proxy_id}/keys",
+              "POST /api/v1/proxies/{proxy_id}/keys",
+              "DELETE /api/v1/orgs/{org_id}/keys/{key}",
+              "DELETE /api/v1/proxies/{proxy_id}/keys/{key}"
+            ]
+          },
+          {
+            "group": "Sessions and traces",
+            "pages": [
+              "GET /api/v1/sessions",
+              "GET /api/v1/traces",
+              "GET /api/v1/workflows",
+              "GET /api/v1/sessions/{session_id}",
+              "GET /api/v1/traces/proxy-activity",
+              "GET /api/v1/traces/stats",
+              "GET /api/v1/workflows/{workflow_id}",
+              "GET /api/v1/traces/{trace_id}/flow"
+            ]
+          },
+          {
+            "group": "Alerts",
+            "pages": [
+              "GET /api/v1/alert-notifications",
+              "GET /api/v1/alert-rules",
+              "POST /api/v1/alert-rules",
+              "GET /api/v1/alerts",
+              "GET /api/v1/notification-settings",
+              "PATCH /api/v1/notification-settings",
+              "POST /api/v1/alert-notifications/read-all",
+              "PATCH /api/v1/alert-rules/{rule_id}",
+              "DELETE /api/v1/alert-rules/{rule_id}",
+              "GET /api/v1/alerts/{event_id}",
+              "POST /api/v1/notification-settings/test",
+              "PATCH /api/v1/alert-notifications/{notification_id}/read"
+            ]
+          },
+          {
+            "group": "Organization",
+            "pages": [
+              "GET /api/v1/orgs/{org_id}",
+              "PATCH /api/v1/orgs/{org_id}",
+              "GET /api/v1/orgs/{org_id}/audit-logs",
+              "GET /api/v1/orgs/{org_id}/users",
+              "POST /api/v1/orgs/{org_id}/users",
+              "GET /api/v1/orgs/{org_id}/users/{user_id}",
+              "PATCH /api/v1/orgs/{org_id}/users/{user_id}",
+              "DELETE /api/v1/orgs/{org_id}/users/{user_id}"
+            ]
+          },
+          {
+            "group": "Deployments (hybrid)",
+            "pages": [
+              "GET /api/v1/deployments",
+              "POST /api/v1/deployments",
+              "GET /api/v1/deployments/health",
+              "GET /api/v1/deployments/{deployment_id}",
+              "PATCH /api/v1/deployments/{deployment_id}",
+              "POST /api/v1/deployments/{deployment_id}/revoke",
+              "POST /api/v1/deployments/{deployment_id}/rotate"
+            ]
           }
-        ]
+        ],
+        "openapi": {
+          "source": "https://cp.xenovia.io/openapi.json",
+          "overlays": [
+            "api-reference/overlay.json"
+          ]
+        }
       }
     ],
     "global": {
