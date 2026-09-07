@@ -1,0 +1,39 @@
+integrations/autogen-crewai.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 28,61
+getting-started/overview.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 43
+integrations/llamaindex.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 23,33-34,39,45,80,90
+platform/overview.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 80
+integrations/openai-sdk.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 26,46,130,141,157,216
+integrations/overview.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 20,95
+integrations/langchain.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 22,38,82,89,124
+getting-started/quickstart.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 37,51,93,104,112,201,214
+integrations/openai-agents-sdk.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 24,61
+integrations/vercel-ai-sdk.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 18,54,100
+platform/traces-and-remediation.mdx
+  s_a3ea5d48dadf83::t_d48a9a8f2412e1 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "650039f010f319390a24c54fd6690769c8b15ca3",
+  "prompts": {},
+  "sessions": {
+    "s_a3ea5d48dadf83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5213bdd0-7f2f-4031-8b8a-e58bebc7097f",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Akash S <96624761+AkashS0510@users.noreply.github.com>"
+    }
+  }
+}
