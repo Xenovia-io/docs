@@ -1,0 +1,48 @@
+platform/runtime-architecture.mdx
+  s_a3ea5d48dadf83::t_acb5b13b7308bc 23,91,98
+  s_a3ea5d48dadf83::t_18eac13b05a183 3,7,9-11,15-22,24,26-28,31-35,41-45,47,49,53-57,59,61,63-65,67,69,73,77-86,90,92-93,95,97,99,108-115
+api-reference/errors-and-limits.mdx
+  s_a3ea5d48dadf83::t_37e76d294e8951 3,7,9-11,14,17,21-23,27,29,33,36,39,42,45,47-48,52-84,86,90,92,94-103,105,109-115
+platform/traces-and-remediation.mdx
+  s_a3ea5d48dadf83::t_eaf7059d18ae85 95
+  s_a3ea5d48dadf83::t_7f081b7b536388 3,7,9,13-32,39,41,43,48-59,70,72,75-76,78-79,81-82,84-85,89-93
+platform/overview.mdx
+  s_a3ea5d48dadf83::t_89d7af3ad23513 3,7,11,13-14,17,19-20,22-23,25-26,30-43,47-51,53-54,56,63-64,66-67,69-70,72-73,75-76,78-79,91,93,95-97
+integrations/openai-sdk.mdx
+  s_a3ea5d48dadf83::t_c65cceb378ed57 161
+platform/policies-and-approvals.mdx
+  s_a3ea5d48dadf83::t_acb5b13b7308bc 18-19,21-22,25,133,141-143,145,148,156-157,160,183,194-197,203
+  s_a3ea5d48dadf83::t_cab0b8eaf9127b 2-3,7,9-10,12,14,16,24,27-31,33-35,37-39,41,43-52,54,56,58,60-67,71,73,75,77-78,80,82,84,86-99,103,105-113,117-119,121,123-132,136-138,147,149,153,158,162-165,169,171,173-177,179,181-182,184,188,190,201,205,207-209,211-213
+getting-started/quickstart.mdx
+  s_a3ea5d48dadf83::t_c65cceb378ed57 128,130-131,133-135,141
+integrations/vercel-ai-sdk.mdx
+  s_a3ea5d48dadf83::t_c65cceb378ed57 103
+api-reference/introduction.mdx
+  s_a3ea5d48dadf83::t_eaf7059d18ae85 27-36
+introduction.mdx
+  s_a3ea5d48dadf83::t_eaf7059d18ae85 65
+  s_a3ea5d48dadf83::t_c65cceb378ed57 9,18,42,55
+getting-started/overview.mdx
+  s_a3ea5d48dadf83::t_c65cceb378ed57 7-11
+docs.json
+  s_a3ea5d48dadf83::t_5461ba92fb8393 66-190,192-198
+platform/tools-and-access.mdx
+  s_a3ea5d48dadf83::t_eaf7059d18ae85 79
+  s_a3ea5d48dadf83::t_89d7af3ad23513 3,7,9,11,13,15,17,19,21,23,25-27,29,31-34,36,38-41,44,47-49,51,53-55,57,59,61,63-66,70-78,81,83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "74409683d5b2f07cd7444165a125ce67e8a719d6",
+  "prompts": {},
+  "sessions": {
+    "s_a3ea5d48dadf83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5213bdd0-7f2f-4031-8b8a-e58bebc7097f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Akash S <96624761+AkashS0510@users.noreply.github.com>"
+    }
+  }
+}
