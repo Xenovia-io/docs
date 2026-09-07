@@ -1,0 +1,35 @@
+platform/policies-and-approvals.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 61-66,180-184,193-197
+api-reference/errors-and-limits.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 39
+api-reference/overlay.json
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 23,28,31,38
+getting-started/overview.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 18,20,30-31,66
+platform/tools-and-access.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 64-69
+platform/overview.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 17
+platform/runtime-architecture.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 26
+api-reference/authentication.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 49-50
+platform/traces-and-remediation.mdx
+  s_a3ea5d48dadf83::t_ba1ffbc3fb1c44 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cfabbe5df3a3776d6b7a7daa9197fbd816da6d9b",
+  "prompts": {},
+  "sessions": {
+    "s_a3ea5d48dadf83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5213bdd0-7f2f-4031-8b8a-e58bebc7097f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Akash S <96624761+AkashS0510@users.noreply.github.com>"
+    }
+  }
+}
