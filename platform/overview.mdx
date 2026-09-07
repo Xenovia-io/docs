@@ -14,7 +14,7 @@ icon: "layer-group"
     A provider holds the upstream credential and model for a proxy. One provider per proxy; credentials are resolved server-side.
   </Card>
   <Card title="Policies" icon="gavel">
-    Rego rules evaluated by OPA at the request or response stage. A decision is `allow`, `block`, `redact`, or `escalate`.
+    Rego rules evaluated by OPA. Request-stage decisions are `allow`, `block`, `redact`, or `escalate`; response-stage decisions use `block_response` and `redact_response`.
   </Card>
   <Card title="Sessions" icon="fingerprint">
     A session groups related turns. Xenovia resolves one for every request; you can also set it explicitly.

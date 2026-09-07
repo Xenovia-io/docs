@@ -58,6 +58,12 @@ When several enabled policies run at the same stage, the strongest action wins: 
 Return the labels to strip in `redact_fields`:
 
 ```rego
+package xenovia
+import future.keywords.if
+import future.keywords.in
+
+default decision = {"action": "allow"}
+
 decision = {
     "action": "redact",
     "rule": "mask-contact-details",
@@ -171,6 +177,11 @@ decision = {"action": "block", "rule": "model-allowlist"} if {
 ### Cap output tokens (request stage)
 
 ```rego
+package xenovia
+import future.keywords.if
+
+default decision = {"action": "allow"}
+
 decision = {"action": "block", "rule": "output-cap"} if {
     input.request_max_tokens > 2000
 }
@@ -179,6 +190,11 @@ decision = {"action": "block", "rule": "output-cap"} if {
 ### Block a refusal in the reply (response stage)
 
 ```rego
+package xenovia
+import future.keywords.if
+
+default decision = {"action": "allow"}
+
 decision = {"action": "block_response", "rule": "no-refusal"} if {
     input.stage == "response"
     contains(input.output.content, "I cannot help")

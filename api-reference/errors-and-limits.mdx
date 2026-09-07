@@ -36,7 +36,7 @@ Every response carries an `X-Request-ID` header. Send your own value to have it 
     Missing, malformed, expired, or revoked credential — or a proxy `xe_` key used against the management API.
   </Card>
   <Card title="403 Forbidden" icon="lock">
-    Valid credential without access: a `read`-scoped key on a write, an org key on a human-only endpoint, or a resource in another organization.
+    Valid credential without access: a `read`-scoped key on a write, an org key on a human-only endpoint, or an `org_id` that does not match your key's organization. (A resource that belongs to another organization returns `404`, not `403`.)
   </Card>
   <Card title="404 Not Found" icon="magnifying-glass">
     The resource does not exist or belongs to another organization. Cross-organization reads return `404`, not `403`.

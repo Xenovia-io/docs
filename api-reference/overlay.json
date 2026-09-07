@@ -20,22 +20,22 @@
         ],
         "security": [
           {
-            "OrgApiKey": []
+            "BearerAuth": []
           }
         ],
         "components": {
           "securitySchemes": {
-            "OrgApiKey": {
+            "BearerAuth": {
               "type": "http",
               "scheme": "bearer",
-              "description": "Organization API key (`ak_\u2026`) created under Settings \u2192 API Keys, or a dashboard user session token. Proxy keys (`xe_\u2026`) are not accepted."
+              "description": "Bearer token: an organization API key (`ak_\u2026`) created under Settings \u2192 API Keys, or a dashboard user session token. Proxy keys (`xe_\u2026`) are not accepted here. Endpoints marked as user-only in their description reject organization keys with `403`."
             }
           }
         }
       }
     },
     {
-      "target": "$.paths[*][*].parameters[?(@.in == 'header')]",
+      "target": "$.paths[*][*].parameters[?(@.name == 'Authorization')]",
       "remove": true
     },
     {

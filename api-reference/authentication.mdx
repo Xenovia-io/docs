@@ -46,8 +46,8 @@ The scope is fixed at creation. To change it, create a new key and revoke the ol
 
 These endpoints require a signed-in dashboard session and return `403` for any organization key, because they manage credentials, membership or billing:
 
-- Proxy API keys: `GET`/`POST`/`DELETE /proxies/{proxy_id}/keys`
-- Organization API keys: `GET`/`POST`/`DELETE /orgs/{org_id}/keys` (admins)
+- Proxy API keys: `GET`/`POST /proxies/{proxy_id}/keys`, `DELETE /proxies/{proxy_id}/keys/{key}`
+- Organization API keys: `GET`/`POST /orgs/{org_id}/keys`, `DELETE /orgs/{org_id}/keys/{key}` (admins)
 - Organization and members: `GET`/`PATCH /orgs/{org_id}`, `/orgs/{org_id}/users/...` (writes require an admin)
 - Alert rule writes and notification settings: `POST`/`PATCH`/`DELETE /alert-rules`, `PATCH /notification-settings`, `POST /notification-settings/test` (admins)
 - Hybrid deployments: everything under `/deployments` (admins, except `GET /deployments/health`)

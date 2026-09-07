@@ -61,6 +61,12 @@ decision = {"action": "block", "rule": "tool-allowlist"} if {
 ### Escalate a destructive tool for human attention
 
 ```rego
+package xenovia
+import future.keywords.if
+import future.keywords.in
+
+default decision = {"action": "allow"}
+
 decision = {"action": "escalate", "rule": "destructive-tool-review"} if {
     some tool in input.tool_names
     tool == "delete_account"
