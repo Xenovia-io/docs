@@ -58,6 +58,21 @@ By default, Mintlify serves docs at `http://localhost:3000`.
 - Pages show `404`: verify page path is included in `docs.json`.
 - OpenAPI pages missing: verify the `openapi.source` URL in `docs.json` is reachable.
 
+## Integration example checks
+
+The LlamaIndex and LangChain Python snippets are executed directly from their MDX pages against in-memory HTTP fixtures:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r tests/requirements-current.txt
+python -m unittest discover -s tests -v
+```
+
+CI runs both `requirements-minimum.txt` (LlamaIndex 0.13 / LangChain 1.0) and `requirements-current.txt` (versions tested on 2026-09-09). Update the current matrix when validating a new framework release. Tests cover tool round trips, session headers, request-stage 403 handling and trace IDs, unrelated errors, interrupted LlamaIndex streams, and LangChain RAG prompt variables.
+
+These tests do not contact Xenovia or model providers. The query-engine tool and embeddings are fixtures. Live policy enforcement, provider-specific stream behavior, and server traces must be verified separately against a test proxy before claiming end-to-end compatibility.
+
 ## References
 
 - [Mintlify docs](https://mintlify.com/docs)

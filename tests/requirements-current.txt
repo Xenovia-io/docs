@@ -1,0 +1,5 @@
+langchain==1.4.0
+langchain-openai==1.6.1
+llama-index-core==0.14.24
+llama-index-llms-openai==0.8.1
+httpx==0.28.1
