@@ -6,27 +6,37 @@ icon: "database"
 
 ## Setup
 
+The agent example uses the workflow API available in LlamaIndex 0.13 and later. It requires a proxy configured with a model that supports native tool calling.
+
+The agent example is checked with Python 3.12, `llama-index-core` 0.13.0 / `llama-index-llms-openai` 0.5.0 and core 0.14.24 / OpenAI integration 0.8.1 using simulated HTTP responses. Validate your proxy's policy and provider configuration separately.
+
 ```bash
-pip install llama-index-llms-openai llama-index-embeddings-openai
+pip install "llama-index-core>=0.13" llama-index-llms-openai llama-index-embeddings-openai llama-index-readers-file
 export XENOVIA_API_KEY=xe_...
 export XENOVIA_PROXY_ID=your-proxy-id
 ```
 
 ```python
 import os
+import uuid
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
+
+session_id = str(uuid.uuid4())
 
 llm = OpenAI(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
+    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+    default_headers={"X-Xenovia-Session-Id": session_id}
 )
 
 Settings.llm = llm
 ```
 
 Setting `Settings.llm` globally applies to all LlamaIndex components that use an LLM — query engines, chat engines, agents — without further configuration.
+
+Use the same `https://runtime.xenovia.io/{proxy_id}/v1` base URL across the OpenAI-compatible integrations, including the OpenAI Agents SDK. The older `/a/{proxy_id}/openai/v1` route is not part of the current runtime API.
 
 Use `llama_index.llms.openai.OpenAI` for every provider the proxy can route to, including Anthropic, Groq, Bedrock, and Gemini. The `model` argument is a placeholder that the runtime replaces with the proxy's configured model; provider-native LlamaIndex classes cannot target the proxy.
 
@@ -61,8 +71,11 @@ print(response)
 
 ## Agentic query engine
 
+Use `FunctionAgent` so tool definitions are sent as native `tools` metadata. The `QueryEngineTool` below reuses the RAG query engine from the preceding example.
+
 ```python
-from llama_index.core.agent import ReActAgent
+import asyncio
+from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import QueryEngineTool
 
 tool = QueryEngineTool.from_defaults(
@@ -71,32 +84,31 @@ tool = QueryEngineTool.from_defaults(
     description="Search internal documentation"
 )
 
-agent = ReActAgent.from_tools([tool], llm=llm, verbose=True)
-response = agent.chat("Find information about governance policies")
+agent = FunctionAgent(
+    tools=[tool],
+    llm=llm,
+    system_prompt="Use docs_search to answer questions about internal documentation."
+)
+
+async def main():
+    response = await agent.run(user_msg="Find information about governance policies")
+    print(response)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-Each reasoning step (think, act, observe) is a separate LLM call. All calls route through Xenovia and produce individual traces. Use a consistent `X-Xenovia-Session-Id` to group the full agent run in Traces.
+In a notebook, use `await main()` instead of `asyncio.run(main())`, because a notebook already has an event loop. The older `ReActAgent.from_tools(...)` and synchronous `.chat()` examples do not apply to workflow agents. Modern `ReActAgent` remains available, but describes tools in its prompt instead of supplying the native tool metadata used by FunctionAgent.
+
+Each LLM call, including query synthesis inside `docs_search`, routes through Xenovia. The session header set during setup groups these calls in Traces. Request-stage policy checks the tools offered to the model; this is separate from authorizing a local action after the model selects a tool and generates its arguments.
 
 ## Session tracking
 
-Pass a stable session header on the LLM client so every step of an agent run stays grouped in Traces:
-
-```python
-import uuid
-
-session_id = str(uuid.uuid4())
-
-llm = OpenAI(
-    model="gpt-4o-mini",
-    api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
-    default_headers={"X-Xenovia-Session-Id": session_id}
-)
-```
+The setup example creates one `X-Xenovia-Session-Id` before building the query engine and agent. Reuse it for the conversation, and create a new client and session ID for a separate conversation. Replacing `llm` after creating an agent does not update the client already held by that agent.
 
 ## Handling policy blocks
 
-When a request is blocked, LlamaIndex propagates the upstream `403` as an `openai.PermissionDeniedError`.
+For a direct query-engine call, a request-stage `403` propagates as `openai.PermissionDeniedError`:
 
 ```python
 from openai import PermissionDeniedError
@@ -106,3 +118,25 @@ try:
 except PermissionDeniedError as e:
     print(f"Blocked by policy: {e.message}")
 ```
+
+Workflow agents can wrap that error in `WorkflowRuntimeError`. Use the following handler with the agent above; it recognizes direct and wrapped permission errors and re-raises unrelated failures:
+
+```python
+from llama_index.core.workflow.errors import WorkflowRuntimeError
+from openai import PermissionDeniedError
+
+async def run_with_policy_handling(message: str):
+    try:
+        return await agent.run(user_msg=message)
+    except (PermissionDeniedError, WorkflowRuntimeError) as error:
+        cause = error
+        while cause is not None:
+            if isinstance(cause, PermissionDeniedError):
+                trace_id = cause.response.headers.get("X-Xenovia-Trace-Id")
+                print(f"Blocked by policy: {cause.message}; trace: {trace_id}")
+                return None
+            cause = cause.__cause__
+        raise
+```
+
+Call `await run_with_policy_handling(...)` from your async entry point. This handles a `403` returned before streaming begins. FunctionAgent streams by default; failures after a stream has started can surface differently and must also be tested with the configured provider and response policies.

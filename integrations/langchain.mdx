@@ -8,22 +8,28 @@ Xenovia is an OpenAI-compatible endpoint, so `ChatOpenAI` is the client for ever
 
 ## Setup
 
+The Python examples are checked with Python 3.12, `langchain` / `langchain-openai` 1.0.0 and `langchain` 1.4.0 / `langchain-openai` 1.6.1 using simulated HTTP responses. Validate your proxy's policy and provider configuration separately.
+
 <Tabs>
   <Tab title="Python">
     ```bash
-    pip install langchain-openai
+    pip install "langchain>=1,<2" "langchain-openai>=1,<2"
     export XENOVIA_API_KEY=xe_...
     export XENOVIA_PROXY_ID=your-proxy-id
     ```
 
     ```python
     import os
+    import uuid
     from langchain_openai import ChatOpenAI
+
+    session_id = str(uuid.uuid4())
 
     llm = ChatOpenAI(
         model="gpt-4o-mini",  # placeholder: the proxy's configured model is used
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+        default_headers={"X-Xenovia-Session-Id": session_id}
     )
     ```
   </Tab>
@@ -77,10 +83,12 @@ print(response.content)
 
 ## Agents with tools
 
-Tool definitions are passed to the upstream LLM through Xenovia. The request-stage Rego policy evaluates `input.tool_names` before the call reaches the model — a blocked tool returns `403` before the LLM is called.
+The Python example uses LangChain 1.x `create_agent`. Older examples using `create_tool_calling_agent` and `AgentExecutor` from `langchain.agents` do not work on 1.x.
+
+Tool definitions are passed to the upstream LLM through Xenovia. The request-stage Rego policy evaluates `input.tool_names` before the call reaches the model — a blocked tool returns `403` before the LLM is called. This checks the tools offered to the model, separately from authorizing a local action using model-generated arguments.
 
 ```python
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.agents import create_agent
 from langchain_core.tools import tool
 
 @tool
@@ -88,9 +96,15 @@ def search(query: str) -> str:
     """Search the web for information."""
     return f"Results for: {query}"
 
-agent = create_tool_calling_agent(llm, [search], prompt)
-executor = AgentExecutor(agent=agent, tools=[search])
-result = executor.invoke({"input": "Search for recent AI news"})
+agent = create_agent(
+    model=llm,
+    tools=[search],
+    system_prompt="Use search to find information when asked."
+)
+result = agent.invoke({
+    "messages": [{"role": "user", "content": "Search for recent AI news"}]
+})
+print(result["messages"][-1].content)
 ```
 
 ## RAG pipeline
@@ -114,10 +128,16 @@ retriever = vectorstore.as_retriever()
 # Combine retriever with LLM
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+rag_prompt = ChatPromptTemplate.from_messages([
+    ("system", "Answer using this context:\n{context}"),
+    ("user", "{question}")
+])
 
 rag_chain = (
     {"context": retriever, "question": RunnablePassthrough()}
-    | prompt
+    | rag_prompt
     | llm
     | StrOutputParser()
 )
@@ -126,21 +146,7 @@ answer = rag_chain.invoke("What does Xenovia provide?")
 
 ## Session tracking
 
-To group all LLM calls in a multi-step chain under one session, pass `X-Xenovia-Session-Id` as a default header on the client.
-
-```python
-import uuid
-from langchain_openai import ChatOpenAI
-
-session_id = str(uuid.uuid4())
-
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
-    default_headers={"X-Xenovia-Session-Id": session_id}
-)
-```
+The Python setup sets `X-Xenovia-Session-Id` on the client before constructing chains or agents, so all their LLM calls stay grouped in Traces. Reuse it for the conversation, and create a new client and session ID for a separate conversation. Reassigning `llm` after creating a chain or agent does not update the client it already holds.
 
 ## Handling policy blocks
 
@@ -150,9 +156,12 @@ LangChain propagates the upstream `403` as an `openai.PermissionDeniedError`. Ca
 from openai import PermissionDeniedError
 
 try:
-    result = executor.invoke({"input": "Delete all records"})
+    result = agent.invoke({
+        "messages": [{"role": "user", "content": "Delete all records"}]
+    })
 except PermissionDeniedError as e:
-    print(f"Blocked by policy: {e.message}")
+    trace_id = e.response.headers.get("X-Xenovia-Trace-Id")
+    print(f"Blocked by policy: {e.message}; trace: {trace_id}")
 ```
 
 <Callout type="info">

@@ -1,0 +1,23 @@
+name: Integration examples
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dependencies: [minimum, current]
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r tests/requirements-${{ matrix.dependencies }}.txt
+      - run: python -m unittest discover -s tests -v
