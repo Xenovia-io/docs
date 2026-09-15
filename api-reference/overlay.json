@@ -411,14 +411,14 @@
       "target": "$.paths['/api/v1/policy-templates'].get",
       "update": {
         "summary": "List policy templates",
-        "description": "**Auth:** none required.\n\nFilter with `framework`, `stage`, `category`, `status` and `search`."
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nFilter with `framework`, `stage`, `category`, `status` and `search`."
       }
     },
     {
       "target": "$.paths['/api/v1/policy-templates/{template_id}'].get",
       "update": {
         "summary": "Get policy template",
-        "description": "**Auth:** none required.\n\nIncludes the `rego_template` source with `{{parameter}}` placeholders."
+        "description": "**Auth:** organization API key (`read` scope or higher) or a signed-in user.\n\nIncludes the `rego_template` source with `{{parameter}}` placeholders."
       }
     },
     {
