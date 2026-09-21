@@ -223,7 +223,8 @@
   },
   "integrations": {
     "posthog": {
-      "apiKey": "phc_q4nUtwYn8CNyQYTfZChzYhYWhAVBWA7sYP5sTCcUbfMQ"
+      "apiKey": "phc_q4nUtwYn8CNyQYTfZChzYhYWhAVBWA7sYP5sTCcUbfMQ",
+      "sessionRecording": false
     }
   }
 }
