@@ -220,5 +220,11 @@
       "x": "https://x.com/xenovia_io",
       "linkedin": "https://www.linkedin.com/company/xenovia"
     }
+  },
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_q4nUtwYn8CNyQYTfZChzYhYWhAVBWA7sYP5sTCcUbfMQ",
+      "sessionRecording": false
+    }
   }
 }
