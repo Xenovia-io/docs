@@ -163,7 +163,7 @@ else:
 - The payload sent is `{"arguments": {...}}`, with every bound argument (including defaults).
 - On `allow`, the function runs with its original arguments. On `redact`, it runs with the masked arguments. On `deny` or `error`, it does not run.
 - `async def` functions are supported.
-- `mode="enforce"` is the only mode. The SDK has no observe mode: to trial a rule without blocking, set the policy or guardrail to **Monitor** in the console. Monitor evaluations return `allow`.
+- `mode="enforce"` is the only mode. The SDK has no observe mode: to trial a rule without blocking, set the policy or guardrail to **Monitor** in the console. Monitor evaluations return `allow` and record a would-block on the trace.
 
 ## Roles and subagents
 
