@@ -14,7 +14,7 @@ Before any plugin runs, the router prepares the request: it validates the agent 
 Request
   │  router: validate agent ID · check path/method/modality · authenticate key · resolve provider + rewrite model
   ▼
-  1. Auth        bind the agent identity (Redis, 5-min cache)
+  1. Auth        bind the agent identity (Redis, 5-min cache) and the verified role
   2. Session     resolve or create the session UUID, set the turn number
   3. Trace       open the turn record, stamp session/trace response headers
   4. Billing     check the organization's request allowance
@@ -39,8 +39,9 @@ A session middleware wraps the whole router and stamps `X-Xenovia-Session-Id` an
 ### 1. Auth
 
 - Accepts `x-xenovia-key: xe_...` or `Authorization: Bearer xe_...`.
-- Resolves the key against Redis (`apikey:{sha256(key)}`, 5-minute TTL). On a miss it calls the control plane; a resolved identity is an HMAC-signed blob holding `agent_id` and `org_id`.
+- Resolves the key against Redis (`apikey:{sha256(key)}`, 5-minute TTL). On a miss it calls the control plane; a resolved identity is an HMAC-signed blob holding `agent_id`, `org_id`, and the key's `allowed_roles`.
 - The key's agent must match the agent ID in the URL, unless the request carries a workflow header for same-organization cross-agent delegation.
+- A role sent in `x-xenovia-agent-role` is verified when the key's `allowed_roles` list it; an unlisted role is rejected with `403` `role_not_permitted`.
 - Organization keys (`ak_...`) are rejected here — they authenticate the [management API](/api-reference/authentication), not the runtime.
 - Keys are never logged; only an 8-character SHA-256 prefix appears in logs.
 

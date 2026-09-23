@@ -73,6 +73,10 @@ decision = {"action": "escalate", "rule": "destructive-tool-review"} if {
 }
 ```
 
+## Roles
+
+The caller names its role with the `x-xenovia-agent-role` header on the agent endpoint, or with `agent_role` in the [Python SDK](/integrations/xenovia-sdk#roles-and-subagents). A role is verified only when the agent key lists it in its **allowed roles**; a role the key does not list is rejected with `403` `role_not_permitted`. On a key without allowed roles the role is unverified, and its guardrails only add to the agent's base guardrails.
+
 ## Recommended controls
 
 - **Least privilege.** Blocklist high-risk tools explicitly rather than trusting a broad allowlist.

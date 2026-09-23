@@ -101,7 +101,8 @@ Both stages receive the same base fields; each stage adds its own.
   "tools":         "[{ name, description, parameters_schema }]",
   "tool_names":    "[]string — the declared tool names, exactly as sent, convenient for allow/deny lists",
   "system_prompt": "string — first system message, if any",
-  "agent_role":    "string — present only when the x-xenovia-agent-role header is sent",
+  "agent_role":    "string — present only when a role is sent (x-xenovia-agent-role or the SDK's agent_role)",
+  "agent_role_verified": "boolean — true only when the API key's allowed roles include agent_role",
   "http_headers":  "object — request headers, with secret values redacted"
 }
 ```
