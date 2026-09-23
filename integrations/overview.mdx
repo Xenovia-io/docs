@@ -20,7 +20,7 @@ Every agent has an OpenAI-compatible endpoint on the Xenovia runtime. Any client
 https://runtime.xenovia.io/{agent_id}/v1
 ```
 
-Provider credentials are configured on the agent and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the agent. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the endpoint.
+Provider credentials are configured on the agent's model route and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the agent. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the endpoint.
 
 <CardGroup cols={2}>
   <Card title="OpenAI SDK" icon="python" href="/integrations/openai-sdk">
@@ -87,7 +87,7 @@ result = transfer_funds(500, "acct_123")
 | **Trace contains** | LLM request and response, tokens, latency, tool calls | Operation, stage, payload, decision, and session |
 | **Session tracking** | Automatic via Xenovia session resolution | Explicit `session_id` or `auto_session=True` |
 
-Use both together: the endpoint for LLM governance, the SDK for downstream tool governance.
+Use both together: the endpoint for LLM governance, the SDK for downstream tool governance. An agent set up in **SDK only** mode has no model route; check its model calls with `model_pre` and `model_post`.
 
 ## If your framework is not listed
 

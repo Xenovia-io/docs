@@ -30,7 +30,7 @@ Every response carries an `X-Request-ID` header. Send your own value to have it 
 
 <CardGroup cols={2}>
   <Card title="400 Bad Request" icon="circle-exclamation">
-    A domain rule was violated — for example activating an agent with no API key, or enabling a policy that is not attached to an active agent.
+    A domain rule was violated — for example activating an agent with no API key, or enabling a policy that is not attached to an agent.
   </Card>
   <Card title="401 Unauthorized" icon="key">
     Missing, malformed, expired, or revoked credential — or an agent `xe_` key used against the management API.
@@ -66,7 +66,7 @@ The runtime returns the gateway error envelope:
 
 `is_bifrost_error` is `true` when the error came from the upstream provider (a timeout, say), in which case `extra_fields` names the provider, model, and request type. OpenAI-compatible SDKs raise these as their usual typed errors (`403` → `PermissionDeniedError`, `429` → `RateLimitError`, and so on).
 
-Errors raised before the request reaches the pipeline — body validation, authentication, and provider problems — use a shorter body, `{ "error": { "message": "..." } }`. An invalid agent ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`. The SDK's `POST /v1/execute` returns its own decision body; see the [Python SDK](/integrations/xenovia-sdk).
+Errors raised before the request reaches the pipeline — body validation, authentication, and model route problems — use a shorter body, `{ "error": { "message": "..." } }`. An invalid agent ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`. The SDK's `POST /v1/execute` returns its own decision body; see the [Python SDK](/integrations/xenovia-sdk).
 
 ### Runtime status codes
 
@@ -78,7 +78,7 @@ Errors raised before the request reaches the pipeline — body validation, authe
 | `403` | Blocked by an enforced policy or guardrail, or escalated by a policy |
 | `404` | Unknown agent ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served) |
 | `405` | Wrong method on a supported path |
-| `502` | The agent has no provider, or an ambiguous or invalid provider configuration |
+| `502` | The agent has no model route, or an ambiguous or invalid provider configuration |
 | `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable |
 
 ### Policy and guardrail blocks

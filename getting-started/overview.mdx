@@ -18,13 +18,35 @@ The two combine: the endpoint checks model traffic, and the [Xenovia Python SDK]
 ## Prerequisites
 
 **For the agent endpoint**
-- A Xenovia account and workspace with at least one agent created.
+- A Xenovia account and workspace with at least one agent set up (see below).
 - Your agent ID (found under **Agents** in the platform).
 - A Xenovia API key (`xe_...`) for that agent.
 - An LLM client or framework (OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, etc.).
 
 **For SDK hooks**
 - Python ≥ 3.9 and `xenovia-sdk` 0.2.1 or later.
+
+## Agent setup
+
+Create the agent under **Agents**. Setup has four steps, then activation:
+
+<Steps>
+  <Step title="Purpose">
+    Name the agent, choose how it connects (**Agent endpoint**, **SDK only**, or **Hybrid deployment**), and describe the job it does.
+  </Step>
+  <Step title="Model route">
+    Choose the provider credential and model the agent calls. SDK-only agents call their model themselves and skip this step.
+  </Step>
+  <Step title="Protection">
+    Apply the recommended policies and guardrails, including the agent's scope guardrail. They start enabled in **Monitor**, so nothing is blocked until you switch them to **Enforce**.
+  </Step>
+  <Step title="Connect">
+    Create an `xe_` API key and copy the endpoint and client snippet.
+  </Step>
+  <Step title="Activate and send a first request">
+    **Activate** the agent once the control plane reports it ready, then send a request. Setup waits for the first request, which completes it.
+  </Step>
+</Steps>
 
 ## What to decide before rollout
 
