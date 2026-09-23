@@ -62,8 +62,8 @@ xenovia = Xenovia(
 | `unreachable_mode` | `str` | `"block"` | What to return when the runtime cannot be reached (see below) |
 | `raise_on_block` | `bool` | `False` | Raise `XenoviaBlockedError` instead of returning a blocked response |
 | `auto_session` | `bool` | `False` | Let the runtime create a session on the first call and reuse it |
-| `agent_role` | `str` | `None` | Role label sent with each check (see [Roles and subagents](#roles-and-subagents)) |
-| `agent_depth` | `int` | `0` | Nesting depth sent with each check |
+| `agent_role` | `str` | `None` | Role of this agent, for role-scoped guardrails (see [Roles and subagents](#roles-and-subagents)) |
+| `agent_depth` | `int` | `0` | Nesting depth, recorded on traces only |
 | `default_env` | `str` | `"prod"` | Environment label recorded with each decision |
 | `identity_id` | `str` | env `XENOVIA_AGENT_ID` or `"default-agent"` | Label recorded with each decision |
 | `identity_type` | `str` | `"agent"` | Identity type label |
@@ -118,7 +118,7 @@ A redacted tool call returns the masked arguments in `payload["arguments"]`; a r
 If your model calls already go through the agent endpoint, leave `model_pre` and `model_post` off: the runtime checks the model request and reply there. Use them only for agents that call their model provider directly.
 </Note>
 
-`model_pre` accepts messages with string content or a list of content parts (OpenAI or Anthropic style), and tools as flat `{name, description}` objects or OpenAI function tools. Only text is checked: text parts are joined, and other parts (images, audio, files) are not sent. On success, `payload["messages"]` and `payload["tools"]` are your own objects, with any redaction written back into them.
+`model_pre` accepts messages with string content or a list of content parts (OpenAI or Anthropic style), and tools as flat `{name, description}` objects or OpenAI function tools. Only text is checked: text parts are joined, and other parts (images, audio, files) are not sent — `response.unchecked_parts` counts them. On success, `payload["messages"]` and `payload["tools"]` are your own objects, with any redaction written back into them.
 
 ## `execute()` — a single check
 
@@ -167,7 +167,7 @@ else:
 
 ## Roles and subagents
 
-Set `agent_role` on the client, or create a child client with `subagent()`:
+Guardrails can be scoped to a role. Set `agent_role` on the client, or create a child client with `subagent()`:
 
 ```python
 planner = Xenovia(api_key=os.environ["XENOVIA_API_KEY"], agent_role="planner", auto_session=True)
@@ -175,6 +175,17 @@ researcher = planner.subagent(role="researcher")   # agent_depth = 1
 ```
 
 `subagent()` returns a new client with the same key and endpoint, the given role, and `agent_depth` one higher. It gets **its own session**, but because it uses the same key it is the same Xenovia agent: its checks run that agent's policies and guardrails. Give a subagent its own agent and key when it needs a separate identity.
+
+Whether the role is trusted depends on the API key:
+
+| API key | Role sent | Result |
+|---------|-----------|--------|
+| Has `allowed_roles`, role is in the list | `researcher` | **Verified.** Role-specific guardrails run, and a role scope guardrail **replaces** the agent's base scope guardrail |
+| Has `allowed_roles`, role is not in the list | `admin` | Rejected with `403` `role_not_permitted`, raised as `XenoviaRoleNotPermittedError`. An empty list rejects every role |
+| `allowed_roles` is `null` (any role accepted) | any | **Unverified.** Base guardrails always run; role-specific guardrails for that role run in addition, never instead |
+| — | none | Base guardrails only |
+
+Set `allowed_roles` when you create the key, or change it later on the agent's **API keys** tab (see [Roles](/platform/tools-and-access#roles)). `agent_depth` is recorded on traces and never used for authorization.
 
 ## `XenoviaResponse`
 
@@ -189,6 +200,7 @@ class XenoviaResponse:
     result:     Any          # the guarded function's return value (guard only)
     error:      str | None
     raw:        dict         # the runtime's response body
+    unchecked_parts: int     # non-text message parts model_pre/model_post did not send
 
     def is_success(self) -> bool: ...
     def is_blocked(self) -> bool: ...
@@ -214,6 +226,7 @@ The runtime issues the session and returns it in the `X-Xenovia-Session-Id` resp
 from xenovia_sdk import (
     XenoviaBlockedError,
     XenoviaExecutionError,
+    XenoviaRoleNotPermittedError,
     XenoviaUnreachableError,
 )
 
@@ -223,11 +236,15 @@ try:
     strict.tool_pre("delete_account", {"account_id": "acct_123"})
 except XenoviaBlockedError as e:
     ...  # denied by a policy or guardrail; e.trace_id finds it in Sessions
+except XenoviaRoleNotPermittedError:
+    ...  # the key's allowed_roles do not include agent_role
 except XenoviaUnreachableError:
     ...  # runtime unreachable and unreachable_mode="error"
 except XenoviaExecutionError:
     ...  # any other non-2xx response, an unexpected body, or a session mismatch
 ```
+
+`XenoviaRoleNotPermittedError` is a subclass of `XenoviaExecutionError`, so catch it first.
 
 ## Wire format
 

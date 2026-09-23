@@ -66,7 +66,7 @@ The runtime returns the gateway error envelope:
 
 `is_bifrost_error` is `true` when the error came from the upstream provider (a timeout, say), in which case `extra_fields` names the provider, model, and request type. OpenAI-compatible SDKs raise these as their usual typed errors (`403` → `PermissionDeniedError`, `429` → `RateLimitError`, and so on).
 
-Errors raised before the request reaches the pipeline — body validation, authentication, and provider problems — use a shorter body, `{ "error": { "message": "..." } }`. An invalid agent ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`. The SDK's `POST /v1/execute` returns its own decision body; see the [Python SDK](/integrations/xenovia-sdk).
+Errors raised before the request reaches the pipeline — body validation, authentication, a rejected role, and provider problems — use a shorter body, `{ "error": { "message": "..." } }`. An invalid agent ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`. The SDK's `POST /v1/execute` returns its own decision body; see the [Python SDK](/integrations/xenovia-sdk).
 
 ### Runtime status codes
 
@@ -75,7 +75,7 @@ Errors raised before the request reaches the pipeline — body validation, authe
 | `400` | Invalid or empty JSON body, an unsupported modality or content part, or a malformed `X-Xenovia-Session-Id` |
 | `401` | Missing key, or a key that cannot act as this agent: unknown or revoked, another agent's key, or a key for a draft or deleted agent (`invalid api key for this agent`) |
 | `402` | The organization's request allowance is exhausted, or billing access is restricted |
-| `403` | Blocked by an enforced policy or guardrail, or escalated by a policy |
+| `403` | Blocked by an enforced policy or guardrail, escalated by a policy, or `role_not_permitted` |
 | `404` | Unknown agent ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served) |
 | `405` | Wrong method on a supported path |
 | `502` | The agent has no provider, or an ambiguous or invalid provider configuration |
