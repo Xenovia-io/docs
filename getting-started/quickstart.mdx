@@ -4,20 +4,21 @@ description: "Route one request through Xenovia, verify trace headers, and attac
 icon: "bolt"
 ---
 
-This quickstart uses **proxy mode** because it is the fastest path to coverage. If you need to gate non-LLM actions too, continue with the [Xenovia Python SDK](/integrations/xenovia-sdk) after this.
+This quickstart uses the **agent endpoint** because it is the fastest path to coverage. If you need to gate non-LLM actions too, continue with the [Xenovia Python SDK](/integrations/xenovia-sdk) after this.
 
 ## 1. Collect the two values you need
 
 From the Xenovia platform:
 
-1. Create a **proxy** and note the **proxy ID**.
-2. Generate an **API key** (`xe_...`) scoped to that proxy.
+1. Create an **agent** and note the **agent ID**.
+2. Generate an **API key** (`xe_...`) for that agent.
+3. **Activate** the agent. While it is a draft, the runtime rejects its keys with `401`.
 
 Set them as environment variables:
 
 ```bash
 export XENOVIA_API_KEY=xe_...
-export XENOVIA_PROXY_ID=your-proxy-id
+export XENOVIA_AGENT_ID=your-agent-id
 ```
 
 ## 2. Point your client at Xenovia
@@ -34,7 +35,7 @@ export XENOVIA_PROXY_ID=your-proxy-id
 
     client = OpenAI(
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1"
     )
     ```
   </Tab>
@@ -48,7 +49,7 @@ export XENOVIA_PROXY_ID=your-proxy-id
 
     const client = new OpenAI({
       apiKey: process.env.XENOVIA_API_KEY,
-      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`
+      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_AGENT_ID}/v1`
     })
     ```
   </Tab>
@@ -81,7 +82,7 @@ The request now flows through Xenovia for authentication, provider routing, sess
 
 ## 4. Add a stable session ID
 
-Group related calls into a session so multi-turn conversations appear together in Traces.
+Group related calls into a session so multi-turn conversations appear together in **Sessions**.
 
 <Tabs>
   <Tab title="Python">
@@ -90,7 +91,7 @@ Group related calls into a session so multi-turn conversations appear together i
 
     client = OpenAI(
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1",
         default_headers={"X-Xenovia-Session-Id": str(uuid.uuid4())}
     )
     ```
@@ -101,7 +102,7 @@ Group related calls into a session so multi-turn conversations appear together i
 
     const client = new OpenAI({
       apiKey: process.env.XENOVIA_API_KEY,
-      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`,
+      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_AGENT_ID}/v1`,
       defaultHeaders: { "X-Xenovia-Session-Id": randomUUID() }
     })
     ```
@@ -109,7 +110,7 @@ Group related calls into a session so multi-turn conversations appear together i
 </Tabs>
 
 <Callout type="info">
-  The session ID must be a valid UUID. If the value is malformed, the runtime discards it and assigns a fresh UUID — check the echoed `X-Xenovia-Session-Id` response header to confirm your ID was accepted.
+  The session ID must be a valid UUID. A malformed value is rejected with `400`.
 </Callout>
 
 ## 5. Confirm the trace exists
@@ -117,12 +118,12 @@ Group related calls into a session so multi-turn conversations appear together i
 After the request completes, check the platform and confirm:
 
 - A trace exists for the request
-- The trace shows the expected model and proxy
+- The trace shows the expected model and agent
 - The response includes `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id`
 
 ## 6. Attach a first policy
 
-Start with one policy that proves enforcement is working. This example blocks a destructive tool name:
+Start with one policy that proves enforcement is working. Set it to **Enforce** (new policies start in Monitor) and enable it. This example blocks a destructive tool name:
 
 ```rego
 package xenovia
@@ -201,7 +202,7 @@ Tag traces with business context so they stay useful as traffic grows.
     ```python
     client = OpenAI(
         api_key=os.environ["XENOVIA_API_KEY"],
-        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+        base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1",
         default_headers={
             "X-Xenovia-Session-Id": str(uuid.uuid4()),
             "X-Xenovia-Property-environment": "dev",
@@ -214,7 +215,7 @@ Tag traces with business context so they stay useful as traffic grows.
     ```typescript
     const client = new OpenAI({
       apiKey: process.env.XENOVIA_API_KEY,
-      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_PROXY_ID}/v1`,
+      baseURL: `https://runtime.xenovia.io/${process.env.XENOVIA_AGENT_ID}/v1`,
       defaultHeaders: {
         "X-Xenovia-Session-Id": randomUUID(),
         "X-Xenovia-Property-environment": "dev",

@@ -7,11 +7,11 @@ icon: "layer-group"
 ## Core concepts
 
 <CardGroup cols={3}>
-  <Card title="Proxies" icon="hexagon-nodes">
-    Operator-created entry points. A proxy has an owner, a single provider, attached policies, and an optional intent. All governance is scoped to a proxy.
+  <Card title="Agents" icon="hexagon-nodes">
+    Operator-created entry points. An agent has an owner, a single provider, attached policies, and guardrails. All governance is scoped to an agent.
   </Card>
   <Card title="Providers" icon="plug">
-    A provider holds the upstream credential and model for a proxy. One provider per proxy; credentials are resolved server-side.
+    A provider holds the upstream credential and model for an agent. One provider per agent; credentials are resolved server-side.
   </Card>
   <Card title="Policies" icon="gavel">
     Rego rules evaluated by OPA. Request-stage decisions are `allow`, `block`, `redact`, or `escalate`; response-stage decisions use `block_response` and `redact_response`.
@@ -19,8 +19,8 @@ icon: "layer-group"
   <Card title="Sessions" icon="fingerprint">
     A session groups related turns. Xenovia resolves one for every request; you can also set it explicitly.
   </Card>
-  <Card title="Intent" icon="brain">
-    An optional semantic guardrail. Xenovia scores each triggered request against the proxy's declared intent and can allow, block, or escalate.
+  <Card title="Guardrails" icon="brain">
+    Named semantic checks, including the agent's **scope guardrail** for what it is for, across model, tool, memory, and summary stages. They can allow, block, redact, or escalate.
   </Card>
   <Card title="Traces" icon="file-waveform">
     The record of what happened: turns, model and tool runs, token counts, latency, decisions, and custom properties.
@@ -34,25 +34,24 @@ The platform nests telemetry three levels deep. The names differ slightly betwee
 | Term | What it is |
 |------|------------|
 | **Session** | A group of related turns, resolved per request or set with `X-Xenovia-Session-Id`. The **Sessions** page lists these. |
-| **Turn** | One request/response cycle through a proxy. A turn carries the policy decision, tokens, and latency. (Some screens call a turn a "trace".) |
-| **Run / step** | A unit of work inside a turn — the model call, a policy check, an intent score, a runtime-executed tool. |
-| **Workflow** | Turns across several proxies grouped by a shared workflow ID, for multi-agent runs. |
-| **Intent / Guardrail** | The same semantic check: "Intent" in proxy configuration, "Guardrail" in traces and alerts. |
-| **Escalation** | A `403` block plus a recorded signal for human attention. There is no approve/deny queue. |
+| **Turn** | One request/response cycle through an agent, or one SDK check. A turn carries the policy decision, tokens, and latency. (Some screens call a turn a "trace".) |
+| **Run / step** | A unit of work inside a turn — the model call, a policy check, a runtime-executed tool. |
+| **Workflow** | Turns across several agents grouped by a shared workflow ID, for multi-agent runs. |
+| **Guardrail** | A named semantic check. The **scope guardrail** describes what the agent is for. |
+| **Escalation** | A step queued on its session for human review and resolved with a note. A policy escalation blocks with `403`; a guardrail escalation lets the call proceed. |
 
-## How a proxy is put together
+## How an agent is put together
 
 ```
-Proxy
+Agent
  ├── Provider (one: OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
  ├── Request-stage policies (Rego)
  ├── Response-stage policies (Rego)
- ├── Intent definition + trigger (optional)
- ├── Capabilities and role configs (optional)
+ ├── Guardrails (scope guardrail + named checks, optionally per role)
+ ├── API keys (xe_…)
  └── Sessions
       └── Turns
            ├── Policy decision (action, rule)
-           ├── Intent score + action
            ├── Model and tool runs
            └── Custom properties (X-Xenovia-Property-*)
 ```
@@ -60,38 +59,38 @@ Proxy
 ## Request lifecycle
 
 <Steps>
-  <Step title="Route">
-    The runtime validates the proxy ID, checks the path and content, and resolves the proxy's provider — replacing the request's model with the proxy's configured model.
+  <Step title="Validate">
+    The runtime validates the agent ID, the path, and the content.
   </Step>
   <Step title="Authenticate">
-    The `xe_...` proxy key is verified and bound to the proxy in the URL.
+    The `xe_...` agent key is verified and must belong to the active agent in the URL.
+  </Step>
+  <Step title="Route">
+    The agent's provider is resolved, replacing the request's model with the agent's configured model.
   </Step>
   <Step title="Resolve the session">
     A session and turn number are resolved, and `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` are stamped into the response headers.
   </Step>
-  <Step title="Enforce policy">
-    The request-stage Rego runs. A `block` returns `403`; a `redact` strips fields; an `escalate` blocks and records a signal.
-  </Step>
-  <Step title="Score intent">
-    If an intent is configured and the trigger fires, the request is scored and may be blocked or escalated.
+  <Step title="Enforce policy and guardrails">
+    The request-stage Rego runs, then `model_request` guardrails. A `block` returns `403`; a `redact` strips fields; a policy `escalate` blocks and is queued for review.
   </Step>
   <Step title="Call the model and check the response">
-    The upstream model is called, the response-stage Rego runs, and the completed turn is persisted.
+    The upstream model is called, the response-stage Rego and `model_response` guardrails run, and the completed turn is persisted.
   </Step>
 </Steps>
 
-## Proxy URL
+## Agent endpoint
 
-Every proxy exposes an OpenAI-compatible base URL:
+Every agent exposes an OpenAI-compatible base URL:
 
 ```
-https://runtime.xenovia.io/{proxy_id}/v1
+https://runtime.xenovia.io/{agent_id}/v1
 ```
 
-Only `/v1/chat/completions` and `/v1/responses` are served. Any other path under the proxy — `/v1/embeddings`, `/v1/completions`, `/v1/models`, provider-prefixed paths such as `/openai/v1/...`, and the legacy `/a/{proxy_id}/...` prefix — returns `404`.
+Only `/v1/chat/completions` and `/v1/responses` are served. Any other path under the agent — `/v1/embeddings`, `/v1/completions`, `/v1/models`, provider-prefixed paths such as `/openai/v1/...`, and the legacy `/a/{agent_id}/...` prefix — returns `404`. The Python SDK's decision endpoint is `POST https://runtime.xenovia.io/v1/execute`; the key identifies the agent.
 
 ## What the platform does not expose
 
-- **Provider credentials** live in the proxy configuration, never in your app or in telemetry.
+- **Provider credentials** live in the agent's configuration, never in your app or in telemetry.
 - **Raw API keys** are never logged; only a short SHA-256 prefix appears.
 - **Block and escalation reasons** are recorded server-side and are never returned to the agent.

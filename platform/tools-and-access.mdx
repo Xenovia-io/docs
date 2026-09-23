@@ -8,7 +8,7 @@ Most agent risk comes from tool use, not text generation. Xenovia sees the tools
 
 ## How tool calls appear in traces
 
-### Tool definitions and model tool calls (proxy mode)
+### Tool definitions and model tool calls (agent endpoint)
 
 When your app sends a `chat/completions` or `responses` request, the tool **definitions** you pass are visible to policy as `input.tools` and `input.tool_names`, and are recorded on the trace. When the model decides to call a tool, the **tool calls** it returns are captured on the turn as `output.tool_calls` (name, arguments, and call ID).
 
@@ -23,7 +23,7 @@ When a tool is executed through the Model Context Protocol by the runtime itself
 Tool governance is ordinary policy. The request-stage Rego sees the declared tools before the model is called, so a matching rule returns `403` before any tokens are spent. Read [Policies and Enforcement](/platform/policies-and-approvals) first for the decision contract.
 
 <Note>
-  `input.tool_names` is a convenient lowercased list of the declared tool names. `input.tools` carries the full schemas, and its keys are **capitalised** — `input.tools[_].Name`, `.Description`, `.ParametersSchema`. Use `tool_names` for allow/deny lists.
+  `input.tool_names` lists the declared tool names exactly as your app sent them; comparisons are case-sensitive. `input.tools` carries the full schemas as `input.tools[_].name`, `.description`, and `.parameters_schema`; the keys of every tool object are lowercase. Use `tool_names` for allow/deny lists.
 </Note>
 
 ### Block a tool by name
@@ -76,14 +76,14 @@ decision = {"action": "escalate", "rule": "destructive-tool-review"} if {
 ## Recommended controls
 
 - **Least privilege.** Blocklist high-risk tools explicitly rather than trusting a broad allowlist.
-- **Separate by environment.** Use different proxies, or different policies on one proxy, for `dev`, `staging`, and `prod`. Never share production credentials.
+- **Separate by environment.** Use different agents, or different policies on one agent, for `dev`, `staging`, and `prod`. Never share production credentials.
 - **Escalate irreversible actions.** Use `escalate` for deletions, financial writes, and cross-system state changes so they surface in Sessions and Alerts.
 - **Review from evidence.** Traces show which tools are actually called. Remove rules for tools that no longer appear.
 
 ## Starting from a template
 
-Several shipped policy templates cover tool access directly — for example an approved-tool allowlist, tool-argument PII blocking, tool-argument size caps, and human review for high-risk tools. Instantiate one from the dashboard or the [management API](/api-reference/introduction) rather than writing Rego from scratch.
+Several shipped policy templates cover tool access directly — for example an approved-tool allowlist, tool-argument PII blocking, and tool-argument size caps. Instantiate one from the dashboard or the [management API](/api-reference/introduction) rather than writing Rego from scratch.
 
 ## Governing actions outside the model call
 
-Tool governance here covers tools the model requests through the proxy. To gate actions your code takes on its own — database writes, outbound API calls, file operations — the [Xenovia Python SDK](/integrations/xenovia-sdk) is the intended path. Its hosted decision endpoint is not live yet; see that page before adopting it.
+Tool governance here covers tools the model requests through the agent endpoint. To gate actions your code takes on its own — tool calls and results, memory writes, database writes, outbound API calls — use the [Xenovia Python SDK](/integrations/xenovia-sdk).

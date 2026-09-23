@@ -4,7 +4,7 @@ description: "Route AutoGen and CrewAI through Xenovia using OpenAI-compatible m
 icon: "users"
 ---
 
-Both AutoGen and CrewAI can target OpenAI-compatible endpoints, which makes Xenovia a good fit. The main job is to point the framework at your Xenovia proxy URL and keep a stable session header for the whole run.
+Both AutoGen and CrewAI can target OpenAI-compatible endpoints, which makes Xenovia a good fit. The main job is to point the framework at your Xenovia agent endpoint and keep a stable session header for the whole run.
 
 <Callout type="info">
   AutoGen has multiple major-package eras in the wild. The example below uses the current `autogen-agentchat` and `autogen-ext[openai]` packages rather than the older `pyautogen` setup.
@@ -25,7 +25,7 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 model_client = OpenAIChatCompletionClient(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1"
 )
 
 assistant = AssistantAgent(
@@ -58,7 +58,7 @@ session_id = str(uuid.uuid4())
 llm = LLM(
     model="openai/gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1",
     extra_headers={"X-Xenovia-Session-Id": session_id}
 )
 
@@ -95,13 +95,13 @@ print(result)
 
 ## How multi-agent traces work
 
-In multi-agent setups, each agent turn is a separate call through the proxy. Each call:
+In multi-agent setups, each framework agent's turn is a separate call through the Xenovia endpoint. Each call:
 
 - Gets its own `X-Xenovia-Trace-Id`
 - Is evaluated independently by the request-stage Rego policy
 - Is grouped under the shared `X-Xenovia-Session-Id`
 
-Filter by `session_id` in the Traces view to reconstruct the full agent conversation in order, with per-turn policy decisions and intent scores.
+Open the session in **Sessions** to reconstruct the full agent conversation in order, with per-turn policy and guardrail decisions.
 
 ## Handling policy blocks
 

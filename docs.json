@@ -63,26 +63,16 @@
             ]
           },
           {
-            "group": "Proxies",
+            "group": "Agents",
             "pages": [
-              "GET /api/v1/proxies",
-              "POST /api/v1/proxies",
-              "GET /api/v1/proxies/{proxy_id}",
-              "PATCH /api/v1/proxies/{proxy_id}",
-              "DELETE /api/v1/proxies/{proxy_id}",
-              "POST /api/v1/proxies/{proxy_id}/activate",
-              "GET /api/v1/proxies/{proxy_id}/capabilities",
-              "POST /api/v1/proxies/{proxy_id}/capabilities",
-              "POST /api/v1/proxies/{proxy_id}/deactivate",
-              "GET /api/v1/proxies/{proxy_id}/intent-trigger",
-              "PUT /api/v1/proxies/{proxy_id}/intent-trigger",
-              "DELETE /api/v1/proxies/{proxy_id}/intent-trigger",
-              "GET /api/v1/proxies/{proxy_id}/role-configs",
-              "PATCH /api/v1/proxies/{proxy_id}/capabilities/{capability_id}",
-              "DELETE /api/v1/proxies/{proxy_id}/capabilities/{capability_id}",
-              "PUT /api/v1/proxies/{proxy_id}/role-configs/{role}",
-              "DELETE /api/v1/proxies/{proxy_id}/role-configs/{role}",
-              "GET /api/v1/proxies/{proxy_id}/schema/policy-input"
+              "GET /api/v1/agents",
+              "POST /api/v1/agents",
+              "GET /api/v1/agents/{agent_id}",
+              "PATCH /api/v1/agents/{agent_id}",
+              "DELETE /api/v1/agents/{agent_id}",
+              "POST /api/v1/agents/{agent_id}/activate",
+              "POST /api/v1/agents/{agent_id}/deactivate",
+              "GET /api/v1/agents/{agent_id}/schema/policy-input"
             ]
           },
           {
@@ -93,9 +83,9 @@
               "GET /api/v1/providers/{provider_id}",
               "PATCH /api/v1/providers/{provider_id}",
               "DELETE /api/v1/providers/{provider_id}",
-              "GET /api/v1/proxies/{proxy_id}/providers",
-              "POST /api/v1/proxies/{proxy_id}/providers/{provider_id}",
-              "DELETE /api/v1/proxies/{proxy_id}/providers/{provider_id}"
+              "GET /api/v1/agents/{agent_id}/providers",
+              "POST /api/v1/agents/{agent_id}/providers/{provider_id}",
+              "DELETE /api/v1/agents/{agent_id}/providers/{provider_id}"
             ]
           },
           {
@@ -109,9 +99,9 @@
               "DELETE /api/v1/policies/{policy_id}",
               "POST /api/v1/policies/{policy_id}/disable",
               "POST /api/v1/policies/{policy_id}/enable",
-              "GET /api/v1/proxies/{proxy_id}/policies",
-              "POST /api/v1/proxies/{proxy_id}/policies/{policy_id}",
-              "DELETE /api/v1/proxies/{proxy_id}/policies/{policy_id}"
+              "GET /api/v1/agents/{agent_id}/policies",
+              "POST /api/v1/agents/{agent_id}/policies/{policy_id}",
+              "DELETE /api/v1/agents/{agent_id}/policies/{policy_id}"
             ]
           },
           {
@@ -120,7 +110,7 @@
               "GET /api/v1/policy-templates",
               "GET /api/v1/policy-templates/{template_id}",
               "POST /api/v1/policy-templates/{template_id}/instantiate",
-              "GET /api/v1/proxies/{proxy_id}/policy-templates/recommended"
+              "GET /api/v1/agents/{agent_id}/policy-templates/recommended"
             ]
           },
           {
@@ -128,10 +118,10 @@
             "pages": [
               "GET /api/v1/orgs/{org_id}/keys",
               "POST /api/v1/orgs/{org_id}/keys",
-              "GET /api/v1/proxies/{proxy_id}/keys",
-              "POST /api/v1/proxies/{proxy_id}/keys",
+              "GET /api/v1/agents/{agent_id}/keys",
+              "POST /api/v1/agents/{agent_id}/keys",
               "DELETE /api/v1/orgs/{org_id}/keys/{key}",
-              "DELETE /api/v1/proxies/{proxy_id}/keys/{key}"
+              "DELETE /api/v1/agents/{agent_id}/keys/{key}"
             ]
           },
           {
@@ -141,7 +131,7 @@
               "GET /api/v1/traces",
               "GET /api/v1/workflows",
               "GET /api/v1/sessions/{session_id}",
-              "GET /api/v1/traces/proxy-activity",
+              "GET /api/v1/traces/agent-activity",
               "GET /api/v1/traces/stats",
               "GET /api/v1/workflows/{workflow_id}",
               "GET /api/v1/traces/{trace_id}/flow"

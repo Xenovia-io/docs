@@ -1,15 +1,15 @@
 ---
 title: "API Introduction"
-description: "Programmatic access to proxies, providers, policies, telemetry, alerts and organization settings."
+description: "Programmatic access to agents, providers, policies, telemetry, alerts and organization settings."
 icon: "code"
 ---
 
-Xenovia exposes two HTTP surfaces. This reference covers the **management API** served by the control plane. Inference traffic goes to the **runtime** instead, at your proxy's base URL, and is documented under [Integrations](/integrations/overview).
+Xenovia exposes two HTTP surfaces. This reference covers the **management API** served by the control plane. Inference and SDK traffic goes to the **runtime** instead, at your agent's endpoint, and is documented under [Integrations](/integrations/overview).
 
 | Surface | Base URL | Credential | Used for |
 |---------|----------|------------|----------|
-| Management API (this reference) | `https://cp.xenovia.io/api/v1` | Organization API key `ak_…` or a dashboard session | Creating and configuring proxies, providers, policies and alerts; reading sessions, traces and audit logs |
-| Runtime (inference) | `https://runtime.xenovia.io/{proxy_id}/v1` | Proxy API key `xe_…` | `POST /chat/completions` and `POST /responses` from your application |
+| Management API (this reference) | `https://cp.xenovia.io/api/v1` | Organization API key `ak_…` or a dashboard session | Creating and configuring agents, providers, policies and alerts; reading sessions, traces and audit logs |
+| Runtime | `https://runtime.xenovia.io/{agent_id}/v1` and `https://runtime.xenovia.io/v1/execute` | Agent API key `xe_…` | `POST /chat/completions` and `POST /responses` from your application; `POST /v1/execute` from the Python SDK |
 
 The two credentials are not interchangeable: the management API rejects `xe_…` keys and the runtime rejects `ak_…` keys. See [Authentication](/api-reference/authentication).
 
@@ -24,14 +24,14 @@ The OpenAPI document is published at `https://cp.xenovia.io/openapi.json`; the e
 ## What you can do
 
 <CardGroup cols={2}>
-  <Card title="Proxies" icon="hexagon-nodes">
-    Create proxies, attach a provider, define capabilities and role intents, activate them, and read the policy input schema observed in their traffic.
+  <Card title="Agents" icon="hexagon-nodes">
+    Create agents, attach a provider, activate them, manage their API keys, and read the policy input schema observed in their traffic.
   </Card>
   <Card title="Policies and templates" icon="gavel">
-    Create Rego policies or instantiate one of the 55 templates, attach them to a proxy and enable them in monitor or enforce mode.
+    Create Rego policies or instantiate a template, attach them to an agent and enable them in monitor or enforce mode.
   </Card>
   <Card title="Sessions and traces" icon="route">
-    Read sessions, turns and steps, flat trace records with custom-property filters, aggregate stats and multi-proxy workflows.
+    Read sessions, turns and steps, flat trace records with custom-property filters, aggregate stats and multi-agent workflows.
   </Card>
   <Card title="Alerts" icon="bell">
     Manage event and metric alert rules, notification channels and the alert episode history.
@@ -41,12 +41,12 @@ The OpenAPI document is published at `https://cp.xenovia.io/openapi.json`; the e
 ## Conventions
 
 - **JSON everywhere.** Request and response bodies are `application/json`.
-- **Identifiers.** Proxies, providers, policies, sessions and traces use UUIDs. The `org_id` path parameter is the Clerk organization id (`org_…`), visible under Settings in the dashboard.
+- **Identifiers.** Agents, providers, policies, sessions and traces use UUIDs. The `org_id` path parameter is the Clerk organization id (`org_…`), visible under Settings in the dashboard.
 - **Status codes.** `201` on create and attach, `204` on delete and other empty responses, `200` otherwise. See [Errors and Limits](/api-reference/errors-and-limits).
-- **Pagination.** List endpoints take `limit` (default `20`, maximum `100`) and `offset` (default `0`) and return `{ "items": [...], "total": n, "limit": n, "offset": n }`. Alert events and notifications default to `50`, alert rules to `100`. Capabilities, role configs, deployments and policy templates return a bare array instead.
+- **Pagination.** List endpoints take `limit` (default `20`, maximum `100`) and `offset` (default `0`) and return `{ "items": [...], "total": n, "limit": n, "offset": n }`. Alert events and notifications default to `50`, alert rules to `100`. Guardrails, deployments and policy templates return a bare array instead.
 - **Request ids.** Every response carries an `X-Request-ID` header. Send your own value to have it echoed and recorded in the audit log; otherwise one is generated.
-- **No idempotency keys.** Retrying a `POST` creates a second resource, or returns `409` where names are unique (proxies, providers, policies, capabilities).
-- **Propagation.** Configuration changes are written through to the runtime immediately and revalidated by each runtime instance about every five minutes. A change to a proxy, provider, policy, capability or intent trigger is live within that window.
+- **No idempotency keys.** Retrying a `POST` creates a second resource, or returns `409` where names are unique (agents, providers, policies, guardrails).
+- **Propagation.** Configuration changes are written through to the runtime immediately and revalidated by each runtime instance about every five minutes. A change to an agent, provider, policy or guardrail is live within that window.
 
 ## Tenancy
 

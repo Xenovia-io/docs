@@ -11,7 +11,7 @@ The OpenAI Agents SDK is best paired with Xenovia through the **Responses API** 
 ```bash
 pip install openai-agents
 export XENOVIA_API_KEY=xe_...
-export XENOVIA_PROXY_ID=your-proxy-id
+export XENOVIA_AGENT_ID=your-agent-id
 ```
 
 ```python
@@ -21,7 +21,7 @@ from agents import Agent, Runner, OpenAIResponsesModel
 
 client = AsyncOpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1"
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1"
 )
 
 model = OpenAIResponsesModel(
@@ -58,7 +58,7 @@ session_id = str(uuid.uuid4())
 
 client = AsyncOpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1",
     default_headers={"X-Xenovia-Session-Id": session_id}
 )
 ```
@@ -85,7 +85,7 @@ result = await Runner.run(writer_agent, "Write a report on AI governance")
 print(result.final_output)
 ```
 
-Each agent in the handoff chain calls the Responses API independently. All calls are traced individually. Filter by `session_id` in the Traces view to see the full conversation in order.
+Each agent in the handoff chain calls the Responses API independently. All calls are traced individually. Open the session in **Sessions** to see the full conversation in order.
 
 ## Agents with tools
 
@@ -93,14 +93,14 @@ Each agent in the handoff chain calls the Responses API independently. All calls
 from agents import function_tool
 
 @function_tool
-def get_policy_status(proxy_id: str) -> str:
-    """Check the current policy status for a proxy."""
-    return f"Policy active for proxy {proxy_id}"
+def get_order_status(order_id: str) -> str:
+    """Look up the status of an order."""
+    return f"Order {order_id} has shipped"
 
 agent = Agent(
-    name="PolicyChecker",
-    instructions="Check policy status when asked.",
-    tools=[get_policy_status],
+    name="OrderDesk",
+    instructions="Look up order status when asked.",
+    tools=[get_order_status],
     model=model
 )
 ```

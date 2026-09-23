@@ -4,7 +4,7 @@ description: "What Xenovia records per request, how to enrich it, and how to inv
 icon: "route"
 ---
 
-Every proxied request produces a **turn** record, grouped under a **session**. Turns carry the model and tool runs, token counts, latency, and the policy and intent decisions.
+Every request to an agent, and every SDK check, produces a **turn** record, grouped under a **session**. Turns carry the model and tool runs, token counts, latency, and the policy and guardrail decisions. The **Sessions** page lists them.
 
 ## What a turn records
 
@@ -13,7 +13,7 @@ Every proxied request produces a **turn** record, grouped under a **session**. T
 | `trace_id` | Identifier for this turn |
 | `session_id` | The session this turn belongs to |
 | `turn_number` | Position within the session |
-| `proxy_id` / `org_id` | Proxy and organization |
+| `agent_id` / `org_id` | Agent and organization |
 | `provider` | Resolved upstream provider |
 | `model` | Model the runtime called |
 | `request_type` | `chat_completion`, `chat_completion_stream`, `responses`, or `responses_stream` |
@@ -22,19 +22,18 @@ Every proxied request produces a **turn** record, grouped under a **session**. T
 | `latency_ms` | Total latency |
 | `ttft_ms` | Time to first token (streaming) |
 | `policy_decision` / `policy_rule` | Final policy action and the rule that fired |
-| `intent_score` / `intent_action` | Semantic score and action |
 | `custom_properties` | Key–value pairs from `X-Xenovia-Property-*` headers |
 
-Inside a turn, each unit of work is a **run**: the model call, plus policy, intent, and runtime-executed tool runs. Client-executed tool calls appear in the turn's `output.tool_calls` and, once returned, in the next turn's `tool_results`.
+Inside a turn, each unit of work is a **run**: the model call, plus policy and runtime-executed tool runs. Client-executed tool calls appear in the turn's `output.tool_calls` and, once returned, in the next turn's `tool_results`.
 
 ## Enriching a turn
 
-Attach these headers to any proxied request:
+Attach these headers to any request to the agent endpoint:
 
 ```python
 client = OpenAI(
     api_key=os.environ["XENOVIA_API_KEY"],
-    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+    base_url=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1",
     default_headers={
         # Group related calls under one session (a valid UUID)
         "X-Xenovia-Session-Id": "550e8400-e29b-41d4-a716-446655440000",
@@ -67,19 +66,19 @@ Every response includes:
 | `X-Xenovia-Session-Id` | Resolved session UUID |
 | `X-Xenovia-Trace-Id` | Per-request trace UUID |
 
-Use `X-Xenovia-Trace-Id` to find a specific call in the platform. For a malformed `X-Xenovia-Session-Id`, read the echoed response header to confirm which session the runtime actually used.
+Use `X-Xenovia-Trace-Id` to find a specific call in the platform. A malformed `X-Xenovia-Session-Id` request header is rejected with `400`.
 
 ## Investigating
 
 <Steps>
   <Step title="Notice">
-    Watch the Sessions and Alerts views for a rise in blocks, a drop in intent scores, or a spike in escalations. Configure alert rules to be told rather than to poll.
+    Watch the Sessions and Alerts views for a rise in blocks or a spike in escalations. Configure alert rules to be told rather than to poll.
   </Step>
   <Step title="Drill in">
     Open a session and read its turns. Each turn carries the messages, tools, model, tokens, decision, and custom properties, so the cause is visible without stitching logs together.
   </Step>
   <Step title="Adjust">
-    Update the Rego policy, change the intent configuration, or revoke a proxy key. Configuration changes reach the runtime within about five minutes.
+    Update the Rego policy or guardrail, or revoke an agent key. Configuration changes reach the runtime within about five minutes.
   </Step>
   <Step title="Confirm">
     Send the request again and check the new turn. Historical turns are immutable, so earlier decisions remain as evidence after a change.
@@ -87,9 +86,9 @@ Use `X-Xenovia-Trace-Id` to find a specific call in the platform. For a malforme
 </Steps>
 
 <Note>
-  Escalations surface here and in Alerts as a signal; there is no approve/deny queue to action. Respond by adjusting the policy or intent that raised them.
+  Escalations are queued on the session and surface in Alerts. Resolving one records the reviewer's note; it does not replay or release the original request.
 </Note>
 
 ## Querying traces programmatically
 
-The [management API](/api-reference/introduction) exposes sessions, turns, aggregate stats, and multi-proxy workflows. The `GET /api/v1/traces` endpoint filters by proxy, session, decision, provider, and time range, and by any custom property as `cp_<key>=<value>`.
+The [management API](/api-reference/introduction) exposes sessions, turns, aggregate stats, escalations, and multi-agent workflows. The `GET /api/v1/traces` endpoint filters by agent (`agent_id`), session, decision, provider, and time range, and by any custom property as `cp_<key>=<value>`.
