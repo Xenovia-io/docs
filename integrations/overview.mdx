@@ -91,7 +91,7 @@ Model and tool-call checks run the agent's policies and guardrails; tool-result,
 | **Trace contains** | LLM request and response, tokens, latency, tool calls | Operation, stage, payload, decision, and session |
 | **Session tracking** | Automatic via Xenovia session resolution | Explicit `session_id` or `auto_session=True` |
 
-Use both together: the endpoint for LLM governance, the SDK for downstream tool governance.
+Use both together: the endpoint for LLM governance, the SDK for downstream tool governance. An agent set up in **SDK only** mode has no model route; check its model calls with `model_pre` and `model_post`.
 
 ## If your framework is not listed
 
