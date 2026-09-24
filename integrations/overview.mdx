@@ -12,15 +12,15 @@ If your stack can speak the OpenAI API, Xenovia usually fits with a `base_url` c
 2. If you are unsure, use the [OpenAI SDK](/integrations/openai-sdk) guide because it maps cleanly to most OpenAI-compatible clients.
 3. Add the [Xenovia Python SDK](/integrations/xenovia-sdk) when you need policy checks around downstream actions.
 
-## Proxy mode integrations
+## Agent endpoint integrations
 
-Xenovia Runtime is an OpenAI-compatible proxy. Any client that accepts a custom `base_url` works without further changes, and every call passes through Xenovia's policy and trace pipeline.
+Every agent has an OpenAI-compatible endpoint on the Xenovia runtime. Any client that accepts a custom `base_url` works without further changes, and every call passes through Xenovia's policy and trace pipeline.
 
 ```text
-https://runtime.xenovia.io/{proxy_id}/v1
+https://runtime.xenovia.io/{agent_id}/v1
 ```
 
-Provider credentials are configured in the proxy and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the proxy. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the proxy.
+Provider credentials are configured on the agent and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the agent. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the endpoint.
 
 <CardGroup cols={2}>
   <Card title="OpenAI SDK" icon="python" href="/integrations/openai-sdk">
@@ -55,25 +55,25 @@ Provider credentials are configured in the proxy and resolved server-side. So is
   </Card>
 </CardGroup>
 
-## SDK mode
+## SDK hooks
 
-The [Xenovia Python SDK](/integrations/xenovia-sdk) (`pip install xenovia-sdk`) gates arbitrary agent actions such as tool calls, database writes, API requests, and file operations without proxying an LLM call.
-
-<Warning>
-The SDK's hosted decision endpoint (`POST /v1/execute`) is not live yet, so SDK mode cannot evaluate policy today. See the [SDK page](/integrations/xenovia-sdk) for the exact behaviour of each `unreachable_mode`.
-</Warning>
+The [Xenovia Python SDK](/integrations/xenovia-sdk) (`pip install "xenovia-sdk>=0.2.1"`) checks agent actions such as tool calls, tool results, memory writes, and context summaries against the same agent's controls, through `POST /v1/execute` on the runtime with the agent's `xe_` key.
 
 ```python
 from xenovia_sdk import Xenovia
 
-xenovia = Xenovia(api_key="xe_...", identity_id="billing-agent")
+xenovia = Xenovia(api_key="xe_...", auto_session=True)
 
-@xenovia.guard(capability="payments.transfer")
-def transfer_funds(payload: dict) -> dict:
-    return run_transfer(payload["amount"], payload["to"])
+@xenovia.guard(operation="payments.transfer")
+def transfer_funds(amount: int, to: str) -> dict:
+    return run_transfer(amount, to)
 
-result = transfer_funds({"amount": 500, "to": "acct_123"})
+response = transfer_funds(500, "acct_123")  # a XenoviaResponse
+if response.is_success():
+    receipt = response.result  # what transfer_funds returned
 ```
+
+Model and tool-call checks run the agent's policies and guardrails; tool-result, memory-write, and context-summary checks run guardrails only.
 
 <Card title="Xenovia Python SDK" icon="python" href="/integrations/xenovia-sdk">
   ![Xenovia SDK badge](/images/integrations/xenovia-sdk.svg)
@@ -83,23 +83,23 @@ result = transfer_funds({"amount": 500, "to": "acct_123"})
 
 ## Choose the right guide
 
-| | Proxy mode | SDK mode |
-|--|-----------|----------|
-| **What is governed** | Every LLM call through the proxy | Arbitrary agent actions such as tools, writes, and APIs |
-| **Code change required** | `base_url` swap only | `execute()` call or `@guard()` decorator |
-| **Policy input** | Full LLM request context | Capability string plus payload |
-| **Trace contains** | LLM request and response, tokens, latency, tool calls | Capability, payload, decision, and session |
+| | Agent endpoint | SDK hooks |
+|--|----------------|-----------|
+| **What is governed** | Every LLM call through the endpoint | Agent actions such as tool calls, memory writes, and summaries |
+| **Code change required** | `base_url` swap only | A hook, `execute()` call, or `@guard()` decorator |
+| **Policy input** | Full LLM request context | Stage, operation, and payload |
+| **Trace contains** | LLM request and response, tokens, latency, tool calls | Operation, stage, payload, decision, and session |
 | **Session tracking** | Automatic via Xenovia session resolution | Explicit `session_id` or `auto_session=True` |
 
-Use both together: proxy mode for LLM governance, SDK mode for downstream tool governance.
+Use both together: the endpoint for LLM governance, the SDK for downstream tool governance.
 
 ## If your framework is not listed
 
 - If it accepts an OpenAI-compatible `base_url`, start from the [OpenAI SDK](/integrations/openai-sdk) guide.
-- If it only needs HTTP access, point it at `https://runtime.xenovia.io/{proxy_id}/v1`.
+- If it only needs HTTP access, point it at `https://runtime.xenovia.io/{agent_id}/v1`.
 - If the framework makes risky local calls after the model response, add the [Xenovia Python SDK](/integrations/xenovia-sdk) alongside it.
 
-## Supported proxy endpoints
+## Supported endpoint paths
 
 | Endpoint | Use case |
 |----------|----------|

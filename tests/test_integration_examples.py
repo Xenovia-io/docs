@@ -18,7 +18,7 @@ from llama_index.llms.openai import OpenAI
 ROOT = Path(__file__).resolve().parents[1]
 ENV = {
     "XENOVIA_API_KEY": "fixture-only",
-    "XENOVIA_PROXY_ID": "fixture-proxy",
+    "XENOVIA_AGENT_ID": "fixture-agent",
     "OPENAI_API_KEY": "fixture-only",
 }
 
@@ -170,7 +170,7 @@ class LlamaIndexExamples(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.engine.queries, ["governance policies"])
         self.assertEqual(len(self.endpoint.requests), 2)
         for request, body in self.endpoint.requests:
-            self.assertEqual(request.url.path, "/fixture-proxy/v1/chat/completions")
+            self.assertEqual(request.url.path, "/fixture-agent/v1/chat/completions")
             self.assertEqual(
                 request.headers["X-Xenovia-Session-Id"], self.namespace["session_id"]
             )
@@ -249,7 +249,7 @@ class LangChainExamples(unittest.TestCase):
         self.assertIn("Xenovia", self.namespace["result"]["messages"][-1].content)
         self.assertEqual(len(self.endpoint.requests), 2)
         for request, body in self.endpoint.requests:
-            self.assertEqual(request.url.path, "/fixture-proxy/v1/chat/completions")
+            self.assertEqual(request.url.path, "/fixture-agent/v1/chat/completions")
             self.assertEqual(
                 request.headers["X-Xenovia-Session-Id"], self.namespace["session_id"]
             )

@@ -4,31 +4,27 @@ description: "Choose the right Xenovia integration path and prepare your first g
 icon: "flag-checkered"
 ---
 
-Most teams start in **proxy mode** because it gives immediate coverage with the smallest code change.
-
-<Warning>
-  SDK mode (the [Xenovia Python SDK](/integrations/xenovia-sdk)) is not available yet — its hosted decision endpoint is not live. Use proxy mode today.
-</Warning>
+Most teams start with the **agent endpoint** because it gives immediate coverage with the smallest code change.
 
 ## Choose your integration path
 
 | Path | Best for | First change |
 |------|----------|--------------|
-| **Proxy mode** | OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, Agents SDK, CrewAI, and most OpenAI-compatible clients | Change `base_url` to your Xenovia proxy URL |
-| **SDK mode** _(not available yet)_ | Actions outside the model call — tool calls, API requests, writes, file operations | Coming soon; the decision endpoint is not live |
+| **Agent endpoint** | OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, Agents SDK, CrewAI, and most OpenAI-compatible clients | Change `base_url` to your agent's endpoint |
+| **SDK hooks** | Actions outside the model call — tool calls, tool results, memory writes, context summaries | Call `tool_pre` / `tool_post` (or `@guard()`) around the action |
 
-Proxy mode is the path available today. SDK mode, for governing actions that happen after the model call, is coming soon — see the [Xenovia Python SDK](/integrations/xenovia-sdk).
+The two combine: the endpoint checks model traffic, and the [Xenovia Python SDK](/integrations/xenovia-sdk) checks the actions around it.
 
 ## Prerequisites
 
-**For proxy mode**
-- A Xenovia account and workspace with at least one proxy created.
-- Your proxy ID (found under **Proxies** in the platform).
-- A Xenovia API key (`xe_...`) scoped to that proxy.
+**For the agent endpoint**
+- A Xenovia account and workspace with at least one agent created.
+- Your agent ID (found under **Agents** in the platform).
+- A Xenovia API key (`xe_...`) for that agent.
 - An LLM client or framework (OpenAI SDK, LangChain, LlamaIndex, Vercel AI SDK, etc.).
 
-**For SDK mode** _(not available yet)_
-- Python ≥ 3.9 and your agent or tool functions that need gating, once the decision endpoint is live.
+**For SDK hooks**
+- Python ≥ 3.9 and `xenovia-sdk` 0.2.1 or later.
 
 ## What to decide before rollout
 
@@ -37,12 +33,12 @@ Proxy mode is the path available today. SDK mode, for governing actions that hap
 - What should be blocked, redacted, or escalated first
 - Which metadata you want attached to traces: environment, user tier, feature, or workflow ID
 
-## Proxy URL format
+## Endpoint URL format
 
-Every proxy exposes an OpenAI-compatible base URL:
+Every agent exposes an OpenAI-compatible base URL:
 
 ```text
-https://runtime.xenovia.io/{proxy_id}/v1
+https://runtime.xenovia.io/{agent_id}/v1
 ```
 
 Point your client here and pass the `xe_...` key as the API key. Xenovia resolves the upstream provider credentials server-side.
@@ -50,7 +46,7 @@ Point your client here and pass the `xe_...` key as the API key. Xenovia resolve
 ## Recommended rollout
 
 <Steps>
-  <Step title="Create one proxy">
+  <Step title="Create one agent">
     Give it a clear owner, environment label, and scope so the traces mean something on day one.
   </Step>
   <Step title="Route one workflow">
@@ -63,12 +59,12 @@ Point your client here and pass the `xe_...` key as the API key. Xenovia resolve
     Begin with a concrete rule such as blocking a destructive tool or redacting email addresses.
   </Step>
   <Step title="Expand based on evidence">
-    Use real traces to add stricter rules and intent checks.
+    Use real traces to add stricter rules and guardrails.
   </Step>
 </Steps>
 
 ## Session tracking
 
-Xenovia resolves a session automatically, but for multi-turn agents you should usually pass an explicit `X-Xenovia-Session-Id` header so related calls stay grouped in Traces.
+Xenovia resolves a session automatically, but for multi-turn agents you should usually pass an explicit `X-Xenovia-Session-Id` header so related calls stay grouped in **Sessions**.
 
-Continue to [Quickstart](/getting-started/quickstart) to run your first proxied call with policy enforcement.
+Continue to [Quickstart](/getting-started/quickstart) to set up an agent and send your first governed request.

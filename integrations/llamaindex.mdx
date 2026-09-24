@@ -6,14 +6,14 @@ icon: "database"
 
 ## Setup
 
-The agent example uses the workflow API available in LlamaIndex 0.13 and later. It requires a proxy configured with a model that supports native tool calling.
+The agent example uses the workflow API available in LlamaIndex 0.13 and later. It requires an agent configured with a model that supports native tool calling.
 
-The agent example is checked with Python 3.12, `llama-index-core` 0.13.0 / `llama-index-llms-openai` 0.5.0 and core 0.14.24 / OpenAI integration 0.8.1 using simulated HTTP responses. Validate your proxy's policy and provider configuration separately.
+The agent example is checked with Python 3.12, `llama-index-core` 0.13.0 / `llama-index-llms-openai` 0.5.0 and core 0.14.24 / OpenAI integration 0.8.1 using simulated HTTP responses. Validate your agent's policies, guardrails, and provider configuration separately.
 
 ```bash
 pip install "llama-index-core>=0.13" llama-index-llms-openai llama-index-embeddings-openai llama-index-readers-file
 export XENOVIA_API_KEY=xe_...
-export XENOVIA_PROXY_ID=your-proxy-id
+export XENOVIA_AGENT_ID=your-agent-id
 ```
 
 ```python
@@ -27,7 +27,7 @@ session_id = str(uuid.uuid4())
 llm = OpenAI(
     model="gpt-4o-mini",
     api_key=os.environ["XENOVIA_API_KEY"],
-    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_PROXY_ID']}/v1",
+    api_base=f"https://runtime.xenovia.io/{os.environ['XENOVIA_AGENT_ID']}/v1",
     default_headers={"X-Xenovia-Session-Id": session_id}
 )
 
@@ -36,13 +36,13 @@ Settings.llm = llm
 
 Setting `Settings.llm` globally applies to all LlamaIndex components that use an LLM — query engines, chat engines, agents — without further configuration.
 
-Use the same `https://runtime.xenovia.io/{proxy_id}/v1` base URL across the OpenAI-compatible integrations, including the OpenAI Agents SDK. The older `/a/{proxy_id}/openai/v1` route is not part of the current runtime API.
+Use the same `https://runtime.xenovia.io/{agent_id}/v1` base URL across the OpenAI-compatible integrations, including the OpenAI Agents SDK. The older `/a/{agent_id}/openai/v1` route is not part of the current runtime API.
 
-Use `llama_index.llms.openai.OpenAI` for every provider the proxy can route to, including Anthropic, Groq, Bedrock, and Gemini. The `model` argument is a placeholder that the runtime replaces with the proxy's configured model; provider-native LlamaIndex classes cannot target the proxy.
+Use `llama_index.llms.openai.OpenAI` for every provider the agent can route to, including Anthropic, Groq, Bedrock, and Gemini. The `model` argument is a placeholder that the runtime replaces with the agent's configured model; provider-native LlamaIndex classes cannot target the agent endpoint.
 
 ## Embeddings
 
-The runtime does not expose `/v1/embeddings` yet, so keep the embedding model pointed directly at your provider. An embeddings call sent to the proxy URL returns `404`.
+The runtime does not expose `/v1/embeddings` yet, so keep the embedding model pointed directly at your provider. An embeddings call sent to the agent endpoint returns `404`.
 
 ```python
 from llama_index.embeddings.openai import OpenAIEmbedding
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
 In a notebook, use `await main()` instead of `asyncio.run(main())`, because a notebook already has an event loop. The older `ReActAgent.from_tools(...)` and synchronous `.chat()` examples do not apply to workflow agents. Modern `ReActAgent` remains available, but describes tools in its prompt instead of supplying the native tool metadata used by FunctionAgent.
 
-Each LLM call, including query synthesis inside `docs_search`, routes through Xenovia. The session header set during setup groups these calls in Traces. Request-stage policy checks the tools offered to the model; this is separate from authorizing a local action after the model selects a tool and generates its arguments.
+Each LLM call, including query synthesis inside `docs_search`, routes through Xenovia. The session header set during setup groups these calls in **Sessions**. Request-stage policy checks the tools offered to the model; this is separate from authorizing a local action after the model selects a tool and generates its arguments.
 
 ## Session tracking
 

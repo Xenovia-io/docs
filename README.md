@@ -71,7 +71,7 @@ python -m unittest discover -s tests -v
 
 CI runs both `requirements-minimum.txt` (LlamaIndex 0.13 / LangChain 1.0) and `requirements-current.txt` (versions tested on 2026-09-09). Update the current matrix when validating a new framework release. Tests cover tool round trips, session headers, request-stage 403 handling and trace IDs, unrelated errors, interrupted LlamaIndex streams, and LangChain RAG prompt variables.
 
-These tests do not contact Xenovia or model providers. The query-engine tool and embeddings are fixtures. Live policy enforcement, provider-specific stream behavior, and server traces must be verified separately against a test proxy before claiming end-to-end compatibility.
+These tests do not contact Xenovia or model providers. The query-engine tool and embeddings are fixtures. Live policy enforcement, provider-specific stream behavior, and server traces must be verified separately against a test agent before claiming end-to-end compatibility.
 
 ## References
 

@@ -6,7 +6,7 @@ icon: "sparkles"
 
 # Govern agent behavior without rebuilding your stack
 
-Xenovia gives you a control layer for agent runtimes. Route model traffic through an OpenAI-compatible proxy and enforce policy without rewriting your application architecture.
+Xenovia gives you a control layer for agent runtimes. Route model traffic through your agent's OpenAI-compatible endpoint and enforce policy without rewriting your application architecture.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
@@ -26,8 +26,8 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
 ## Two ways to integrate
 
 <CardGroup cols={2}>
-  <Card title="Proxy mode" icon="shuffle" href="/getting-started/quickstart">
-    Point any OpenAI-compatible client at Xenovia. You keep your prompts, tools, and framework code, while Xenovia adds policy evaluation, provider routing, session tracking, and traces.
+  <Card title="Agent endpoint" icon="shuffle" href="/getting-started/quickstart">
+    Point any OpenAI-compatible client at your agent's endpoint. You keep your prompts, tools, and framework code, while Xenovia adds policy evaluation, provider routing, session tracking, and traces.
   </Card>
   <Card title="Python SDK" icon="python" href="/integrations/xenovia-sdk">
     Gate tool calls, file writes, API requests, or database mutations that happen outside the model call itself. Use `execute()` for one-off checks or `@guard()` to wrap functions.
@@ -40,13 +40,13 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
 - Session-linked traces with turn counts and request headers for correlation
 - Central provider credentials and upstream routing
 - Tool visibility and recorded block and escalation signals
-- Optional semantic intent checks before risky requests proceed
+- Guardrails, including a scope guardrail for what the agent is for
 
 ## Recommended reading order
 
 <Steps>
   <Step title="1. Pick your path">
-    Start with [Getting Started](/getting-started/overview) to decide between proxy mode and SDK mode.
+    Start with [Getting Started](/getting-started/overview) to decide between the agent endpoint and SDK hooks.
   </Step>
   <Step title="2. Prove the plumbing">
     Run the [Quickstart](/getting-started/quickstart) and confirm a trace appears for a known request.
@@ -64,5 +64,5 @@ Xenovia gives you a control layer for agent runtimes. Route model traffic throug
 - Request and response bodies, token counts, latency, and TTFT
 - Session ID, session turn, and trace linkage
 - Tool names, arguments, and results when present
-- Policy outcomes, reasons, and intent actions
+- Policy and guardrail outcomes
 - Custom request metadata via `X-Xenovia-Property-*` headers

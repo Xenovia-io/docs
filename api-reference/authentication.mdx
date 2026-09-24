@@ -12,16 +12,16 @@ Authorization: Bearer ak_...
 
 ## Two kinds of key
 
-| | Organization API key | Proxy API key |
+| | Organization API key | Agent API key |
 |--|----------------------|---------------|
 | Prefix | `ak_` | `xe_` |
-| Created in | Settings → API Keys (organization admins) | A proxy's **API keys** tab |
+| Created in | Settings → API Keys (organization admins) | An agent's **API keys** tab |
 | Accepted by | Management API (`cp.xenovia.io`) | Runtime (`runtime.xenovia.io`) only |
-| Scope | Whole organization, `read` or `write` | One proxy's inference traffic |
+| Scope | Whole organization, `read` or `write` | One agent's endpoint and SDK traffic |
 | Expiry | 30, 60 or 90 days (default 90) | None until revoked |
 | Limit | 20 active keys per organization | No limit |
 
-The management API rejects proxy keys with `401 Invalid API key`; the runtime rejects organization keys. Use the proxy key in your application's `base_url` client and the organization key in scripts, CI and integrations that call this API.
+The management API rejects agent keys with `401 Invalid API key`; the runtime rejects organization keys. Use the agent key in your application's `base_url` client or the Xenovia SDK, and the organization key in scripts, CI and integrations that call this API.
 
 Dashboard users authenticate with their sign-in session instead of a key. Some endpoints are only available to a signed-in user; see [Human-only endpoints](#human-only-endpoints).
 
@@ -46,7 +46,7 @@ The scope is fixed at creation. To change it, create a new key and revoke the ol
 
 These endpoints require a signed-in dashboard session and return `403` for any organization key, because they manage credentials, membership or billing:
 
-- Proxy API keys: `GET`/`POST /proxies/{proxy_id}/keys`, `DELETE /proxies/{proxy_id}/keys/{key}`
+- Agent API keys: `GET`/`POST /agents/{agent_id}/keys`, `DELETE /agents/{agent_id}/keys/{key}`
 - Organization API keys: `GET`/`POST /orgs/{org_id}/keys`, `DELETE /orgs/{org_id}/keys/{key}` (admins)
 - Organization and members: `GET`/`PATCH /orgs/{org_id}`, `/orgs/{org_id}/users/...` (writes require an admin)
 - Alert rule writes and notification settings: `POST`/`PATCH`/`DELETE /alert-rules`, `PATCH /notification-settings`, `POST /notification-settings/test` (admins)
@@ -66,7 +66,7 @@ The same flow is available to admins as `POST /orgs/{org_id}/keys`.
 
 Deleting a key in the dashboard or via `DELETE /orgs/{org_id}/keys/{key}` takes effect immediately on every request. Keys revoked directly in Clerk, outside Xenovia, can remain valid for up to about 90 seconds while verification caches expire.
 
-Proxy keys are revoked from the proxy's **API keys** tab; the runtime rejects a revoked key within seconds.
+Agent keys are revoked from the agent's **API keys** tab; the runtime rejects a revoked key within seconds.
 
 ## Authentication failures
 
@@ -74,7 +74,7 @@ Proxy keys are revoked from the proxy's **API keys** tab; the runtime rejects a 
 |--------|----------|-------|
 | `401` | `Missing Authorization header` | No header |
 | `401` | `Authorization header must use Bearer scheme` | Wrong scheme |
-| `401` | `Invalid API key` | Unknown, expired or revoked key, or a proxy key used here |
+| `401` | `Invalid API key` | Unknown, expired or revoked key, or an agent (`xe_`) key used here |
 | `401` | `Invalid or expired token` / `Token has been revoked` | Dashboard session problems |
 | `403` | `Org API keys are not accepted on this endpoint; a user session is required` | Human-only endpoint |
 | `403` | `API key scope does not allow POST requests; a 'write'-scoped key is required` | Read-scoped key on a write |
@@ -90,5 +90,5 @@ Proxy keys are revoked from the proxy's **API keys** tab; the runtime rejects a 
 - Rotate before the expiry date: create the replacement, deploy it, then revoke the old key.
 
 <Warning>
-  Never call the management API from a browser or mobile client. Organization keys grant access to every proxy, policy and trace in the organization.
+  Never call the management API from a browser or mobile client. Organization keys grant access to every agent, policy and trace in the organization.
 </Warning>

@@ -1,35 +1,44 @@
 ---
 title: "Xenovia Python SDK"
-description: "Gate arbitrary agent actions against Xenovia policy using execute() and @guard()."
+description: "Check tool calls, memory writes, summaries, and model calls against an agent's policies and guardrails with hooks, execute(), and @guard()."
 icon: "python"
 ---
 
-The Xenovia Python SDK (`xenovia-sdk`) gates agent tool calls, database writes, API requests, and any other action against Xenovia policy — without proxying an LLM call. Use it alongside proxy mode for end-to-end governance.
+The Xenovia Python SDK (`xenovia-sdk`) sends an agent's actions to Xenovia for a decision before they happen: tool calls and tool results, memory writes, context summaries, and — for agents that call their model directly — the model request and reply. Each check runs the guardrails configured on the agent for that stage; `model_request`, `model_response`, and `tool_call` checks also run the agent's policies.
 
-<Warning>
-**Not available yet.** The hosted decision endpoint the SDK calls (`POST /v1/execute` on `https://api.xenovia.io`) is not live. Until it ships, no SDK call reaches Xenovia and no policy is evaluated: the default `unreachable_mode="error"` raises `XenoviaUnreachableError`, while `"allow"` and `"block"` return decisions generated inside the SDK. Use [proxy mode](/integrations/overview) to govern your agents today.
-</Warning>
+Use it alongside the [agent endpoint](/integrations/overview): the endpoint governs model traffic, and the SDK governs the steps your code takes around it. Tool, memory, and summary guardrails only run when the SDK sends those stages.
 
 **Install:**
 
 ```bash
-pip install xenovia-sdk
+pip install "xenovia-sdk>=0.2.1"
 ```
 
-**Requirements:** Python ≥ 3.9. Zero runtime dependencies (stdlib only).
+**Requirements:** Python ≥ 3.9. No runtime dependencies (standard library only).
 
 ## How it works
 
-The SDK sends an action intent — a capability string plus a payload — to the Xenovia backend via `POST /v1/execute`. The backend evaluates your Rego policy and returns a typed decision. Your function executes locally if allowed. No LLM is involved.
+Every SDK call is a `POST /v1/execute` to the Xenovia runtime, authenticated with the agent's `xe_` API key. The key identifies the agent, so the request body does not name it.
 
 ```
 agent code
-  → xenovia.execute(capability, payload)
-    → POST /v1/execute (Xenovia backend)
-      → Rego policy evaluation
-    ← XenoviaResponse (status, decision, trace_id)
-  → local execution (if allowed)
+  → xenovia.tool_pre("send_email", {"to": ..., "body": ...})
+    → POST /v1/execute  (stage=tool_call, operation=send_email)
+      → the agent's policies (model and tool_call stages) and guardrails for that stage
+    ← decision: allow | redact (masked payload) | deny
+  → run the tool with the returned arguments, or stop
 ```
+
+The decision is one of:
+
+| Outcome | `status` | What your code should do |
+|---------|----------|--------------------------|
+| `allow` | `success` | Proceed with the original values |
+| `redact` | `success` | Proceed with the masked values in `response.payload` |
+| `deny` | `blocked` | Stop; do not run the action |
+| `error` | `failed` | Treat as not allowed |
+
+`decision["escalated"]` is `true` when a guardrail escalated the step. The step is still allowed, and an escalation is queued for review (see [Escalations](/platform/policies-and-approvals#escalations)).
 
 ## Initialise the client
 
@@ -38,14 +47,8 @@ import os
 from xenovia_sdk import Xenovia
 
 xenovia = Xenovia(
-    api_key=os.environ["XENOVIA_API_KEY"],   # xe_... key
-    identity_id="billing-agent",             # agent identity
-    identity_type="agent",                   # default
-    default_env="prod",                      # environment label
-    auto_session=True,                       # auto-generate session UUIDs
-    raise_on_block=False,                    # return response instead of raising
-    unreachable_mode="error",                # "error" | "allow" | "block"
-    timeout=5                                # HTTP timeout in seconds
+    api_key=os.environ["XENOVIA_API_KEY"],   # the agent's xe_ key
+    auto_session=True,                       # let the runtime issue a session and reuse it
 )
 ```
 
@@ -53,197 +56,206 @@ xenovia = Xenovia(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `api_key` | `str` | required | Xenovia API key (`xe_...`) |
-| `endpoint` | `str` | `https://api.xenovia.io` | Xenovia API base URL |
-| `default_env` | `str` | `"prod"` | Environment label |
-| `raise_on_block` | `bool` | `False` | Raise `XenoviaBlockedError` on block |
-| `timeout` | `int` | `5` | HTTP request timeout (seconds) |
-| `auto_session` | `bool` | `False` | Auto-generate and reuse session UUIDs |
-| `debug` | `bool` | `False` | Print decision logs to stdout |
-| `identity_id` | `str` | env `XENOVIA_AGENT_ID` or `"default-agent"` | Actor identity |
+| `api_key` | `str` | required | The agent's API key (`xe_...`) |
+| `endpoint` | `str` | `https://runtime.xenovia.io` | Runtime base URL. Set your runtime's ingress URL for a hybrid deployment |
+| `timeout` | `int` | `65` | HTTP timeout in seconds. Guardrail checks can take several seconds |
+| `unreachable_mode` | `str` | `"block"` | What to return when the runtime cannot be reached (see below) |
+| `raise_on_block` | `bool` | `False` | Raise `XenoviaBlockedError` instead of returning a blocked response |
+| `auto_session` | `bool` | `False` | Let the runtime create a session on the first call and reuse it |
+| `agent_role` | `str` | `None` | Role label sent with each check (see [Roles and subagents](#roles-and-subagents)) |
+| `agent_depth` | `int` | `0` | Nesting depth sent with each check |
+| `default_env` | `str` | `"prod"` | Environment label recorded with each decision |
+| `identity_id` | `str` | env `XENOVIA_AGENT_ID` or `"default-agent"` | Label recorded with each decision |
 | `identity_type` | `str` | `"agent"` | Identity type label |
-| `unreachable_mode` | `str` | `"error"` | Behaviour when backend unreachable |
-| `allow_insecure_http` | `bool` | `False` | Allow HTTP (localhost/loopback only) |
+| `debug` | `bool` | `False` | Print decision outcomes to stdout |
+| `allow_insecure_http` | `bool` | `False` | Allow `http://` to `localhost`, `127.0.0.1`, or `::1` only |
 
 **`unreachable_mode` values:**
 
 | Mode | Behaviour |
 |------|-----------|
-| `"error"` | Raise `XenoviaUnreachableError` (fail closed) |
+| `"block"` (default) | Return a synthetic `blocked` response (fail closed) |
+| `"error"` | Raise `XenoviaUnreachableError` |
 | `"allow"` | Return a synthetic `success` response (fail open) |
-| `"block"` | Return a synthetic `blocked` response |
 
 <Note>
-The `"allow"` and `"block"` fallbacks are produced by the SDK on your machine, not by Xenovia. You can tell them apart from a real decision: `rule_id` is `SDK_UNREACHABLE_ALLOW` or `SDK_UNREACHABLE_BLOCK`, `trace_id` is `None`, and no trace appears in the platform. Read them as "Xenovia was not consulted", not as a policy outcome.
+The `"block"` and `"allow"` fallbacks are produced by the SDK on your machine, not by Xenovia. You can tell them apart from a real decision: `decision["rule_id"]` is `SDK_UNREACHABLE_BLOCK` or `SDK_UNREACHABLE_ALLOW`, `trace_id` is `None`, and no trace appears in the platform.
 </Note>
 
-## `execute()` — one-off policy check
+## Hooks
+
+Hooks are the main API. Each one sends one stage and returns a `XenoviaResponse`. Hooks never skip work for you: check the response and act on it.
+
+| Hook | Stage | Sends |
+|------|-------|-------|
+| `tool_pre(name, arguments)` | `tool_call` | The tool's arguments before it runs |
+| `tool_post(name, content)` | `tool_result` | The tool's output before the model sees it |
+| `memory_write(content)` | `memory_write` | Content your agent is about to persist |
+| `context_summary(summary, original)` | `context_summary` | A summary replacing earlier context |
+| `model_pre(messages, system_prompt=None, tools=None)` | `model_request` | The model request, for agents that call the model directly |
+| `model_post(response, messages=None)` | `model_response` | The model reply, for agents that call the model directly |
+| `model_post_stream(chunks, messages=None)` | `model_response` | Buffers streamed text chunks, then checks the full reply |
+
+Every hook also accepts `session_id=`.
+
+```python
+check = xenovia.tool_pre("send_email", {"to": to, "body": body})
+
+if not check.is_success():  # blocked, or failed
+    return "This action is not allowed."
+
+args = check.payload["arguments"] if check.is_redacted() else {"to": to, "body": body}
+result = send_email(**args)
+
+reviewed = xenovia.tool_post("send_email", str(result))
+if not reviewed.is_success():
+    return "The tool result was withheld."
+```
+
+A redacted tool call returns the masked arguments in `payload["arguments"]`; a redacted tool result, memory write, or reply returns masked text in `payload["content"]` or `payload["response"]`.
+
+<Note>
+If your model calls already go through the agent endpoint, leave `model_pre` and `model_post` off: the runtime checks the model request and reply there. Use them only for agents that call their model provider directly.
+</Note>
+
+`model_pre` accepts messages with string content or a list of content parts (OpenAI or Anthropic style), and tools as flat `{name, description}` objects or OpenAI function tools. Only text is checked: text parts, `refusal` parts, and the text of Anthropic `tool_result`, `mcp_tool_result` and `search_result` blocks (string content or nested text parts) are joined. Media and file parts, the model's own tool calls (`tool_use`, `server_tool_use`, `mcp_tool_use`) and thinking, and Anthropic server tool results (web search, web fetch, code execution) are not sent, so their content is not checked. On success, `payload["messages"]` and `payload["tools"]` are your own objects, with any redaction written back into the part it came from.
+
+`model_pre`, and `model_post` when you pass `messages`, raise `ValueError`, and send nothing, when messages are not a list of dicts, a role is not a string, content is not a string, a list, or `None`, or a content part is malformed or of a type not listed above. `model_pre` also raises it when a tool is not a dict or has no name.
+
+## `execute()` — a single check
+
+`execute()` is the call the hooks are built on. Use it for actions that are not a tool, memory, or model step.
 
 ```python
 response = xenovia.execute(
-    payload={"amount": 500, "to": "acct_123"},
-    capability="payments.transfer",          # optional — inferred from caller if omitted
-    session_id="sess_abc",                   # optional — auto-generated if auto_session=True
-    env="prod"                               # optional — overrides default_env
+    {"amount": 500, "to": "acct_123"},
+    operation="payments.transfer",   # inferred from the calling function if omitted
+    stage="tool_call",               # default
 )
 
 if response.is_blocked():
-    print(f"Blocked: {response.decision['reason']}")
+    print(f"Blocked. Trace: {response.trace_id}")
 elif response.is_success():
     print(f"Allowed. Trace: {response.trace_id}")
 ```
 
-**Capability inference:** if `capability` is omitted, the SDK infers it from the caller's module and function name (`module.function_name`) using frame inspection.
+`stage` is one of `model_request`, `model_response`, `tool_call`, `tool_result`, `memory_write`, or `context_summary`. If `operation` is omitted, the SDK uses the caller's `module.function` name.
+
+<Note>
+`capability=` was renamed to `operation=` in 0.2.0. In 0.2.1 `capability=` still works on `execute()` and `@guard()` as a deprecated alias and emits a `DeprecationWarning`.
+</Note>
 
 ## `@guard()` — decorator
 
-Wraps a function with policy-aware gating. In `enforce` mode (default), the function body does not execute if the policy denies the action.
+`@guard()` checks a function call as a `tool_call` before the body runs. The decorated function returns a `XenoviaResponse`; read `.result` for the function's return value.
 
 ```python
-@xenovia.guard(capability="payments.transfer", mode="enforce")
-def transfer_funds(payload: dict) -> dict:
-    return run_transfer(payload["amount"], payload["to"])
+@xenovia.guard(operation="payments.transfer")
+def transfer_funds(amount: int, to: str) -> dict:
+    return run_transfer(amount, to)
 
-result = transfer_funds({"amount": 500, "to": "acct_123"})
-```
-
-The decorator returns a `XenoviaResponse`. Access `.result` for the function's return value when allowed:
-
-```python
-response = transfer_funds({"amount": 500, "to": "acct_123"})
+response = transfer_funds(500, "acct_123")
 
 if response.is_blocked():
-    handle_block(response.decision["reason"])
+    handle_block(response.trace_id)
 else:
-    data = response.result  # return value from transfer_funds
+    receipt = response.result
 ```
 
-**Guard modes:**
+- The payload sent is `{"arguments": {...}}`, with every bound argument (including defaults).
+- On `allow`, the function runs with its original arguments. On `redact`, it runs with the masked arguments. On `deny` or `error`, it does not run.
+- `async def` functions are supported.
+- `mode="enforce"` is the only mode. The SDK has no observe mode: to trial a rule without blocking, set the policy or guardrail to **Monitor** in the console. Monitor evaluations return `allow`.
 
-| Mode | Behaviour |
-|------|-----------|
-| `"enforce"` | Function body does not execute if denied or if the backend call fails |
-| `"observe"` | Function always executes locally; would-block decisions are logged |
+## Roles and subagents
 
-**Payload extraction:** the decorator extracts the payload from the function call in this order:
-1. Explicit `payload` keyword argument
-2. Single `dict` positional argument
-3. Scalar argument → `{"value": arg}`
-4. Multiple args → all args as a dict
-5. No args → `{}`
+Set `agent_role` on the client, or create a child client with `subagent()`:
 
-## `XenoviaResponse` — response object
+```python
+planner = Xenovia(api_key=os.environ["XENOVIA_API_KEY"], agent_role="planner", auto_session=True)
+researcher = planner.subagent(role="researcher")   # agent_depth = 1
+```
+
+`subagent()` returns a new client with the same key and endpoint, the given role, and `agent_depth` one higher. It gets **its own session**, but because it uses the same key it is the same Xenovia agent: its checks run that agent's policies and guardrails. Give a subagent its own agent and key when it needs a separate identity.
+
+## `XenoviaResponse`
 
 ```python
 @dataclass(frozen=True)
 class XenoviaResponse:
-    status:   str        # "success" | "blocked" | "failed"
-    result:   Any        # local function output (guard) or None (execute)
-    error:    str | None
-    decision: dict       # {"outcome": str, "rule_id": str, "reason": str}
-    trace_id: str | None # trace UUID for correlation
-    raw:      dict       # original backend response
+    status:     str          # "success" | "blocked" | "failed"
+    decision:   dict         # {"outcome": "allow" | "redact" | "deny" | "error", "escalated": bool}
+    payload:    dict | None  # masked values when the outcome is "redact"
+    trace_id:   str | None   # trace UUID for correlation
+    session_id: str | None   # session the runtime used
+    result:     Any          # the guarded function's return value (guard only)
+    error:      str | None
+    raw:        dict         # the runtime's response body
 
-    def is_blocked(self) -> bool: ...
     def is_success(self) -> bool: ...
-    def is_failed(self)  -> bool: ...
+    def is_blocked(self) -> bool: ...
+    def is_redacted(self) -> bool: ...
+    def is_escalated(self) -> bool: ...
+    def is_failed(self) -> bool: ...
 ```
 
-## Session handling
+The decision never contains the rule or the reason. Look up `trace_id` in the platform to see which policy or guardrail fired.
 
-With `auto_session=True`, the SDK generates a session UUID on the first call and reuses it for subsequent calls on the same client instance:
+## Sessions
 
-```python
-xenovia = Xenovia(api_key="xe_...", auto_session=True)
+The runtime issues the session and returns it in the `X-Xenovia-Session-Id` response header; the SDK stores it on the client.
 
-xenovia.execute({"step": 1}, capability="workflow.step")  # new session
-xenovia.execute({"step": 2}, capability="workflow.step")  # same session
-```
-
-Pass an explicit `session_id` to override auto-session:
-
-```python
-xenovia.execute({"step": 3}, capability="workflow.step", session_id="my-session-id")
-```
+- With `auto_session=True`, the first call lets the runtime create a session and later calls reuse it.
+- Otherwise, pass `session_id=` (a UUID) on each call, or share a session ID with your agent endpoint traffic so SDK steps and model turns appear in one session.
+- If the runtime returns a different session than the one you sent, the SDK raises `XenoviaExecutionError`.
+- `next_turn()` only advances a local counter. To report a turn number, pass `turn=` to `execute()`.
 
 ## Error handling
 
 ```python
 from xenovia_sdk import (
     XenoviaBlockedError,
-    XenoviaUnreachableError,
     XenoviaExecutionError,
+    XenoviaUnreachableError,
 )
 
-# Raise on block (requires raise_on_block=True)
-xenovia_strict = Xenovia(api_key="xe_...", raise_on_block=True)
+strict = Xenovia(api_key=os.environ["XENOVIA_API_KEY"], raise_on_block=True, unreachable_mode="error")
 
 try:
-    response = xenovia_strict.execute(payload, capability="payments.transfer")
+    strict.tool_pre("delete_account", {"account_id": "acct_123"})
 except XenoviaBlockedError as e:
-    print(f"Blocked: {e}")
-except XenoviaUnreachableError as e:
-    # unreachable_mode="error" (default) raises this on network failure
-    print(f"Backend unreachable: {e}")
-except XenoviaExecutionError as e:
-    # Non-JSON or invalid HTTP response
-    print(f"Execution error: {e}")
+    ...  # denied by a policy or guardrail; e.trace_id finds it in Sessions
+except XenoviaUnreachableError:
+    ...  # runtime unreachable and unreachable_mode="error"
+except XenoviaExecutionError:
+    ...  # any other non-2xx response, an unexpected body, or a session mismatch
 ```
+
+Malformed input raises `ValueError` before any request is sent, for example a `model_pre` message part the SDK cannot read.
 
 ## Wire format
 
-The SDK sends `POST /v1/execute` with:
-
 ```json
+POST /v1/execute
+Authorization: Bearer xe_...
+
 {
-  "capability": "payments.transfer",
-  "payload": { "amount": 500, "to": "acct_123" },
-  "session_id": "sess_abc",
+  "stage": "tool_call",
+  "operation": "payments.transfer",
+  "payload": { "arguments": { "amount": 500, "to": "acct_123" } },
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "agent_role": "researcher",
+  "agent_depth": 1,
   "identity": { "type": "agent", "id": "billing-agent" },
   "env": "prod",
-  "sdk": { "version": "0.1.2", "language": "python" }
+  "sdk": { "version": "0.2.1", "language": "python" }
 }
 ```
 
+`session_id`, `agent_role`, and `agent_depth` are sent only when set.
+
 ## Security
 
-- HTTPS is enforced unless `allow_insecure_http=True` (restricted to localhost/loopback only).
-- The API key is sent only in the `Authorization: Bearer xe_...` header — never in payloads or logs.
-- No payload logging in debug mode; only the decision outcome and trace ID are printed.
-
-## Full example: governed tool call
-
-```python
-import os
-from xenovia_sdk import Xenovia
-
-xenovia = Xenovia(
-    api_key=os.environ["XENOVIA_API_KEY"],
-    identity_id="data-pipeline-agent",
-    auto_session=True,
-    raise_on_block=False,
-    unreachable_mode="allow"  # fail open if Xenovia is unreachable
-)
-
-@xenovia.guard(capability="database.write", mode="enforce")
-def write_record(payload: dict) -> dict:
-    return db.insert("records", payload)
-
-@xenovia.guard(capability="database.read", mode="observe")
-def read_records(payload: dict) -> list:
-    return db.select("records", payload["filters"])
-
-# write_record executes only if policy allows
-result = write_record({"table": "orders", "data": {"amount": 100}})
-
-if result.is_blocked():
-    logger.warning("Write blocked by policy", extra={
-        "reason": result.decision.get("reason"),
-        "rule_id": result.decision.get("rule_id"),
-        "trace_id": result.trace_id
-    })
-
-# read_records always executes; policy violations are logged only
-result = read_records({"filters": {"status": "pending"}})
-records = result.result
-```
+- HTTPS is required unless `allow_insecure_http=True`, which is limited to loopback addresses.
+- The API key is sent only in the `Authorization` header, never in payloads or logs.
+- Debug output prints the decision outcome and trace ID, not payloads.

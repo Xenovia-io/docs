@@ -4,32 +4,32 @@ description: "How a request flows through the Xenovia runtime: routing, the plug
 icon: "sitemap"
 ---
 
-Xenovia Runtime is a high-performance Go proxy that speaks the OpenAI wire format. It exposes two routes per proxy and passes every request through a fixed pipeline before and after the upstream model call.
+Xenovia Runtime is a high-performance Go service that speaks the OpenAI wire format. It exposes two inference routes per agent and passes every inference request through a fixed pipeline before and after the upstream model call. It also serves the [Python SDK](/integrations/xenovia-sdk)'s decision endpoint `POST /v1/execute`, which checks one stage and returns a decision without calling a model.
 
 ## Request flow
 
-Before any plugin runs, the router prepares the request: it validates the proxy ID, checks the path, method, and content modality, sets the internal `X-Xenovia-Agent-Path`, and resolves the proxy's provider — rewriting the request's `model` to the proxy's configured provider and model. Then the plugin pipeline runs.
+Before any plugin runs, the router prepares the request: it validates the agent ID, checks the path, method, and content modality, sets the internal `X-Xenovia-Agent-Path`, authenticates the key against the agent in the URL, and only then resolves the agent's provider — rewriting the request's `model` to the agent's configured provider and model. Then the plugin pipeline runs.
 
 ```
 Request
-  │  router: validate proxy ID · check path/method/modality · resolve provider + rewrite model
+  │  router: validate agent ID · check path/method/modality · authenticate key · resolve provider + rewrite model
   ▼
-  1. Auth        verify the xe_ key, resolve the proxy identity (Redis, 5-min cache)
+  1. Auth        bind the agent identity (Redis, 5-min cache)
   2. Session     resolve or create the session UUID, set the turn number
   3. Trace       open the turn record, stamp session/trace response headers
-  4. Rate limit  enforce the proxy's per-minute limit, if one is set
+  4. Billing     check the organization's request allowance
   5. Policy      evaluate the request-stage Rego (OPA, 200 ms eval timeout)
-  6. Intent      score against the proxy's intent, if the trigger fires
+  6. Guardrails  evaluate the agent's model_request guardrails
   │
   ▼  Upstream model (OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
   │
-  post-hooks (reverse order): intent (no-op) · response-stage policy · rate limit (no-op) · trace persist · session chain · auth (no-op)
+  post-hooks: response-stage policy · model_response and tool_call guardrails · trace persist · session chain
   ▼
 Response
 ```
 
 <Note>
-  Provider resolution and JSON parsing happen at the router, before authentication. An unauthenticated caller can therefore receive a `400` (bad body) or `502` (provider misconfiguration) from a proxy route.
+  Path, method, and body validation happen before authentication, so an unauthenticated caller can receive a `400`, `404`, or `405`. Every key that cannot act as the agent in the URL — unknown, revoked, another agent's, or a key for a draft or deleted agent — gets the same `401` `invalid api key for this agent`. A provider misconfiguration (`502`) is reported only to an authenticated caller.
 </Note>
 
 A session middleware wraps the whole router and stamps `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` into the response headers before the first body byte, so streaming responses still carry them.
@@ -39,9 +39,9 @@ A session middleware wraps the whole router and stamps `X-Xenovia-Session-Id` an
 ### 1. Auth
 
 - Accepts `x-xenovia-key: xe_...` or `Authorization: Bearer xe_...`.
-- Resolves the key against Redis (`apikey:{sha256(key)}`, 5-minute TTL). On a miss it calls the control plane; a resolved identity is an HMAC-signed blob holding `proxy_id` and `org_id`.
-- The key's proxy must match the proxy ID in the URL, unless the request carries a workflow header for same-organization cross-proxy delegation.
-- Organization keys (`ak_...`) are rejected here — they authenticate the [management API](/api-reference/authentication), not the proxy.
+- Resolves the key against Redis (`apikey:{sha256(key)}`, 5-minute TTL). On a miss it calls the control plane; a resolved identity is an HMAC-signed blob holding `agent_id` and `org_id`.
+- The key's agent must match the agent ID in the URL, unless the request carries a workflow header for same-organization cross-agent delegation.
+- Organization keys (`ak_...`) are rejected here — they authenticate the [management API](/api-reference/authentication), not the runtime.
 - Keys are never logged; only an 8-character SHA-256 prefix appears in logs.
 
 ### 2. Session
@@ -50,7 +50,7 @@ Five strategies, first match wins:
 
 | Priority | Source | Mechanism |
 |----------|--------|-----------|
-| 1 | `X-Xenovia-Session-Id` header | Must be a UUID; a malformed value is replaced with a fresh UUID (no error) |
+| 1 | `X-Xenovia-Session-Id` header | Must be a UUID; a malformed value is rejected with `400` |
 | 2 | `previous_response_id` (Responses API) | Looked up per API key |
 | 3 | `user` field (Chat Completions) | Looked up per API key; the value is stored only as a SHA-256 hash |
 | 4 | Message fingerprint | Hash of the messages up to the last assistant turn |
@@ -60,30 +60,25 @@ Turn numbers increment per session (30-minute sliding TTL). Sessions are isolate
 
 ### 3. Trace
 
-- Opens a turn record and emits child runs: the model call, plus policy, intent, escalation, and runtime-executed tool runs.
+- Opens a turn record and emits child runs: the model call, plus policy, escalation, and runtime-executed tool runs.
 - Custom `X-Xenovia-Property-*` headers are attached to the turn (see [Traces and Remediation](/platform/traces-and-remediation)).
 - Persistence is asynchronous. Under sustained overload a record can be dropped rather than block the request.
 
-### 4. Rate limit
+### 4. Billing
 
-Enforces the proxy's `rate_limit_rpm` when one is configured; by default there is no limit. Over the limit returns `429` (no `Retry-After`). This stage runs after tracing so rate-limited requests are still recorded.
+There is no per-agent rate limit. The runtime checks the organization's request allowance and returns `402` when it is exhausted or billing access is restricted.
 
 ### 5. Policy
 
-Evaluates the request-stage Rego against the full request context, then the response-stage Rego after the model replies. See [Policies and Enforcement](/platform/policies-and-approvals) for the decision contract and the input schema. Policies are cached per proxy and revalidated about every five minutes.
+Evaluates the request-stage Rego against the full request context, then the response-stage Rego after the model replies. See [Policies and Enforcement](/platform/policies-and-approvals) for the decision contract and the input schema. Policies are cached per agent and revalidated about every five minutes.
 
-### 6. Intent
+### 6. Guardrails
 
-An optional semantic guardrail. When the proxy has an intent defined and the trigger fires, the request is scored against it:
+The intent check and its triggers are gone; the agent's [guardrails](/platform/policies-and-approvals#guardrails) run instead, evaluated by Xenovia's guardrail service: `model_request` guardrails after the request-stage policies, then `model_response` guardrails and a `tool_call` guardrail per proposed tool call after the model replies. `tool_result`, `memory_write`, and `context_summary` guardrails run only through the SDK.
 
-- **Trigger axes:** `turn_scope` (`all`, `first`, `first_n`), `on_tools` (`ignore`, `require`, `always`), `min_content_chars`, and `sample_rate`.
-- **Actions:** `allow`, `block` (`403`), or `escalate` (`403` plus an escalation signal).
+- A guardrail `escalate` lets the request proceed; a `block` returns `403`.
 - The block or escalation reason is recorded server-side and never returned to the caller.
-- Fail mode is open by default (scoring failures allow the request); it can be set to fail closed, which returns `503` on a scoring error.
-
-<Note>
-  The dashboard and alerts label this feature **Guardrail**, while proxy configuration calls it **Intent**. They are the same thing.
-</Note>
+- There is no fail mode setting: an enforced guardrail that cannot be evaluated fails closed with `503`, and a Monitor guardrail that fails records the error and never blocks.
 
 ## Supported providers
 
@@ -109,7 +104,24 @@ Embeddings, legacy completions, model listing, and audio, image, video, batch, a
 
 ## Security
 
-- **Credential isolation.** Provider credentials live in the proxy configuration and are resolved server-side; your app never holds them. Secrets are fetched over an internal channel and kept in memory, never written to Redis or into telemetry.
-- **SSRF protection.** vLLM and Azure base URLs are validated; link-local and cloud-metadata addresses are rejected.
-- **Config integrity.** Config snapshots and identity blobs are HMAC-signed. A revoked proxy key stops working within about five minutes in the cloud.
+- **Credential isolation.** Provider credentials live in the agent's configuration and are resolved server-side; your app never holds them. Secrets are fetched over an internal channel and kept in memory, never written to Redis or into telemetry.
+- **SSRF protection.** vLLM and Azure base URLs are validated; link-local and cloud-metadata addresses are rejected. Loopback and private vLLM addresses are rejected unless the runtime sets `XENOVIA_ALLOW_PRIVATE_PROVIDER_ENDPOINTS` (see [Hybrid deployments](#hybrid-deployments)).
+- **Config integrity.** Config snapshots and identity blobs are HMAC-signed. A revoked agent key stops working within about five minutes in the cloud.
 - **Deployment.** In the standard cloud deployment Xenovia operates the runtime. A hybrid data-plane option runs the runtime inside your own cluster; ask your Xenovia contact for the deployment guide.
+
+## Hybrid deployments
+
+A hybrid agent is served by the runtime in your own cluster. Its provider uses a credential reference that your cluster resolves at request time, and its endpoint is your deployment's ingress URL followed by `/{agent_id}/v1`.
+
+These runtime settings govern guardrails and model routing in a hybrid deployment:
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `GUARDRAIL_URL` | unset | Base URL of the guardrail service. Required for guardrails |
+| `GUARDRAIL_SECRET` | unset | Shared secret sent to the guardrail service. At least 16 characters, and the same value the guardrail service uses |
+| `XENOVIA_GUARDRAIL_CONCURRENCY` | `64` | Guardrail checks allowed at once per runtime process; further checks wait for a slot within their own deadline |
+| `XENOVIA_ALLOW_PRIVATE_PROVIDER_ENDPOINTS` | `false` | `true` lets vLLM and OpenAI-compatible base URLs target loopback, private, CGNAT, and cluster-local addresses. For hybrid and local development only; link-local and cloud-metadata addresses stay blocked |
+
+<Warning>
+  Without `GUARDRAIL_URL`, every guardrail errors: enforced guardrails fail closed with `503`, and Monitor guardrails record an error. Policies do not depend on it.
+</Warning>

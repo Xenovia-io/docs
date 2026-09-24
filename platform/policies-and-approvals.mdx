@@ -4,12 +4,12 @@ description: "Write Rego policies evaluated by OPA against the full request and 
 icon: "scale-balanced"
 ---
 
-Xenovia evaluates [Open Policy Agent (OPA)](https://www.openpolicyagent.org/) Rego policies on every proxied request. Policies are created in the control plane, attached to a proxy, and enabled. Each proxy can run policies at two stages:
+Xenovia evaluates [Open Policy Agent (OPA)](https://www.openpolicyagent.org/) Rego policies on every request to an agent. Policies are created in the control plane, attached to an agent, and enabled. Each agent can run policies at two stages:
 
 - **Request stage** — before the request is forwarded to the upstream model.
 - **Response stage** — after the model responds, before the reply reaches your app.
 
-Enabled policies are compiled to a per-proxy snapshot, pushed to the runtime, and revalidated by each runtime instance about every five minutes. OPA evaluates with a 2-second compile timeout and a 200-millisecond per-stage evaluation timeout.
+Enabled policies are compiled to a per-agent snapshot, pushed to the runtime, and revalidated by each runtime instance about every five minutes. OPA evaluates with a 2-second compile timeout and a 200-millisecond per-stage evaluation timeout.
 
 ## The decision contract
 
@@ -49,7 +49,7 @@ decision = {"action": "block", "rule": "no-delete-tools"} if {
 | Response | `allow` | — | Return the reply |
 | Response | `block_response` | `403` | Suppress the reply; record the trace |
 | Response | `redact_response` | — | Remove the listed fields from the reply, then return it |
-| Response | `escalate` | — | Record-only at the response stage |
+| Response | `escalate` | `403` | Suppress the reply and record an escalation |
 
 When several enabled policies run at the same stage, the strongest action wins: `block` over `escalate` over `redact` over `allow` (and `block_response` over `redact_response` at the response stage). An unrecognised `action` ranks below `allow` and can never block.
 
@@ -74,7 +74,7 @@ decision = {
 }
 ```
 
-Supported labels: `email`, `ssn`, `phone`, `creditcard` (Luhn-validated), `ip`, `url`. Redaction applies to message text, tool descriptions, and the Responses `instructions` field at the request stage, and to the reply text at the response stage. Redaction is not applied mid-stream; a streamed response that matches a `redact_response` rule is passed through unredacted and the event is recorded.
+Supported labels: `email`, `ssn`, `phone`, `creditcard` (Luhn-validated), `ip`, `url`. Redaction applies to message text, tool descriptions, and the Responses `instructions` field at the request stage, and to the reply text at the response stage. Streamed replies are buffered and checked before any content is sent, so response redaction applies to them too.
 
 ## Monitor vs enforce
 
@@ -91,15 +91,15 @@ Both stages receive the same base fields; each stage adds its own.
 
 ```json
 {
-  "agent_id":      "string — proxy ID",
+  "agent_id":      "string — the agent's ID",
   "org_id":        "string — organization ID",
   "request_type":  "chat_completion | chat_completion_stream | responses | responses_stream",
   "provider":      "resolved upstream provider (openai, anthropic, gemini, azure, bedrock, groq, vllm)",
-  "model":         "the model the runtime will call — the proxy's configured model, not the value your client sent",
+  "model":         "the model the runtime will call — the agent's configured model, not the value your client sent",
   "stream":        "boolean",
   "messages":      "[{ role, content, tool_call_id?, tool_call_ids? }] — text only",
-  "tools":         "[{ Name, Description, ParametersSchema }] — note the capitalised keys",
-  "tool_names":    "[]string — lowercased tool names, convenient for allow/deny lists",
+  "tools":         "[{ name, description, parameters_schema }]",
+  "tool_names":    "[]string — the declared tool names, exactly as sent, convenient for allow/deny lists",
   "system_prompt": "string — first system message, if any",
   "agent_role":    "string — present only when the x-xenovia-agent-role header is sent",
   "http_headers":  "object — request headers, with secret values redacted"
@@ -114,15 +114,11 @@ Both stages receive the same base fields; each stage adds its own.
   "request_flat":        "object — the same request flattened to dotted keys",
   "request_max_tokens":  "int — requested output cap, 0 if unset",
   "tool_results":        "[{ tool_call_id, name, content }] — Chat Completions only",
-  "proxy_tokens_today":  "int — running token count for this proxy today",
+  "agent_tokens_today":  "int — running token count for this agent today",
   "session_tokens_used": "int — running token count for this session",
-  "workflow_context":    "object — prior cross-proxy decisions, only with a workflow header"
+  "workflow_context":    "{ workflow_id, decisions: [{ agent_id, trace_id, policy_action, timestamp }] } — prior cross-agent decisions, only with a workflow header"
 }
 ```
-
-<Warning>
-  `intent_score` and `intent_action` are **not** available at the request stage — policy runs before intent scoring. They are available at the response stage.
-</Warning>
 
 ### Response stage adds
 
@@ -133,9 +129,7 @@ Both stages receive the same base fields; each stage adds its own.
     "content":    "string — the reply text",
     "tool_calls": "[{ id, name, arguments }]"
   },
-  "usage":         "{ input_tokens, output_tokens, total_tokens }",
-  "intent_action": "allow | block | escalate",
-  "intent_score":  "float 0.0–1.0"
+  "usage":         "{ input_tokens, output_tokens, total_tokens }"
 }
 ```
 
@@ -156,7 +150,7 @@ decision = {"action": "block", "rule": "no-destructive-tools"} if {
 }
 ```
 
-### Require the proxy's model to be on an allowlist
+### Require the agent's model to be on an allowlist
 
 ```rego
 package xenovia
@@ -172,7 +166,7 @@ decision = {"action": "block", "rule": "model-allowlist"} if {
 }
 ```
 
-`input.model` is the model configured on the proxy, so this rule guards against a proxy pointed at an unapproved model rather than a client choosing one.
+`input.model` is the model configured on the agent, so this rule guards against an agent routed to an unapproved model rather than a client choosing one.
 
 ### Cap output tokens (request stage)
 
@@ -201,6 +195,16 @@ decision = {"action": "block_response", "rule": "no-refusal"} if {
 }
 ```
 
+## Templates
+
+Instantiate a shipped template with its parameters instead of writing Rego.
+
+Thirteen templates were removed because the runtime never produces the inputs they read, or because they always escalated: `pii-pattern-block`, `rapid-call-rate-block`, `repeat-denial-escalation`, `anomalous-tool-pattern-escalation`, `tenant-boundary-match`, `external-disclosure-consent-gate`, `block-shadow-model-fallback`, `low-confidence-escalation`, `high-risk-tool-human-approval`, `financial-threshold-escalation`, `eu-ai-act-fundamental-rights-review`, `destructive-tool-confirmation`, and `workflow-intent-aggregate-escalate`. Policies you already created from them are unchanged; review whether they can still fire.
+
+## Guardrails
+
+Guardrails replace the former intent check. A guardrail is a named check that Xenovia's guardrail model evaluates at one or more stages (`model_request`, `model_response`, `tool_call`, `tool_result`, `memory_write`, `context_summary`), with an action (`allow`, `block`, `redact`, or `escalate`) and, like a policy, Enabled and Monitor or Enforce. The agent's **scope guardrail** (kind `scope`) describes in plain language what the agent is for; requests outside it are flagged. A guardrail can be limited to one agent role. `tool_result`, `memory_write`, and `context_summary` guardrails run only when your code sends those stages with the [Python SDK](/integrations/xenovia-sdk).
+
 ## What a block looks like to your app
 
 A blocked request returns `403`. The runtime uses the gateway error envelope:
@@ -218,12 +222,14 @@ The OpenAI SDK raises this as `PermissionDeniedError`. The message is deliberate
 
 ## Escalations
 
-`escalate` is for actions you want flagged for human attention. When a request-stage rule (or the [intent guardrail](/platform/runtime-architecture#6-intent)) escalates:
+`escalate` is for actions you want flagged for human attention. When a policy escalates:
 
-1. The request is blocked with `403` (`request escalated for human review`).
-2. An escalation signal is recorded, carrying the proxy, score, and matched rule.
+1. The call is blocked with `403`: a request-stage escalation returns `request blocked by policy`, and a response-stage escalation suppresses the reply with `response blocked by policy`.
+2. An escalation is recorded, carrying the agent and matched rule.
 3. Any alert rule watching for escalations fires (see [Alerts](/platform/traces-and-remediation)).
 
+A guardrail with action `escalate` records an escalation the same way but lets the request proceed.
+
 <Warning>
-  There is no approve/deny queue today. An escalation blocks the request and raises a signal; it does not pause the request for an operator to release. Review escalations in Sessions and in Alerts, then adjust the policy or intent configuration. Reasons are recorded server-side and are never returned to the agent.
+  There is no approve/deny queue today. A policy escalation blocks the call and raises a signal; a guardrail escalation raises the signal and lets the call proceed. Neither pauses the request for an operator to release. Review escalations in Sessions and in Alerts, resolve them with a note, then adjust the policy or guardrail. Reasons are recorded server-side and are never returned to the agent.
 </Warning>
