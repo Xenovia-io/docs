@@ -224,12 +224,12 @@ The OpenAI SDK raises this as `PermissionDeniedError`. The message is deliberate
 
 `escalate` is for actions you want flagged for human attention. When a policy escalates:
 
-1. The request is blocked with `403` (`request escalated for human review`).
+1. The call is blocked with `403`: a request-stage escalation returns `request blocked by policy`, and a response-stage escalation suppresses the reply with `response blocked by policy`.
 2. An escalation is recorded, carrying the agent and matched rule.
 3. Any alert rule watching for escalations fires (see [Alerts](/platform/traces-and-remediation)).
 
 A guardrail with action `escalate` records an escalation the same way but lets the request proceed.
 
 <Warning>
-  There is no approve/deny queue today. An escalation blocks the request and raises a signal; it does not pause the request for an operator to release. Review escalations in Sessions and in Alerts, resolve them with a note, then adjust the policy or guardrail. Reasons are recorded server-side and are never returned to the agent.
+  There is no approve/deny queue today. A policy escalation blocks the call and raises a signal; a guardrail escalation raises the signal and lets the call proceed. Neither pauses the request for an operator to release. Review escalations in Sessions and in Alerts, resolve them with a note, then adjust the policy or guardrail. Reasons are recorded server-side and are never returned to the agent.
 </Warning>

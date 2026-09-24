@@ -14,7 +14,7 @@ icon: "layer-group"
     A provider holds the upstream credential and model for an agent. One provider per agent; credentials are resolved server-side.
   </Card>
   <Card title="Policies" icon="gavel">
-    Rego rules evaluated by OPA. Request-stage decisions are `allow`, `block`, `redact`, or `escalate`; response-stage decisions use `block_response` and `redact_response`.
+    Rego rules evaluated by OPA. Request-stage decisions are `allow`, `block`, `redact`, or `escalate`; response-stage decisions are `allow`, `block_response`, `redact_response`, or `escalate`.
   </Card>
   <Card title="Sessions" icon="fingerprint">
     A session groups related turns. Xenovia resolves one for every request; you can also set it explicitly.
@@ -75,7 +75,7 @@ Agent
     The request-stage Rego runs, then `model_request` guardrails. A `block` returns `403`; a `redact` strips fields; a policy `escalate` blocks and is queued for review.
   </Step>
   <Step title="Call the model and check the response">
-    The upstream model is called, the response-stage Rego and `model_response` guardrails run, and the completed turn is persisted.
+    The upstream model is called, the response-stage Rego and `model_response` guardrails run, `tool_call` guardrails check any tool calls the model proposed, and the completed turn is persisted.
   </Step>
 </Steps>
 

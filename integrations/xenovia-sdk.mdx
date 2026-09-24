@@ -101,14 +101,14 @@ Every hook also accepts `session_id=`.
 ```python
 check = xenovia.tool_pre("send_email", {"to": to, "body": body})
 
-if check.is_blocked():
+if not check.is_success():  # blocked, or failed
     return "This action is not allowed."
 
 args = check.payload["arguments"] if check.is_redacted() else {"to": to, "body": body}
 result = send_email(**args)
 
 reviewed = xenovia.tool_post("send_email", str(result))
-if reviewed.is_blocked():
+if not reviewed.is_success():
     return "The tool result was withheld."
 ```
 
@@ -120,7 +120,7 @@ If your model calls already go through the agent endpoint, leave `model_pre` and
 
 `model_pre` accepts messages with string content or a list of content parts (OpenAI or Anthropic style), and tools as flat `{name, description}` objects or OpenAI function tools. Only text is checked: text parts, `refusal` parts, and the text of Anthropic `tool_result`, `mcp_tool_result` and `search_result` blocks (string content or nested text parts) are joined. Media and file parts, the model's own tool calls (`tool_use`, `server_tool_use`, `mcp_tool_use`) and thinking, and Anthropic server tool results (web search, web fetch, code execution) are not sent, so their content is not checked. On success, `payload["messages"]` and `payload["tools"]` are your own objects, with any redaction written back into the part it came from.
 
-`model_pre` and `model_post` raise `ValueError`, and send nothing, when messages are not a list of dicts, a role is not a string, content is not a string, a list, or `None`, a content part is malformed or of a type not listed above, or a tool is not a dict or has no name.
+`model_pre`, and `model_post` when you pass `messages`, raise `ValueError`, and send nothing, when messages are not a list of dicts, a role is not a string, content is not a string, a list, or `None`, or a content part is malformed or of a type not listed above. `model_pre` also raises it when a tool is not a dict or has no name.
 
 ## `execute()` — a single check
 

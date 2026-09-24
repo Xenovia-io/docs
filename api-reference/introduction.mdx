@@ -9,7 +9,7 @@ Xenovia exposes two HTTP surfaces. This reference covers the **management API** 
 | Surface | Base URL | Credential | Used for |
 |---------|----------|------------|----------|
 | Management API (this reference) | `https://cp.xenovia.io/api/v1` | Organization API key `ak_…` or a dashboard session | Creating and configuring agents, providers, policies and alerts; reading sessions, traces and audit logs |
-| Runtime | `https://runtime.xenovia.io/{agent_id}/v1` and `https://runtime.xenovia.io/v1/execute` | Agent API key `xe_…` | `POST /chat/completions` and `POST /responses` from your application; `POST /v1/execute` from the Python SDK |
+| Runtime | `https://runtime.xenovia.io/{agent_id}/v1` (agent endpoint) and `https://runtime.xenovia.io` (Python SDK) | Agent API key `xe_…` | `POST /chat/completions` and `POST /responses` from your application; `POST /v1/execute` from the Python SDK |
 
 The two credentials are not interchangeable: the management API rejects `xe_…` keys and the runtime rejects `ak_…` keys. See [Authentication](/api-reference/authentication).
 
