@@ -355,7 +355,7 @@
       "target": "$.paths['/api/v1/policy-templates/{template_id}/instantiate'].post",
       "update": {
         "summary": "Instantiate policy template",
-        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRenders the template into an organization policy. `enabled` defaults to `false`; enabling at creation requires `agent_id`, and the agent may be a draft."
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRenders the template into an organization policy. `enabled` defaults to `false`; enabling at creation requires `agent_id` to reference an active agent."
       }
     },
     {
@@ -418,7 +418,7 @@
       "target": "$.paths['/api/v1/policies/{policy_id}/enable'].post",
       "update": {
         "summary": "Enable policy",
-        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRequires the policy to be attached to an agent (`400` otherwise); the agent may be a draft. Only enabled policies reach the runtime."
+        "description": "**Auth:** organization API key with `write` scope, or a signed-in user.\n\nRequires the policy to be attached to an **active** agent (`400` otherwise). Only enabled policies reach the runtime."
       }
     },
     {

@@ -30,7 +30,7 @@ Every response carries an `X-Request-ID` header. Send your own value to have it 
 
 <CardGroup cols={2}>
   <Card title="400 Bad Request" icon="circle-exclamation">
-    A domain rule was violated — for example activating an agent with no API key, or enabling a policy that is not attached to an agent.
+    A domain rule was violated — for example activating an agent with no API key, or enabling a policy that is not attached to an active agent.
   </Card>
   <Card title="401 Unauthorized" icon="key">
     Missing, malformed, expired, or revoked credential — or an agent `xe_` key used against the management API.

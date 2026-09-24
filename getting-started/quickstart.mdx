@@ -12,13 +12,13 @@ In the platform, open **Agents** and choose **Create agent**. The agent is saved
 
 <Steps>
   <Step title="Purpose">
-    Name the agent, choose how it connects, and describe the job it does. The purpose becomes the agent's scope guardrail. This quickstart uses the **Agent endpoint** mode; **SDK only** agents call their model themselves, and **Hybrid deployment** agents are served by your own deployment.
+    Name the agent, choose how it connects, and describe the job it does. The purpose becomes the agent's scope guardrail. This quickstart uses the **Agent endpoint** mode; **SDK only** agents call their model themselves, and **Hybrid deployment** agents are served by your own deployment, which you pick here (organization admins).
   </Step>
   <Step title="Model route">
-    Choose a provider credential (or add one) and the model the agent calls. A hybrid agent picks its deployment here and uses a credential reference that your cluster resolves. SDK-only agents skip this step.
+    Choose a provider (or add one); the agent uses the provider's model. A hybrid agent's provider uses a credential reference that your cluster resolves. SDK-only agents skip this step.
   </Step>
   <Step title="Protection">
-    Keep the recommended policies and guardrails. Every rule here starts enabled in **Monitor**: evaluated and recorded, but never blocking.
+    Keep the recommended policies. They are created in **Monitor** (evaluated and recorded, never blocking) and switched on when you activate the agent.
   </Step>
   <Step title="Connect">
     Create an API key (`xe_...`). It is shown once. Copy it together with the agent ID from the endpoint URL.

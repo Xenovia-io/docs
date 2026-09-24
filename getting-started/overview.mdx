@@ -35,10 +35,10 @@ Create the agent under **Agents**. Setup has four steps, then activation:
     Name the agent, choose how it connects (**Agent endpoint**, **SDK only**, or **Hybrid deployment**), and describe the job it does.
   </Step>
   <Step title="Model route">
-    Choose the provider credential and model the agent calls. SDK-only agents call their model themselves and skip this step.
+    Choose the provider the agent calls, or add one; the agent uses the provider's model. SDK-only agents call their model themselves and skip this step.
   </Step>
   <Step title="Protection">
-    Apply the recommended policies and guardrails, including the agent's scope guardrail. They start enabled in **Monitor**, so nothing is blocked until you switch them to **Enforce**.
+    Choose the recommended policies for the agent. They are created in **Monitor** and switched on when you activate the agent, so nothing is blocked until you switch them to **Enforce**.
   </Step>
   <Step title="Connect">
     Create an `xe_` API key and copy the endpoint and client snippet.
