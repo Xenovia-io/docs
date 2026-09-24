@@ -199,7 +199,7 @@ decision = {"action": "block_response", "rule": "no-refusal"} if {
 
 Instantiate a shipped template with its parameters instead of writing Rego. Agent setup applies five of them as the recommended protection, in Monitor: `baseline-safety`, `secret-detection-block`, `daily-token-budget` (only when the agent has a model route), `tool-invocation-allowlist`, and `tool-arg-pii-block`.
 
-Twelve templates were removed because the runtime never produces the inputs they read, or because they always escalated: `pii-pattern-block`, `rapid-call-rate-block`, `repeat-denial-escalation`, `anomalous-tool-pattern-escalation`, `tenant-boundary-match`, `external-disclosure-consent-gate`, `block-shadow-model-fallback`, `low-confidence-escalation`, `high-risk-tool-human-approval`, `financial-threshold-escalation`, `eu-ai-act-fundamental-rights-review`, and `destructive-tool-confirmation`. Policies you already created from them are unchanged; review whether they can still fire.
+Thirteen templates were removed because the runtime never produces the inputs they read, or because they always escalated: `pii-pattern-block`, `rapid-call-rate-block`, `repeat-denial-escalation`, `anomalous-tool-pattern-escalation`, `tenant-boundary-match`, `external-disclosure-consent-gate`, `block-shadow-model-fallback`, `low-confidence-escalation`, `high-risk-tool-human-approval`, `financial-threshold-escalation`, `eu-ai-act-fundamental-rights-review`, `destructive-tool-confirmation`, and `workflow-intent-aggregate-escalate`. Policies you already created from them are unchanged; review whether they can still fire.
 
 ## Guardrails
 
@@ -224,12 +224,12 @@ The OpenAI SDK raises this as `PermissionDeniedError`. The message is deliberate
 
 `escalate` is for actions you want flagged for human attention. When a policy escalates:
 
-1. The request is blocked with `403` (`request escalated for human review`).
+1. The call is blocked with `403`: a request-stage escalation returns `request blocked by policy`, and a response-stage escalation suppresses the reply with `response blocked by policy`.
 2. An escalation is recorded, carrying the agent and matched rule.
 3. Any alert rule watching for escalations fires (see [Alerts](/platform/traces-and-remediation)).
 
 A guardrail with action `escalate` records an escalation the same way but lets the request proceed.
 
 <Warning>
-  There is no approve/deny queue today. An escalation blocks the request and raises a signal; it does not pause the request for an operator to release. Review escalations in Sessions and in Alerts, resolve them with a note, then adjust the policy or guardrail. Reasons are recorded server-side and are never returned to the agent.
+  There is no approve/deny queue today. A policy escalation blocks the call and raises a signal; a guardrail escalation raises the signal and lets the call proceed. Neither pauses the request for an operator to release. Review escalations in Sessions and in Alerts, resolve them with a note, then adjust the policy or guardrail. Reasons are recorded server-side and are never returned to the agent.
 </Warning>

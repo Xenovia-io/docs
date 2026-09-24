@@ -4,7 +4,7 @@ description: "How a request flows through the Xenovia runtime: routing, the plug
 icon: "sitemap"
 ---
 
-Xenovia Runtime is a high-performance Go service that speaks the OpenAI wire format. It exposes two routes per agent, plus the [Python SDK](/integrations/xenovia-sdk)'s decision endpoint `POST /v1/execute`, and passes every request through a fixed pipeline before and after the upstream model call.
+Xenovia Runtime is a high-performance Go service that speaks the OpenAI wire format. It exposes two inference routes per agent and passes every inference request through a fixed pipeline before and after the upstream model call. It also serves the [Python SDK](/integrations/xenovia-sdk)'s decision endpoint `POST /v1/execute`, which checks one stage and returns a decision without calling a model.
 
 ## Request flow
 

@@ -57,7 +57,7 @@ Provider credentials are configured on the agent's model route and resolved serv
 
 ## SDK hooks
 
-The [Xenovia Python SDK](/integrations/xenovia-sdk) (`pip install "xenovia-sdk>=0.2.1"`) checks agent actions such as tool calls, tool results, memory writes, and context summaries against the same agent's policies and guardrails, through `POST /v1/execute` on the runtime with the agent's `xe_` key.
+The [Xenovia Python SDK](/integrations/xenovia-sdk) (`pip install "xenovia-sdk>=0.2.1"`) checks agent actions such as tool calls, tool results, memory writes, and context summaries against the same agent's controls, through `POST /v1/execute` on the runtime with the agent's `xe_` key.
 
 ```python
 from xenovia_sdk import Xenovia
@@ -68,8 +68,12 @@ xenovia = Xenovia(api_key="xe_...", auto_session=True)
 def transfer_funds(amount: int, to: str) -> dict:
     return run_transfer(amount, to)
 
-result = transfer_funds(500, "acct_123")
+response = transfer_funds(500, "acct_123")  # a XenoviaResponse
+if response.is_success():
+    receipt = response.result  # what transfer_funds returned
 ```
+
+Model and tool-call checks run the agent's policies and guardrails; tool-result, memory-write, and context-summary checks run guardrails only.
 
 <Card title="Xenovia Python SDK" icon="python" href="/integrations/xenovia-sdk">
   ![Xenovia SDK badge](/images/integrations/xenovia-sdk.svg)
