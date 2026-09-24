@@ -35,7 +35,7 @@ The platform nests telemetry three levels deep. The names differ slightly betwee
 |------|------------|
 | **Session** | A group of related turns, resolved per request or set with `X-Xenovia-Session-Id`. The **Sessions** page lists these. |
 | **Turn** | One request/response cycle through an agent, or one SDK check. A turn carries the policy decision, tokens, and latency. (Some screens call a turn a "trace".) |
-| **Run / step** | A unit of work inside a turn — the model call, a policy check, a runtime-executed tool. |
+| **Run / step** | A unit of work inside a turn — the model call, a policy check, a guardrail evaluation, a runtime-executed tool. |
 | **Workflow** | Turns across several agents grouped by a shared workflow ID, for multi-agent runs. |
 | **Guardrail** | A named semantic check. The **scope guardrail** describes what the agent is for. |
 | **Escalation** | A step queued on its session for human review and resolved with a note. A policy escalation blocks with `403`; a guardrail escalation lets the call proceed. |
@@ -52,6 +52,7 @@ Agent
  └── Sessions
       └── Turns
            ├── Policy decision (action, rule)
+           ├── Guardrail evaluations
            ├── Model and tool runs
            └── Custom properties (X-Xenovia-Property-*)
 ```

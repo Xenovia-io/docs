@@ -60,7 +60,7 @@ Turn numbers increment per session (30-minute sliding TTL). Sessions are isolate
 
 ### 3. Trace
 
-- Opens a turn record and emits child runs: the model call, plus policy, escalation, and runtime-executed tool runs.
+- Opens a turn record and emits child runs: the model call, plus policy, guardrail, escalation, and runtime-executed tool runs.
 - Custom `X-Xenovia-Property-*` headers are attached to the turn (see [Traces and Remediation](/platform/traces-and-remediation)).
 - Persistence is asynchronous. Under sustained overload a record can be dropped rather than block the request.
 

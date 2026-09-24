@@ -24,7 +24,7 @@ Every request to an agent, and every SDK check, produces a **turn** record, grou
 | `policy_decision` / `policy_rule` | Final policy action and the rule that fired |
 | `custom_properties` | Key–value pairs from `X-Xenovia-Property-*` headers |
 
-Inside a turn, each unit of work is a **run**: the model call, plus policy and runtime-executed tool runs. Client-executed tool calls appear in the turn's `output.tool_calls` and, once returned, in the next turn's `tool_results`.
+Inside a turn, each unit of work is a **run**: the model call, plus policy, guardrail, and runtime-executed tool runs. Client-executed tool calls appear in the turn's `output.tool_calls` and, once returned, in the next turn's `tool_results`.
 
 ## Enriching a turn
 
