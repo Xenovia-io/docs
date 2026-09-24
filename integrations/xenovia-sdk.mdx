@@ -118,7 +118,9 @@ A redacted tool call returns the masked arguments in `payload["arguments"]`; a r
 If your model calls already go through the agent endpoint, leave `model_pre` and `model_post` off: the runtime checks the model request and reply there. Use them only for agents that call their model provider directly.
 </Note>
 
-`model_pre` accepts messages with string content or a list of content parts (OpenAI or Anthropic style), and tools as flat `{name, description}` objects or OpenAI function tools. Only text is checked: text parts are joined, and other parts (images, audio, files) are not sent. On success, `payload["messages"]` and `payload["tools"]` are your own objects, with any redaction written back into them.
+`model_pre` accepts messages with string content or a list of content parts (OpenAI or Anthropic style), and tools as flat `{name, description}` objects or OpenAI function tools. Only text is checked: text parts, `refusal` parts, and the text of Anthropic `tool_result`, `mcp_tool_result` and `search_result` blocks (string content or nested text parts) are joined. Media and file parts, the model's own tool calls (`tool_use`, `server_tool_use`, `mcp_tool_use`) and thinking, and Anthropic server tool results (web search, web fetch, code execution) are not sent, so their content is not checked. On success, `payload["messages"]` and `payload["tools"]` are your own objects, with any redaction written back into the part it came from.
+
+`model_pre` and `model_post` raise `ValueError`, and send nothing, when messages are not a list of dicts, a role is not a string, content is not a string, a list, or `None`, a content part is malformed or of a type not listed above, or a tool is not a dict or has no name.
 
 ## `execute()` — a single check
 
@@ -228,6 +230,8 @@ except XenoviaUnreachableError:
 except XenoviaExecutionError:
     ...  # any other non-2xx response, an unexpected body, or a session mismatch
 ```
+
+Malformed input raises `ValueError` before any request is sent, for example a `model_pre` message part the SDK cannot read.
 
 ## Wire format
 
