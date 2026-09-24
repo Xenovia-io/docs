@@ -20,7 +20,7 @@ Every agent has an OpenAI-compatible endpoint on the Xenovia runtime. Any client
 https://runtime.xenovia.io/{agent_id}/v1
 ```
 
-Provider credentials are configured on the agent's model route and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the agent. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the endpoint.
+Provider credentials are configured on the agent and resolved server-side. So is the model: the `model` field in your request is replaced with the model configured on the agent. Use your framework's OpenAI-compatible client for every provider, including Anthropic, Groq, Bedrock, and Gemini; provider-native SDKs use different API paths and cannot target the endpoint.
 
 <CardGroup cols={2}>
   <Card title="OpenAI SDK" icon="python" href="/integrations/openai-sdk">

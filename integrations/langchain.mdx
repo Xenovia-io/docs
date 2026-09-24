@@ -4,11 +4,11 @@ description: "Use Xenovia as the LLM backend for LangChain chains, agents, and R
 icon: "link"
 ---
 
-Xenovia is an OpenAI-compatible endpoint, so `ChatOpenAI` is the client for every Xenovia agent, whichever provider the agent routes to. The provider and model are configured on the agent's model route and resolved server-side; the `model` argument in your code is a placeholder that the runtime replaces with the agent's configured model.
+Xenovia is an OpenAI-compatible endpoint, so `ChatOpenAI` is the client for every Xenovia agent, whichever provider the agent routes to. The provider and model are configured on the agent and resolved server-side; the `model` argument in your code is a placeholder that the runtime replaces with the agent's configured model.
 
 ## Setup
 
-The Python examples are checked with Python 3.12, `langchain` / `langchain-openai` 1.0.0 and `langchain` 1.4.0 / `langchain-openai` 1.6.1 using simulated HTTP responses. Validate your agent's policies, guardrails, and model route separately.
+The Python examples are checked with Python 3.12, `langchain` / `langchain-openai` 1.0.0 and `langchain` 1.4.0 / `langchain-openai` 1.6.1 using simulated HTTP responses. Validate your agent's policies, guardrails, and provider configuration separately.
 
 <Tabs>
   <Tab title="Python">
@@ -54,15 +54,15 @@ The Python examples are checked with Python 3.12, `langchain` / `langchain-opena
 
 ## One client for every provider
 
-Use `ChatOpenAI` no matter which provider the agent's model route uses:
+Use `ChatOpenAI` no matter which provider is attached to the agent:
 
-| Provider on the agent's model route | LangChain class to use |
-|-------------------------------------|------------------------|
+| Provider attached to the agent | LangChain class to use |
+|--------------------------------|------------------------|
 | OpenAI, Azure OpenAI, Groq, Amazon Bedrock, Google Gemini, Anthropic, vLLM | `ChatOpenAI` pointed at the agent endpoint |
 
 Provider-native classes such as `ChatGroq`, `ChatAnthropic`, `ChatBedrock`, or `ChatGoogleGenerativeAI` use their own API paths and auth headers, so they cannot be pointed at the agent endpoint; a request from them returns `404`. Pointed at the provider directly, they bypass Xenovia entirely, so those calls are neither traced nor policy-checked.
 
-The `model` argument is a placeholder. The runtime replaces it with the model configured on the agent, and the `model` field in the response reports the model that actually served the request. To change models, update the agent's model route rather than your code.
+The `model` argument is a placeholder. The runtime replaces it with the model configured on the agent, and the `model` field in the response reports the model that actually served the request. To change models, update the agent's provider configuration rather than your code.
 
 ## Chains
 

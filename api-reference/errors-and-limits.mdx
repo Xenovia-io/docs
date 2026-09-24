@@ -66,7 +66,7 @@ The runtime returns the gateway error envelope:
 
 `is_bifrost_error` is `true` when the error came from the upstream provider (a timeout, say), in which case `extra_fields` names the provider, model, and request type. OpenAI-compatible SDKs raise these as their usual typed errors (`403` → `PermissionDeniedError`, `429` → `RateLimitError`, and so on).
 
-Errors raised before the request reaches the pipeline — body validation, authentication, and model route resolution (the `502` below) — use a shorter body, `{ "error": { "message": "..." } }`. An invalid agent ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`. The SDK's `POST /v1/execute` returns its own decision body; see the [Python SDK](/integrations/xenovia-sdk).
+Errors raised before the request reaches the pipeline — body validation, authentication, and provider resolution (the `502` below) — use a shorter body, `{ "error": { "message": "..." } }`. An invalid agent ID in the URL returns `404` with an empty body, and a completely unknown path returns `404` with the plain-text body `Not Found`. The SDK's `POST /v1/execute` returns its own decision body; see the [Python SDK](/integrations/xenovia-sdk).
 
 ### Runtime status codes
 
@@ -78,7 +78,7 @@ Errors raised before the request reaches the pipeline — body validation, authe
 | `403` | Blocked by an enforced policy or guardrail, or escalated by a policy |
 | `404` | Unknown agent ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served under an agent, plus the SDK's `POST /v1/execute` at the runtime root) |
 | `405` | Wrong method on a supported path |
-| `502` | The agent has no model route, or an ambiguous or invalid provider configuration |
+| `502` | The agent has no provider, or an ambiguous or invalid provider configuration |
 | `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable |
 
 ### Policy and guardrail blocks

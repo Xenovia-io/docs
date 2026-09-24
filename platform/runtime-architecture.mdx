@@ -8,11 +8,11 @@ Xenovia Runtime is a high-performance Go service that speaks the OpenAI wire for
 
 ## Request flow
 
-Before any plugin runs, the router prepares the request: it validates the agent ID, checks the path, method, and content modality, sets the internal `X-Xenovia-Agent-Path`, authenticates the key against the agent in the URL, and only then resolves the agent's model route — rewriting the request's `model` to the agent's configured provider and model. Then the plugin pipeline runs.
+Before any plugin runs, the router prepares the request: it validates the agent ID, checks the path, method, and content modality, sets the internal `X-Xenovia-Agent-Path`, authenticates the key against the agent in the URL, and only then resolves the agent's provider — rewriting the request's `model` to the agent's configured provider and model. Then the plugin pipeline runs.
 
 ```
 Request
-  │  router: validate agent ID · check path/method/modality · authenticate key · resolve model route + rewrite model
+  │  router: validate agent ID · check path/method/modality · authenticate key · resolve provider + rewrite model
   ▼
   1. Auth        bind the agent identity (Redis, 5-min cache)
   2. Session     resolve or create the session UUID, set the turn number
@@ -29,7 +29,7 @@ Response
 ```
 
 <Note>
-  Path, method, and body validation happen before authentication, so an unauthenticated caller can receive a `400`, `404`, or `405`. Every key that cannot act as the agent in the URL — unknown, revoked, another agent's, or a key for a draft or deleted agent — gets the same `401` `invalid api key for this agent`. A model route problem (`502`) is reported only to an authenticated caller.
+  Path, method, and body validation happen before authentication, so an unauthenticated caller can receive a `400`, `404`, or `405`. Every key that cannot act as the agent in the URL — unknown, revoked, another agent's, or a key for a draft or deleted agent — gets the same `401` `invalid api key for this agent`. A provider misconfiguration (`502`) is reported only to an authenticated caller.
 </Note>
 
 A session middleware wraps the whole router and stamps `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` into the response headers before the first body byte, so streaming responses still carry them.
@@ -104,7 +104,7 @@ Embeddings, legacy completions, model listing, and audio, image, video, batch, a
 
 ## Security
 
-- **Credential isolation.** Provider credentials live on the agent's model route and are resolved server-side; your app never holds them. Secrets are fetched over an internal channel and kept in memory, never written to Redis or into telemetry.
+- **Credential isolation.** Provider credentials live in the agent's configuration and are resolved server-side; your app never holds them. Secrets are fetched over an internal channel and kept in memory, never written to Redis or into telemetry.
 - **SSRF protection.** vLLM and Azure base URLs are validated; link-local and cloud-metadata addresses are rejected. Loopback and private vLLM addresses are rejected unless the runtime sets `XENOVIA_ALLOW_PRIVATE_PROVIDER_ENDPOINTS` (see [Hybrid deployments](#hybrid-deployments)).
 - **Config integrity.** Config snapshots and identity blobs are HMAC-signed. A revoked agent key stops working within about five minutes in the cloud.
 - **Deployment.** In the standard cloud deployment Xenovia operates the runtime. A hybrid data-plane option runs the runtime inside your own cluster; ask your Xenovia contact for the deployment guide.

@@ -8,10 +8,10 @@ icon: "layer-group"
 
 <CardGroup cols={3}>
   <Card title="Agents" icon="hexagon-nodes">
-    Operator-created entry points. An agent has an owner, a model route, attached policies, and guardrails. All governance is scoped to an agent.
+    Operator-created entry points. An agent has an owner, a single provider, attached policies, and guardrails. All governance is scoped to an agent.
   </Card>
   <Card title="Providers" icon="plug">
-    A provider holds the upstream credential and model for an agent's model route. Credentials are resolved server-side.
+    A provider holds the upstream credential and model for an agent. One provider per agent; credentials are resolved server-side.
   </Card>
   <Card title="Policies" icon="gavel">
     Rego rules evaluated by OPA. Request-stage decisions are `allow`, `block`, `redact`, or `escalate`; response-stage decisions are `allow`, `block_response`, `redact_response`, or `escalate`.
@@ -44,7 +44,7 @@ The platform nests telemetry three levels deep. The names differ slightly betwee
 
 ```
 Agent
- ├── Model route (provider: OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
+ ├── Provider (one: OpenAI / Anthropic / Gemini / Azure / Bedrock / Groq / vLLM)
  ├── Request-stage policies (Rego)
  ├── Response-stage policies (Rego)
  ├── Guardrails (scope guardrail + named checks, optionally per role)
@@ -70,7 +70,7 @@ A new agent starts as a **draft**. Setup has four steps — **Purpose** (includi
     The `xe_...` agent key is verified and must belong to the active agent in the URL.
   </Step>
   <Step title="Route">
-    The agent's model route is resolved, replacing the request's model with the agent's configured model.
+    The agent's provider is resolved, replacing the request's model with the agent's configured model.
   </Step>
   <Step title="Resolve the session">
     A session and turn number are resolved, and `X-Xenovia-Session-Id` and `X-Xenovia-Trace-Id` are stamped into the response headers.
@@ -95,6 +95,6 @@ Only `/v1/chat/completions` and `/v1/responses` are served. Any other path under
 
 ## What the platform does not expose
 
-- **Provider credentials** live on the agent's model route, never in your app or in telemetry.
+- **Provider credentials** live in the agent's configuration, never in your app or in telemetry.
 - **Raw API keys** are never logged; only a short SHA-256 prefix appears.
 - **Block and escalation reasons** are recorded server-side and are never returned to the agent.

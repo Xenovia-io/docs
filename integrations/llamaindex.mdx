@@ -6,9 +6,9 @@ icon: "database"
 
 ## Setup
 
-The agent example uses the workflow API available in LlamaIndex 0.13 and later. It requires an agent whose model route supports native tool calling.
+The agent example uses the workflow API available in LlamaIndex 0.13 and later. It requires an agent configured with a model that supports native tool calling.
 
-The agent example is checked with Python 3.12, `llama-index-core` 0.13.0 / `llama-index-llms-openai` 0.5.0 and core 0.14.24 / OpenAI integration 0.8.1 using simulated HTTP responses. Validate your agent's policies, guardrails, and model route separately.
+The agent example is checked with Python 3.12, `llama-index-core` 0.13.0 / `llama-index-llms-openai` 0.5.0 and core 0.14.24 / OpenAI integration 0.8.1 using simulated HTTP responses. Validate your agent's policies, guardrails, and provider configuration separately.
 
 ```bash
 pip install "llama-index-core>=0.13" llama-index-llms-openai llama-index-embeddings-openai llama-index-readers-file
