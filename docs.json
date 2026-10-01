@@ -44,6 +44,7 @@
             "pages": [
               "platform/overview",
               "platform/runtime-architecture",
+              "platform/providers",
               "platform/policies-and-approvals",
               "platform/tools-and-access",
               "platform/traces-and-remediation"
@@ -85,7 +86,10 @@
               "DELETE /api/v1/providers/{provider_id}",
               "GET /api/v1/agents/{agent_id}/providers",
               "POST /api/v1/agents/{agent_id}/providers/{provider_id}",
-              "DELETE /api/v1/agents/{agent_id}/providers/{provider_id}"
+              "DELETE /api/v1/agents/{agent_id}/providers/{provider_id}",
+              "GET /api/v1/provider-catalog",
+              "GET /api/v1/providers/{provider_id}/models",
+              "POST /api/v1/providers/models/draft"
             ]
           },
           {

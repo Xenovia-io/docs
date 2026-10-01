@@ -1,0 +1,132 @@
+---
+title: "Supported providers"
+description: "The model providers an agent can use, the credentials each takes, and how the runtime reaches them"
+---
+
+An agent uses one provider. You add the provider once in the console (**Providers**) or with the [providers API](/api-reference/introduction), and Xenovia tests the connection before saving it: the runtime sends one short request with the credentials you entered, and the provider is saved only if it answers.
+
+Your application always speaks OpenAI format to the agent endpoint, whichever provider is behind it; the runtime translates each request for the provider and translates the reply back. See [Supported endpoints](/platform/runtime-architecture#supported-endpoints).
+
+### Model developers
+
+| Provider | Type (`input.provider`) | Credentials |
+| --- | --- | --- |
+| OpenAI | `openai` | API key |
+| Anthropic | `anthropic` | API key |
+| Google Gemini (AI Studio) | `gemini` | API key |
+| xAI | `xai` | API key |
+| Mistral AI | `mistral` | API key |
+| Cohere | `cohere` | API key |
+| DeepSeek | `deepseek` | API key |
+| Perplexity | `perplexity` | API key |
+| Moonshot AI (Kimi) | `moonshot` | API key |
+| Z.AI (GLM) | `zai` | API key |
+| Alibaba Model Studio (Qwen) | `alibaba` | API key |
+| MiniMax | `minimax` | API key |
+| Meta Llama API | `llama` | API key |
+
+### Cloud platforms
+
+| Provider | Type (`input.provider`) | Credentials |
+| --- | --- | --- |
+| Azure OpenAI | `azure` | API key, Entra ID |
+| Microsoft Foundry | `microsoft-foundry` | API key, Entra ID |
+| Amazon Bedrock | `bedrock` | Access keys, IAM role, Bedrock API key |
+| Google Vertex AI | `vertex` | Service account |
+| Databricks | `databricks` | Access token, OAuth |
+| NVIDIA NIM | `nvidia` | API key |
+| Cloudflare Workers AI | `cloudflare-workers-ai` | API key |
+| Scaleway Generative APIs | `scaleway` | API key |
+| OVHcloud AI Endpoints | `ovhcloud` | API key |
+
+### Inference providers
+
+| Provider | Type (`input.provider`) | Credentials |
+| --- | --- | --- |
+| Groq | `groq` | API key |
+| Cerebras | `cerebras` | API key |
+| Fireworks AI | `fireworks` | API key |
+| Together AI | `together` | API key |
+| DeepInfra | `deepinfra` | API key |
+| Nebius Token Factory | `nebius` | API key |
+| Hugging Face Inference Providers | `huggingface` | API key |
+| SambaNova Cloud | `sambanova` | API key |
+| Baseten | `baseten` | API key |
+| Novita AI | `novita` | API key |
+| Friendli | `friendli` | API key |
+| CoreWeave Inference (W&B) | `coreweave` | API key |
+| Upstage | `upstage` | API key |
+| Inception | `inception` | API key |
+
+### Routers and gateways
+
+| Provider | Type (`input.provider`) | Credentials |
+| --- | --- | --- |
+| OpenRouter | `openrouter` | API key |
+| Vercel AI Gateway | `vercel-ai-gateway` | API key |
+| GitHub Models | `github-models` | GitHub token |
+| Requesty | `requesty` | API key |
+
+### Self-hosted
+
+| Provider | Type (`input.provider`) | Credentials |
+| --- | --- | --- |
+| vLLM | `vllm` | Optional API key |
+| Ollama | `ollama` | Optional API key |
+| SGLang | `sglang` | Optional API key |
+| LM Studio | `lmstudio` | Optional API key |
+
+### Custom endpoints
+
+| Provider | Type (`input.provider`) | Credentials |
+| --- | --- | --- |
+| Custom OpenAI-compatible endpoint | `openai-compatible` | Optional API key |
+| Custom Anthropic-compatible endpoint | `anthropic-compatible` | Optional API key |
+
+The type in the second column is the provider's id. It is what policies see in `input.provider` and what traces record, whatever API the runtime uses to reach the provider.
+
+## Credentials
+
+Provider credentials are encrypted when saved, are never returned by the API or shown again in the console, and reach the runtime only when it calls the provider.
+
+- **API key.** Most providers. Sent the way the provider expects (`Authorization: Bearer`, `x-api-key` or `api-key`).
+- **Amazon Bedrock.**
+  - *Access keys*: an IAM user's access key ID and secret access key.
+  - *IAM role*: Xenovia assumes a role in your account. You give the role ARN, plus the keys of an IAM user that may only call `sts:AssumeRole` on that role. The role's trust policy must require the external ID shown in the console. That ID is your organization's ID, set by Xenovia and never by the person adding the provider, so no other organization can use your role.
+  - *Bedrock API key*: a long-term or short-term Bedrock API key.
+- **Azure OpenAI and Microsoft Foundry.** An API key, or a Microsoft Entra ID service principal (tenant ID, client ID and client secret) with access to the resource.
+- **Google Vertex AI.** A service account key (the JSON file) for a service account with the Vertex AI User role, plus the project ID and region.
+- **Databricks.** A personal access token, or an OAuth service principal (client ID and secret).
+
+Self-managed installations can also let the runtime use its own cloud identity (an AWS role, an Azure managed identity or Google application default credentials). This is off unless the installation enables it, and it is never available on Xenovia's hosted service.
+
+## Microsoft Foundry and Claude
+
+Microsoft Foundry deployments, including Claude, use the **Microsoft Foundry** type with your resource's endpoint (`https://<resource>.services.ai.azure.com`). Claude deployments are called through Foundry's Anthropic Messages API, every other model through its OpenAI-compatible API. The runtime tells them apart from the model name. If a deployment's name does not show the model (a Claude deployment called `prod-chat`, for example), set **Model family** to *Claude*.
+
+Claude is also available from Anthropic directly, from Amazon Bedrock and from Google Vertex AI. Use `input.model_family` in a policy to treat Claude the same way whichever of these an agent uses.
+
+## Self-hosted and custom endpoints
+
+vLLM, Ollama, SGLang and LM Studio servers, and any other server or gateway that speaks the OpenAI Chat Completions API (**Custom OpenAI-compatible endpoint**) or the Anthropic Messages API (**Custom Anthropic-compatible endpoint**), take a base URL and an optional key.
+
+- An OpenAI-compatible endpoint receives `{base URL}/chat/completions`. If it also serves the Responses API, say so under **Advanced**; otherwise Responses requests are sent to it as chat completions.
+- An Anthropic-compatible endpoint receives `{base URL}/v1/messages` with an `x-api-key` header.
+- OpenAI, Anthropic, Gemini, Groq, xAI, OpenRouter, NVIDIA NIM and Scaleway also accept a custom base URL, for example a company gateway in front of the provider. The provider keeps its type.
+- Private network addresses work only on installations that allow private provider endpoints. Hosted agents can reach public endpoints only.
+
+## Models
+
+The model is set on the provider (and can be overridden per agent). The model in your application's request is replaced with it. The console lists the provider's models where the provider publishes a model list, and suggests common models otherwise; you can always type a model ID.
+
+## Policy fields
+
+Besides `input.provider` and `input.model`, request and response policies receive:
+
+| Field | Value |
+| --- | --- |
+| `input.provider_adapter` | The API the runtime used to reach the provider, for example `openai`, `anthropic`, `azure`, `bedrock` or `openai_compatible` |
+| `input.provider_host` | The upstream host, for example `api.together.xyz` |
+| `input.model_family` | The model family when known: `anthropic`, `openai`, `gemini`, `llama`, `mistral` and so on, or `""` |
+
+The **Approved provider allowlist** template matches on `input.provider`.
