@@ -1,5 +1,6 @@
 """Execute the guides' Python snippets against in-memory HTTP fixtures."""
 
+import asyncio
 import io
 import json
 import os
@@ -283,6 +284,73 @@ class LangChainExamples(unittest.TestCase):
         messages = self.endpoint.requests[-1][1]["messages"]
         self.assertIn("runtime governance", messages[0]["content"])
         self.assertEqual(messages[1]["content"], "What does Xenovia provide?")
+
+
+class SessionForwardingExamples(unittest.IsolatedAsyncioTestCase):
+    """The FastAPI agents forward each request's session header verbatim."""
+
+    async def run_agent(self, page):
+        import xenovia_sdk
+        import xenovia_sdk.integration as integration
+
+        endpoint = Endpoint()
+        transport = httpx.MockTransport(endpoint.handle)
+        sync_client = integration.xenovia_http_client
+        async_client = integration.xenovia_async_http_client
+
+        def make_sync(**kwargs):
+            return sync_client(transport=transport, **kwargs)
+
+        def make_async(**kwargs):
+            return async_client(transport=transport, **kwargs)
+
+        namespace = {"__name__": "docs_example"}
+        env = {key: value for key, value in os.environ.items() if key != "XENOVIA_RUNTIME_URL"}
+        with (
+            patch.dict(os.environ, {**env, **ENV}, clear=True),
+            patch.object(integration, "xenovia_http_client", make_sync),
+            patch.object(integration, "xenovia_async_http_client", make_async),
+            patch.object(xenovia_sdk, "xenovia_async_http_client", make_async),
+        ):
+            execute(snippets(page, "Forwarding the simulation session")[0], namespace)
+
+        sessions = [f"xsim1.{index}{'0' * 31}.eyJ2IjoxfQ.c2ln_-{index}" for index in range(6)]
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=namespace["app"]), base_url="http://agent"
+        ) as agent:
+            replies = await asyncio.gather(
+                *(
+                    agent.post(
+                        "/chat",
+                        json={"message": session},
+                        headers={"X-Xenovia-Session-Id": session},
+                    )
+                    for session in sessions
+                ),
+                agent.post("/chat", json={"message": "no session"}),
+            )
+        for reply in replies:
+            self.assertEqual(reply.status_code, 200)
+            self.assertIn("Xenovia", reply.json()["reply"])
+        self.assertEqual(len(endpoint.requests), len(sessions) + 1)
+        for request, body in endpoint.requests:
+            self.assertEqual(request.url.path, "/fixture-agent/v1/chat/completions")
+            self.assertEqual(request.headers["Authorization"], "Bearer fixture-only")
+            message = body["messages"][-1]["content"]
+            if message == "no session":
+                self.assertNotIn("X-Xenovia-Session-Id", request.headers)
+            else:
+                self.assertEqual(request.headers["X-Xenovia-Session-Id"], message)
+        return namespace
+
+    async def test_openai_sdk_agent_forwards_session(self):
+        await self.run_agent("openai-sdk")
+
+    async def test_langchain_agent_forwards_session(self):
+        namespace = await self.run_agent("langchain")
+        llm = namespace["llm"]
+        self.assertIsNotNone(llm.http_client)
+        self.assertIsNotNone(llm.http_async_client)
 
 
 if __name__ == "__main__":

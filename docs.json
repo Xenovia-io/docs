@@ -47,7 +47,8 @@
               "platform/providers",
               "platform/policies-and-approvals",
               "platform/tools-and-access",
-              "platform/traces-and-remediation"
+              "platform/traces-and-remediation",
+              "platform/simulation"
             ]
           }
         ]

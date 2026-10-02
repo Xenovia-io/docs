@@ -1,0 +1,133 @@
+---
+title: "Simulation"
+description: "Test an agent against realistic conversations before release, see what Xenovia observed, and compare models and enforcement modes side by side."
+icon: "flask"
+---
+
+Simulation talks to your agent the way a user would. A simulated user plays each test case against your agent's own endpoint, Xenovia records what the agent did, and an evaluator checks the conversation against the case's expected behavior and the agent's policies and guardrails. Each case ends with a verdict and findings that point at the evidence behind them.
+
+Simulation is in the console under **Simulation**. It works with any agent you can reach over HTTPS. Routing the agent's model calls through Xenovia is optional, but it is what lets Simulation see more than the conversation and unlocks [variants and comparisons](#variants).
+
+## How a run works
+
+1. **Connect.** Give Xenovia your agent's endpoint, how to call it, and a short profile (instructions, tools, test records). **Save & test** sends two turns ("remember this code" / "what was the code?") to check that the endpoint answers and keeps the conversation.
+2. **Build a dataset.** Generate cases from the profile, write your own, or import JSON or CSV. A case has an opening message, the behavior you expect, and up to 8 turns. Cases are `normal`, `behavioral` or `security`.
+3. **Run.** Pick cases (up to 200) and a concurrency (1–10). Each case gets a fresh Xenovia session. The simulated user continues the conversation until the case is done or reaches its turn limit.
+4. **Review.** Each case gets a verdict, a summary and findings:
+
+| Verdict | Meaning |
+|---------|---------|
+| `pass` | No requirement was violated |
+| `fail` | At least one requirement was violated |
+| `inconclusive` | A medium- or high-severity requirement could not be verified, or the evaluator's confidence was below 0.7 |
+
+A case that could not finish (the endpoint failed, the run was cancelled, evidence was inconsistent) ends in `error` with a code instead of a verdict. Retry starts a new run with fresh sessions for the cases you choose.
+
+### What Xenovia sends to your endpoint
+
+Every turn is an HTTPS `POST` (port 443, 120 s timeout, no redirects) with these headers:
+
+| Header | Value |
+|--------|-------|
+| `X-Xenovia-Session-Id` | The session for this case. See [The session header](#the-session-header) |
+| `Idempotency-Key` | `<result id>:<turn index>`, so your endpoint can recognise a repeated turn |
+| Your auth header | `Authorization: Bearer …` or a custom header, if you configured one |
+
+The body depends on the request format you chose: `simple_json` (`{"message", "session_id"}`, reply read from `reply`), `openai_chat` (the full `messages` history, reply read from `choices[0].message.content`), or `custom` (your own field names).
+
+## Evidence levels
+
+What the evaluator can judge depends on what Xenovia saw. Every case records one of three evidence levels; a run shows the lowest level among its cases.
+
+| Level | What Xenovia saw | How to get it |
+|-------|------------------|---------------|
+| **Conversation only** (`conversation_only`) | The messages and replies on your endpoint. Tool use is only what the agent says it did. | Connect the endpoint. Nothing else is needed. |
+| **Agent observed** (`agent_observed`) | Every turn's model calls went through the agent's Xenovia endpoint under the case's session: the model requests and replies, the tool calls the model proposed (not visible when replies are streamed), tool results passed back to it, and every policy and guardrail decision. | [Route model calls through Xenovia and forward the session header](#route-model-calls-through-xenovia). |
+| **Hooks confirmed** (`hooks_confirmed`) | The agent also checked its tool calls with Xenovia through `/v1/execute`, before a tool ran (`tool_call`) and on its result (`tool_result`), so Xenovia knows which tools actually ran and with what arguments. | Add the [Xenovia Python SDK](/integrations/xenovia-sdk) hooks around your tools. |
+
+A finding can only cite evidence at the level the case reached. At **conversation only**, a claim like "the agent refunded the order" rests on the agent's words; at **hooks confirmed** it rests on the tool call Xenovia allowed and the result it saw.
+
+## Route model calls through Xenovia
+
+To reach **agent observed**, two things must be true for every turn:
+
+1. The agent's model calls go to its Xenovia endpoint, `https://runtime.xenovia.io/{agent_id}/v1`, not to the provider directly.
+2. Each of those calls carries the `X-Xenovia-Session-Id` value that arrived with the turn, **unchanged**.
+
+For a Python agent the [Xenovia Python SDK](/integrations/xenovia-sdk#simulation-session-forwarding) does both in three lines:
+
+```bash
+pip install "xenovia-sdk>=0.3.0"
+export XENOVIA_API_KEY=xe_...          # an API key for this agent
+export XENOVIA_AGENT_ID=your-agent-id
+```
+
+```python
+from openai import OpenAI
+from xenovia_sdk import XenoviaASGIMiddleware, openai_client_kwargs
+
+app.add_middleware(XenoviaASGIMiddleware)    # FastAPI / Starlette: read the header from each request
+client = OpenAI(**openai_client_kwargs())     # model calls go through Xenovia and carry the header
+```
+
+Flask uses `app.wsgi_app = XenoviaWSGIMiddleware(app.wsgi_app)`. For LangChain, pass the same keyword arguments to `ChatOpenAI`. Step-by-step guides: [OpenAI SDK](/integrations/openai-sdk#forwarding-the-simulation-session), [LangChain](/integrations/langchain#forwarding-the-simulation-session). Other languages read the incoming header and set it on each model request; the Connect step shows a prefilled snippet for Python, the OpenAI SDK, LangChain and Node.js.
+
+### Integration status
+
+**Save & test** reports whether the integration works:
+
+| Status | What the test saw | What to fix |
+|--------|-------------------|-------------|
+| **Ready** | Model calls under the test session, with the session header verified by the runtime | Nothing. Variants are available, except for agents on a customer-hosted runtime ([see below](#agents-on-a-customer-hosted-runtime)). |
+| **Header missing** | Model calls on this agent's endpoint during the test, but none under the test session | The agent is routed but drops or changes the header. Forward the incoming value on every model call, exactly as received. |
+| **Not routed** | No model calls on this agent's endpoint during the test | Point the agent's model client at the agent endpoint with an API key for this agent. |
+
+Without **Ready**, Simulation still runs at conversation-only evidence with the agent's default model and Xenovia enforcing.
+
+## The session header
+
+For agents on the Xenovia cloud runtime, every simulation turn and the connection test carry a signed value rather than a plain UUID:
+
+```text
+X-Xenovia-Session-Id: xsim1.<session uuid>.<payload>.<signature>
+```
+
+The payload names the organization, the agent, the [mode and model](#variants) for this run, and an expiry (the end of the case's time budget). The signature is an HMAC that only Xenovia can produce. The value is at most 512 bytes.
+
+When the agent forwards it on a model call or on `/v1/execute` (as the header, or as the `session_id` field in the body), the runtime:
+
+- checks the signature, the expiry and that the value was issued for this agent;
+- uses the UUID inside it as the session, so the calls appear under the case's session in **Sessions**;
+- applies the run's mode and model to that one request.
+
+This is why the value must be forwarded **verbatim**. Treat it as an opaque string: don't parse it, trim it, re-encode it, or replace it with the UUID inside. A changed value fails the signature check and the runtime rejects the call with `400 invalid simulation session`. A dropped header means the call is not tied to the case, so the case falls back to conversation-only evidence and variants can't be applied.
+
+A plain UUID in `X-Xenovia-Session-Id` keeps working as before for your own traffic.
+
+### Agents on a customer-hosted runtime
+
+A [customer-hosted (hybrid) runtime](/platform/runtime-architecture#hybrid-deployments) cannot verify signed values, so for agents it serves Xenovia sends a plain session UUID instead. Forward it exactly like the signed value: on every model call and on `/v1/execute`, unchanged. The integration status and the agent-observed and hooks-confirmed evidence levels work the same way. Only [variants](#variants) and [comparisons](#comparisons) are unavailable: they need an agent on the Xenovia cloud runtime, and a run with any non-default variant is refused with `409 variants_unsupported`.
+
+Forward whatever value arrives without checking its format, so the same code works on either runtime.
+
+## Variants
+
+A **variant** is one way to run the same cases. It combines:
+
+- **Xenovia mode.** **Enforce** (the default) applies every policy, guardrail and SDK check as configured. **Observe only** evaluates and records every one of them, but none acts: nothing is blocked, redacted, escalated or denied, and `/v1/execute` answers `allow` with the original payload. The decision Xenovia would have made is still recorded, so a case shows "Would have blocked (observe only)" where enforcement would have stepped in. Observe only applies to that simulation's sessions alone, never to the agent's other traffic.
+- **Model.** Any model available from the agent's own provider. Xenovia lists the provider's models; if the provider can't list them, you type a model ID. The run's model calls use the agent's provider and credential with that model, whatever `model` your code sends. Switching to another provider is not supported.
+
+The default variant is the agent's configured model with Xenovia enforcing. Any other variant needs the integration to be **Ready** and an agent on the Xenovia cloud runtime, because the mode and model reach the runtime only through the forwarded session header. If a non-default variant's case has a turn where the runtime did not report that variant, the case ends in `error` with code `variant_not_applied` rather than a misleading verdict.
+
+In observe only, the evaluator is told that Xenovia enforced nothing. It judges what the agent actually did and never counts a decision that was only recorded as protection.
+
+## Comparisons
+
+In the run dialog, choose **Enforce**, **Observe only** or **Both**, and one or more models. Xenovia starts one run per combination (up to four), all on the same cases, grouped as a **comparison**. Each run has its own concurrency and progress.
+
+The comparison page puts each variant in a column with its counts and each case in a row, with links to every result. **Only differences** hides the cases where all variants agree, and cells where one variant passes and another fails are highlighted. Typical questions it answers:
+
+- **With or without Xenovia:** Enforce versus Observe only shows which failures Xenovia prevented and which the agent avoids on its own.
+- **Which model:** the same cases on two or three models from your provider show which one follows your requirements best before you change the agent's configuration.
+
+Retrying a run from a comparison starts a standalone run with the same variant.

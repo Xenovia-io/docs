@@ -38,7 +38,8 @@ By default, Mintlify serves docs at `http://localhost:3000`.
 │   ├── runtime-architecture.mdx
 │   ├── policies-and-approvals.mdx
 │   ├── tools-and-access.mdx
-│   └── traces-and-remediation.mdx
+│   ├── traces-and-remediation.mdx
+│   └── simulation.mdx
 ├── api-reference/
 │   ├── introduction.mdx
 │   ├── authentication.mdx
@@ -60,7 +61,7 @@ By default, Mintlify serves docs at `http://localhost:3000`.
 
 ## Integration example checks
 
-The LlamaIndex and LangChain Python snippets are executed directly from their MDX pages against in-memory HTTP fixtures:
+The LlamaIndex and LangChain Python snippets, and the OpenAI SDK and LangChain "Forwarding the simulation session" agents, are executed directly from their MDX pages against in-memory HTTP fixtures:
 
 ```bash
 python -m venv .venv
@@ -69,7 +70,9 @@ pip install -r tests/requirements-current.txt
 python -m unittest discover -s tests -v
 ```
 
-CI runs both `requirements-minimum.txt` (LlamaIndex 0.13 / LangChain 1.0) and `requirements-current.txt` (versions tested on 2026-09-09). Update the current matrix when validating a new framework release. Tests cover tool round trips, session headers, request-stage 403 handling and trace IDs, unrelated errors, interrupted LlamaIndex streams, and LangChain RAG prompt variables.
+CI runs both `requirements-minimum.txt` (LlamaIndex 0.13 / LangChain 1.0) and `requirements-current.txt` (versions tested on 2026-09-09). Update the current matrix when validating a new framework release. Tests cover tool round trips, session headers, request-stage 403 handling and trace IDs, unrelated errors, interrupted LlamaIndex streams, LangChain RAG prompt variables, and verbatim forwarding of each request's `X-Xenovia-Session-Id` under concurrent requests. The forwarding examples need `xenovia-sdk` 0.3.0 and FastAPI (both pinned in the requirements files).
+
+> **Release order:** `xenovia-sdk` 0.3.0 must be published to PyPI before CI can pass on the branch that adds the simulation docs (`feat/simulation`), because both requirements files pin it.
 
 These tests do not contact Xenovia or model providers. The query-engine tool and embeddings are fixtures. Live policy enforcement, provider-specific stream behavior, and server traces must be verified separately against a test agent before claiming end-to-end compatibility.
 

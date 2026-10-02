@@ -11,10 +11,10 @@ Use it alongside the [agent endpoint](/integrations/overview): the endpoint gove
 **Install:**
 
 ```bash
-pip install "xenovia-sdk>=0.2.1"
+pip install "xenovia-sdk>=0.3.0"
 ```
 
-**Requirements:** Python ≥ 3.9. No runtime dependencies (standard library only).
+**Requirements:** Python ≥ 3.9. One dependency, `httpx`, used only by the [session-forwarding helpers](#simulation-session-forwarding).
 
 ## How it works
 
@@ -205,10 +205,38 @@ The decision never contains the rule or the reason. Look up `trace_id` in the pl
 
 The runtime issues the session and returns it in the `X-Xenovia-Session-Id` response header; the SDK stores it on the client.
 
+- Inside a request handled by the [session middleware](#simulation-session-forwarding), calls without `session_id=` send the request's `X-Xenovia-Session-Id` value, unchanged. It is not kept as the client's session.
 - With `auto_session=True`, the first call lets the runtime create a session and later calls reuse it.
 - Otherwise, pass `session_id=` (a UUID) on each call, or share a session ID with your agent endpoint traffic so SDK steps and model turns appear in one session.
-- If the runtime returns a different session than the one you sent, the SDK raises `XenoviaExecutionError`.
+- If the runtime returns a different session than the one you sent, the SDK raises `XenoviaExecutionError`. For a signed [Simulation](/platform/simulation#the-session-header) value the runtime answers with the UUID inside it, which counts as the same session.
 - `next_turn()` only advances a local counter. To report a turn number, pass `turn=` to `execute()`.
+
+## Simulation session forwarding
+
+[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. For Xenovia to see the turn's model calls and SDK checks, and to apply the run's [variant](/platform/simulation#variants), the agent must route its model calls through the agent endpoint and forward that value, exactly as received, on each of them. Since 0.3.0 the SDK does this with a middleware and a client helper:
+
+```python
+from openai import OpenAI
+from xenovia_sdk import XenoviaASGIMiddleware, openai_client_kwargs
+
+app.add_middleware(XenoviaASGIMiddleware)     # read the header from each request
+client = OpenAI(**openai_client_kwargs())      # route model calls through Xenovia, forwarding it
+```
+
+| Helper | What it does |
+|--------|--------------|
+| `XenoviaASGIMiddleware(app)` | Reads the header from each request (FastAPI, Starlette, Django ASGI). `app.add_middleware(XenoviaASGIMiddleware)` |
+| `XenoviaWSGIMiddleware(app)` | The same for WSGI (Flask, Django). `app.wsgi_app = XenoviaWSGIMiddleware(app.wsgi_app)` |
+| `openai_client_kwargs(async_=False)` | `{"base_url", "api_key", "http_client"}` for `OpenAI`, `AsyncOpenAI` (`async_=True`) or LangChain `ChatOpenAI`, from `XENOVIA_API_KEY`, `XENOVIA_AGENT_ID` and `XENOVIA_RUNTIME_URL` (default `https://runtime.xenovia.io`). Raises `ValueError` naming a missing variable |
+| `xenovia_http_client()` / `xenovia_async_http_client()` | `httpx` clients that add the header to each request while a session is set, for any client that accepts an `http_client` (keyword arguments go to `httpx`) |
+| `current_session()` | The header value of the request being handled, or `None` |
+| `session_scope(value)` | Sets the session for a block of code outside a request, such as a queue worker or a thread you start yourself |
+
+- Inside a request, `execute()`, `@guard()` and every hook send the same value as `session_id` when you don't pass one, so tool checks land on the case's session too and the case can reach **hooks confirmed** evidence.
+- The value is opaque. A simulation sends a signed value (`xsim1.…`) that the runtime verifies, or a plain UUID for an agent on a customer-hosted runtime; the SDK never parses, trims or re-encodes it. Requests without the header are sent without it.
+- Concurrent requests never see each other's session: each ASGI request runs in its own task, sync endpoints run in a thread pool with the request's context, and each WSGI request gets its own context. Threads you start yourself don't inherit it: read `current_session()` before starting the thread and wrap the thread's work in `session_scope(value)`.
+- The agent endpoint speaks the OpenAI format for every provider, Anthropic included, so use an OpenAI-compatible client as above. The `anthropic` SDK's Messages API is not served by the endpoint.
+- LangChain's `ChatOpenAI` takes separate sync and async clients: `ChatOpenAI(model=..., **openai_client_kwargs(), http_async_client=xenovia_async_http_client())`. See [LangChain](/integrations/langchain#forwarding-the-simulation-session).
 
 ## Error handling
 
@@ -248,7 +276,7 @@ Authorization: Bearer xe_...
   "agent_depth": 1,
   "identity": { "type": "agent", "id": "billing-agent" },
   "env": "prod",
-  "sdk": { "version": "0.2.1", "language": "python" }
+  "sdk": { "version": "0.3.0", "language": "python" }
 }
 ```
 

@@ -118,7 +118,7 @@ If a tool name matches a block rule in your Rego policy, the request returns `40
 
 ## Sessions
 
-Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session. All turns under that session ID appear together in **Sessions** with a per-session turn counter.
+Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session. During a simulation, forward the value Xenovia sent instead (see [Forwarding the simulation session](#forwarding-the-simulation-session)). All turns under that session ID appear together in **Sessions** with a per-session turn counter.
 
 <Tabs>
   <Tab title="Python">
@@ -146,6 +146,59 @@ Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session
 </Tabs>
 
 If you omit the header, Xenovia resolves a session automatically using message fingerprinting or the `user` field. See [Runtime Architecture](/platform/runtime-architecture) for the full five-strategy chain.
+
+## Forwarding the simulation session
+
+[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. Forward that value, exactly as received, on every model call the turn makes, so Xenovia can see the calls and apply the run's [variant](/platform/simulation#variants). On the Xenovia cloud runtime it is a signed value (`xsim1.…`), not a UUID, and on a customer-hosted runtime a plain UUID. Either way, don't parse, trim or replace it: a changed signed value is rejected with `400`.
+
+<Tabs>
+  <Tab title="Python">
+    The [Xenovia Python SDK](/integrations/xenovia-sdk#simulation-session-forwarding) reads the header in a middleware and adds it to each model call made while handling that request:
+
+    ```bash
+    pip install "xenovia-sdk>=0.3.0" openai fastapi
+    ```
+
+    ```python
+    from fastapi import FastAPI
+    from openai import OpenAI
+    from xenovia_sdk import XenoviaASGIMiddleware, openai_client_kwargs
+
+    app = FastAPI()
+    app.add_middleware(XenoviaASGIMiddleware)
+    client = OpenAI(**openai_client_kwargs())  # base_url, api_key and a session-forwarding http_client
+
+    @app.post("/chat")
+    def chat(body: dict):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": body["message"]}]
+        )
+        return {"reply": response.choices[0].message.content}
+    ```
+
+    `openai_client_kwargs()` reads `XENOVIA_API_KEY` and `XENOVIA_AGENT_ID` (and `XENOVIA_RUNTIME_URL`, default `https://runtime.xenovia.io`). Use `AsyncOpenAI(**openai_client_kwargs(async_=True))` for async code, and `app.wsgi_app = XenoviaWSGIMiddleware(app.wsgi_app)` for Flask. Requests without the header are sent without it, as before.
+  </Tab>
+  <Tab title="Node.js">
+    Read the header from the incoming request and pass it on each call:
+
+    ```typescript
+    app.post("/chat", async (req, res) => {
+      const session = req.get("X-Xenovia-Session-Id") // forward verbatim
+      const response = await client.chat.completions.create(
+        {
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: req.body.message }]
+        },
+        { headers: session ? { "X-Xenovia-Session-Id": session } : {} }
+      )
+      res.json({ reply: response.choices[0].message.content })
+    })
+    ```
+
+    Don't set the session in `defaultHeaders` on a shared client: concurrent requests would overwrite each other's session.
+  </Tab>
+</Tabs>
 
 ## Custom trace properties
 
