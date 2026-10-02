@@ -82,16 +82,9 @@ The intent check and its triggers are gone; the agent's [guardrails](/platform/p
 
 ## Supported providers
 
-Xenovia speaks OpenAI format and translates to each provider upstream, so your app always uses an OpenAI-compatible client.
+Xenovia speaks OpenAI format to your app and translates each request for the provider upstream, so your app always uses an OpenAI-compatible client. More than forty providers are supported: model developers (OpenAI, Anthropic, Google, Mistral, xAI and others), cloud platforms (Azure OpenAI, Microsoft Foundry, Amazon Bedrock, Google Vertex AI, Databricks), inference providers, routers, self-hosted servers and any OpenAI- or Anthropic-compatible endpoint. See [Supported providers](/platform/providers) for the full list and the credentials each takes.
 
-| Provider | Handling |
-|----------|----------|
-| OpenAI | Native |
-| Anthropic, Google Gemini, Azure OpenAI, Amazon Bedrock | Translated from OpenAI format |
-| Groq | OpenAI-compatible |
-| vLLM and other OpenAI-compatible endpoints | Routed by base URL |
-
-An OpenAI-typed provider configured with a base URL is routed as vLLM; one configured for Azure (an Azure endpoint or API version) is routed as Azure. The provider your policy sees in `input.provider` is this resolved value.
+The provider your policy sees in `input.provider` is the provider's type as configured (`openai`, `microsoft-foundry`, `together`, ...), whatever API the runtime uses to reach it. A provider configured with a custom base URL keeps its type.
 
 ## Supported endpoints
 
