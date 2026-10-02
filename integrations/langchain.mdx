@@ -150,7 +150,7 @@ The Python setup sets `X-Xenovia-Session-Id` on the client before constructing c
 
 ## Forwarding the simulation session
 
-[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn, and each turn is a different session. A session ID fixed on the client, as in [Setup](#setup), can't follow that. Instead, build `ChatOpenAI` from the [Xenovia Python SDK](/integrations/xenovia-sdk#simulation-session-forwarding) helper and add its middleware: the header of the request being handled is added, exactly as received, to every LLM call the chain or agent makes for it.
+[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. The value stays the same for every turn of one test conversation, but each conversation (each trial of each scenario) has its own, and several run at once. A session ID fixed on the client, as in [Setup](#setup), can't follow that. Instead, build `ChatOpenAI` from the [Xenovia Python SDK](/integrations/xenovia-sdk#simulation-session-forwarding) helper and add its middleware: the header of the request being handled is added, exactly as received, to every LLM call the chain or agent makes for it.
 
 ```bash
 pip install "xenovia-sdk>=0.3.0" fastapi
@@ -180,7 +180,7 @@ def chat(body: dict):
 
 `openai_client_kwargs()` returns `base_url`, `api_key` and an `http_client` that adds the header; it reads `XENOVIA_API_KEY`, `XENOVIA_AGENT_ID` and `XENOVIA_RUNTIME_URL` (default `https://runtime.xenovia.io`). `ChatOpenAI` uses `http_client` only for sync calls and `http_async_client` only for async ones, so pass both as above unless the agent is purely sync. For Flask, wrap the app with `app.wsgi_app = XenoviaWSGIMiddleware(app.wsgi_app)`.
 
-On the Xenovia cloud runtime the value is a signed string (`xsim1.…`), not a UUID; on a customer-hosted runtime it is a plain UUID. Forward it unchanged either way: a modified value is rejected with `400`, and a dropped one leaves the simulation with conversation-only evidence. Requests without the header are sent without it. LangChain tools that call Xenovia's `/v1/execute` through the SDK pick up the same session automatically.
+On the Xenovia cloud runtime the value is a signed string (`xsim1.…`), not a UUID; on a customer-hosted runtime it is a plain UUID. Forward it unchanged either way: a modified value is rejected with `400`, and a dropped one means Simulation can't grade the scenario's policy and tool checks. Requests without the header are sent without it. LangChain tools that call Xenovia's `/v1/execute` through the SDK pick up the same session automatically.
 
 ## Handling policy blocks
 

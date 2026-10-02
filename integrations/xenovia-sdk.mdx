@@ -213,12 +213,14 @@ The runtime issues the session and returns it in the `X-Xenovia-Session-Id` resp
 
 ## Simulation session forwarding
 
-[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. For Xenovia to see the turn's model calls and SDK checks, and to apply the run's [variant](/platform/simulation#variants), the agent must route its model calls through the agent endpoint and forward that value, exactly as received, on each of them. Since 0.3.0 the SDK does this with a middleware and a client helper:
+[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. For Xenovia to see the turn's model calls and SDK checks, grade the scenario's policy and tool checks, and apply the run's [mode and model](/platform/simulation#enforce-and-observe-only), the agent must route its model calls through the agent endpoint and forward that value, exactly as received, on each of them. Since 0.3.0 the SDK does this with a middleware and a client helper:
 
 ```python
+from fastapi import FastAPI
 from openai import OpenAI
 from xenovia_sdk import XenoviaASGIMiddleware, openai_client_kwargs
 
+app = FastAPI()
 app.add_middleware(XenoviaASGIMiddleware)     # read the header from each request
 client = OpenAI(**openai_client_kwargs())      # route model calls through Xenovia, forwarding it
 ```
@@ -227,12 +229,12 @@ client = OpenAI(**openai_client_kwargs())      # route model calls through Xenov
 |--------|--------------|
 | `XenoviaASGIMiddleware(app)` | Reads the header from each request (FastAPI, Starlette, Django ASGI). `app.add_middleware(XenoviaASGIMiddleware)` |
 | `XenoviaWSGIMiddleware(app)` | The same for WSGI (Flask, Django). `app.wsgi_app = XenoviaWSGIMiddleware(app.wsgi_app)` |
-| `openai_client_kwargs(async_=False)` | `{"base_url", "api_key", "http_client"}` for `OpenAI`, `AsyncOpenAI` (`async_=True`) or LangChain `ChatOpenAI`, from `XENOVIA_API_KEY`, `XENOVIA_AGENT_ID` and `XENOVIA_RUNTIME_URL` (default `https://runtime.xenovia.io`). Raises `ValueError` naming a missing variable |
+| `openai_client_kwargs(async_=False)` | A dict with the keys `base_url`, `api_key` and `http_client`, for `OpenAI`, `AsyncOpenAI` (`async_=True`) or LangChain `ChatOpenAI`, from `XENOVIA_API_KEY`, `XENOVIA_AGENT_ID` and `XENOVIA_RUNTIME_URL` (default `https://runtime.xenovia.io`). Raises `ValueError` naming a missing variable |
 | `xenovia_http_client()` / `xenovia_async_http_client()` | `httpx` clients that add the header to each request while a session is set, for any client that accepts an `http_client` (keyword arguments go to `httpx`) |
 | `current_session()` | The header value of the request being handled, or `None` |
 | `session_scope(value)` | Sets the session for a block of code outside a request, such as a queue worker or a thread you start yourself |
 
-- Inside a request, `execute()`, `@guard()` and every hook send the same value as `session_id` when you don't pass one, so tool checks land on the case's session too and the case can reach **hooks confirmed** evidence.
+- Inside a request, `execute()`, `@guard()` and every hook send the same value as `session_id` when you don't pass one, so SDK tool checks land on the same session as the turn's model calls, and Simulation's policy checks see their decisions.
 - The value is opaque. A simulation sends a signed value (`xsim1.…`) that the runtime verifies, or a plain UUID for an agent on a customer-hosted runtime; the SDK never parses, trims or re-encodes it. Requests without the header are sent without it.
 - Concurrent requests never see each other's session: each ASGI request runs in its own task, sync endpoints run in a thread pool with the request's context, and each WSGI request gets its own context. Threads you start yourself don't inherit it: read `current_session()` before starting the thread and wrap the thread's work in `session_scope(value)`.
 - The agent endpoint speaks the OpenAI format for every provider, Anthropic included, so use an OpenAI-compatible client as above. The `anthropic` SDK's Messages API is not served by the endpoint.
