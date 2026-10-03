@@ -118,7 +118,7 @@ If a tool name matches a block rule in your Rego policy, the request returns `40
 
 ## Sessions
 
-Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session. All turns under that session ID appear together in **Sessions** with a per-session turn counter.
+Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session. During a simulation, forward the value Xenovia sent instead (see [Forwarding the simulation session](#forwarding-the-simulation-session)). All turns under that session ID appear together in **Sessions** with a per-session turn counter.
 
 <Tabs>
   <Tab title="Python">
@@ -146,6 +146,34 @@ Pass `X-Xenovia-Session-Id` (a valid UUID) to group related calls into a session
 </Tabs>
 
 If you omit the header, Xenovia resolves a session automatically using message fingerprinting or the `user` field. See [Runtime Architecture](/platform/runtime-architecture) for the full five-strategy chain.
+
+## Forwarding the simulation session
+
+[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. Pass it, unchanged, on each model call made for that turn, so Xenovia can grade a scenario's tool and instruction-leak checks and apply the run's [provider and mode](/platform/simulation#run-a-simulation). On the Xenovia cloud runtime it is a signed value (`xsim1.…`), not a UUID; don't parse, trim or replace it, because a changed value is rejected with `400`.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    session = request.headers.get("X-Xenovia-Session-Id")
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        extra_headers={"X-Xenovia-Session-Id": session} if session else {}
+    )
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```typescript
+    const session = req.get("X-Xenovia-Session-Id")
+    const response = await client.chat.completions.create(
+      { model: "gpt-4o-mini", messages },
+      { headers: session ? { "X-Xenovia-Session-Id": session } : {} }
+    )
+    ```
+  </Tab>
+</Tabs>
+
+Pass it per call, not in `default_headers` on a shared client: a fixed header sends the same session on every request, so concurrent conversations would be merged into one session and graded together.
 
 ## Custom trace properties
 

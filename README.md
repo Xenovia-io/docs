@@ -38,7 +38,8 @@ By default, Mintlify serves docs at `http://localhost:3000`.
 │   ├── runtime-architecture.mdx
 │   ├── policies-and-approvals.mdx
 │   ├── tools-and-access.mdx
-│   └── traces-and-remediation.mdx
+│   ├── traces-and-remediation.mdx
+│   └── simulation.mdx
 ├── api-reference/
 │   ├── introduction.mdx
 │   ├── authentication.mdx
