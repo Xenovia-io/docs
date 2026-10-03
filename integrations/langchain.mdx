@@ -148,6 +148,17 @@ answer = rag_chain.invoke("What does Xenovia provide?")
 
 The Python setup sets `X-Xenovia-Session-Id` on the client before constructing chains or agents, so all their LLM calls stay grouped in **Sessions**. Reuse it for the conversation, and create a new client and session ID for a separate conversation. Reassigning `llm` after creating a chain or agent does not update the client it already holds.
 
+## Forwarding the simulation session
+
+[Simulation](/platform/simulation) sends your agent an `X-Xenovia-Session-Id` header with every turn. Pass it, unchanged, on each LLM call made for that turn:
+
+```python
+session = request.headers.get("X-Xenovia-Session-Id")
+reply = llm.invoke(messages, extra_headers={"X-Xenovia-Session-Id": session} if session else {})
+```
+
+Here `llm` is a `ChatOpenAI` built as in [Setup](#setup) but without `default_headers`. A session fixed on the client can't follow Simulation, which runs several conversations at once, each with its own value. On the Xenovia cloud runtime the value is signed (`xsim1.…`) and a changed one is rejected with `400`; on any runtime, a changed or dropped value means Simulation can't grade a scenario's tool and instruction-leak checks.
+
 ## Handling policy blocks
 
 LangChain propagates the upstream `403` as an `openai.PermissionDeniedError`. Catch it in your chain's error handler.

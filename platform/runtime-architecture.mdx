@@ -50,7 +50,7 @@ Five strategies, first match wins:
 
 | Priority | Source | Mechanism |
 |----------|--------|-----------|
-| 1 | `X-Xenovia-Session-Id` header | Must be a UUID; a malformed value is rejected with `400` |
+| 1 | `X-Xenovia-Session-Id` header | Must be a UUID; on the Xenovia cloud runtime it may also be a signed [Simulation](/platform/simulation#the-session-header) value (`xsim1.…`) whose signature, expiry and agent are verified. Anything else is rejected with `400` |
 | 2 | `previous_response_id` (Responses API) | Looked up per API key |
 | 3 | `user` field (Chat Completions) | Looked up per API key; the value is stored only as a SHA-256 hash |
 | 4 | Message fingerprint | Hash of the messages up to the last assistant turn |
