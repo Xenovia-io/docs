@@ -3,7 +3,7 @@ title: "Supported providers"
 description: "The model providers an agent can use, the credentials each takes, and how the runtime reaches them"
 ---
 
-An agent uses one provider. You add the provider once in the console (**Providers**) or with the [providers API](/api-reference/introduction), and Xenovia tests the connection before saving it: the runtime sends one short request with the credentials you entered, and the provider is saved only if it answers.
+An agent sends its requests to one provider, its primary, and can have up to three [fallback providers](/platform/fallback-providers) that take over when the primary is down, overloaded or rate-limited. You add each provider once in the console (**Providers**) or with the [providers API](/api-reference/introduction), and Xenovia tests the connection before saving it: the runtime sends one short request with the credentials you entered, and the provider is saved only if it answers.
 
 Your application always speaks OpenAI format to the agent endpoint, whichever provider is behind it; the runtime translates each request for the provider and translates the reply back. See [Supported endpoints](/platform/runtime-architecture#supported-endpoints).
 
@@ -128,5 +128,7 @@ Besides `input.provider` and `input.model`, request and response policies receiv
 | `input.provider_adapter` | The API the runtime used to reach the provider, for example `openai`, `anthropic`, `azure`, `bedrock` or `openai_compatible` |
 | `input.provider_host` | The upstream host, for example `api.together.xyz` |
 | `input.model_family` | The model family when known: `anthropic`, `openai`, `gemini`, `llama`, `mistral` and so on, or `""` |
+
+For agents with fallback providers, policies also receive `input.route_attempt` and `input.route_is_fallback`, and they check each fallback again with its own provider fields before it's called. See [Fallback providers](/platform/fallback-providers#policies).
 
 The **Approved provider allowlist** template matches on `input.provider`.

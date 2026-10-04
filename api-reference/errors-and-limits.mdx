@@ -78,18 +78,39 @@ Errors raised before the request reaches the pipeline — body validation, authe
 | `403` | Blocked by an enforced policy or guardrail, or escalated by a policy |
 | `404` | Unknown agent ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served under an agent, plus the SDK's `POST /v1/execute` at the runtime root) |
 | `405` | Wrong method on a supported path |
-| `502` | The agent has no provider, or an ambiguous or invalid provider configuration |
-| `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable |
+| `502` | The agent has no provider, or an ambiguous or invalid provider configuration; or the provider rejected the agent's credential with a `401`, `402` or `403` (type `upstream_credentials_exhausted`) |
+| `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable, or the agent's route ran out of providers: every provider it tried failed, and any others were skipped (`fallbacks_exhausted`; see [Fallback providers](#fallback-providers)) |
 
 ### Policy and guardrail blocks
 
 A policy block, a guardrail block, and a policy escalation all return `403` with a generic message. A guardrail escalation does not block. The specific reason is recorded server-side and is never returned to the caller. The `X-Xenovia-Trace-Id` header on the response identifies the trace — look it up in the platform to see the policy or guardrail that fired.
 
+### Fallback providers
+
+For an agent with [fallback providers](/platform/fallback-providers), the runtime returns `503` when every provider it tried failed with an error the agent fails over on:
+
+```json
+{
+  "is_bifrost_error": false,
+  "status_code": 503,
+  "type": "fallbacks_exhausted",
+  "error": {
+    "type": "fallbacks_exhausted",
+    "code": "fallbacks_exhausted",
+    "message": "Every provider in this agent's route failed."
+  }
+}
+```
+
+The body also carries `extra_fields`. Match on `error.code`. If the last provider answered with an error the agent doesn't fail over on, you get that error as you would without fallbacks: a `400` comes back as the provider's error, and a `401`, `402` or `403` (while **Rejects the key or model** is off) as a `502` with type `upstream_credentials_exhausted`.
+
+Responses to requests that ran through the fallback route, errors included, also carry `X-Xenovia-Provider`, `X-Xenovia-Provider-Id`, `X-Xenovia-Model`, `X-Xenovia-Attempts` and, when the request switched providers, `X-Xenovia-Fallback-Reason`. Log them with `X-Xenovia-Trace-Id`.
+
 ## Rate limits
 
 The **management API does not rate-limit** requests today.
 
-The **runtime** has no per-agent rate limit. Requests are metered against the organization's request allowance; when it is exhausted the runtime returns `402`. Upstream provider rate limits pass through as the provider's error (for example `429`, with `is_bifrost_error: true`).
+The **runtime** has no per-agent rate limit. Requests are metered against the organization's request allowance; when it is exhausted the runtime returns `402`. Upstream provider rate limits pass through as the provider's error (for example `429`, with `is_bifrost_error: true`), unless a [fallback provider](/platform/fallback-providers) takes the request.
 
 ## Retry guidance
 
@@ -97,6 +118,7 @@ The **runtime** has no per-agent rate limit. Requests are metered against the or
 |--------|--------|-------|
 | `429` | Yes | Upstream provider limit; back off with jitter |
 | `500`, `502`, `503` | Yes | Transient; retry with backoff |
+| `503` with `fallbacks_exhausted` | Not right away | The agent's route ran out of providers (every provider tried failed, and any others were skipped), and a retry runs the whole route again. Back off longer, or check [provider health](/platform/fallback-providers#provider-health) first |
 | `400`, `422` | No | Fix the request |
 | `401` | No | Fix the credential, or activate the agent |
 | `402` | No | Billing; contact your administrator |
