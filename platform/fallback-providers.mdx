@@ -4,7 +4,7 @@ description: "Give an agent up to three backup providers, tried in order when it
 icon: "life-ring"
 ---
 
-An agent sends every model request to its **primary** provider. Fallback providers are up to three more of your organization's providers, tried in order when the primary fails with an outage: it can't be reached, it times out, it rate-limits the request, or it answers with a server error or an overload. Your application keeps calling the same agent endpoint. The runtime switches providers behind it and returns one answer.
+An agent sends its model requests to its **primary** provider first. Fallback providers are up to three more of your organization's providers, tried in order when the primary fails with an outage: it can't be reached, it times out, it rate-limits the request, or it answers with a server error or an overload. Your application keeps calling the same agent endpoint. The runtime switches providers behind it and returns one answer. While the primary [keeps failing](#skipping-a-provider-that-keeps-failing), requests try the fallbacks first and the primary last.
 
 Fallbacks are set on the agent, in the console or with the management API. A request can't choose its own: a `fallbacks` field in a request body is removed.
 
@@ -81,7 +81,7 @@ Codes without a status are `422`. If a saved fallback later becomes unusable (it
 
 These never fail over, and reach your application as they would without fallbacks:
 
-- invalid requests: `400`, `413`, `422` and other `4xx` errors, a `404` that isn't about the model, a prompt too long for the context window;
+- invalid requests: `400`, `413`, `422`, a prompt too long for the context window, a `404` that isn't about the model, and any other `4xx` except `429` and the codes under **Rejects the key or model**, which fail over only when you tick it;
 - Xenovia policy and guardrail blocks, and billing limits;
 - a provider's own content refusal;
 - a client that disconnects.
@@ -132,7 +132,7 @@ Use it for interactive agents, where waiting on a stalled provider costs more th
 
 The runtime keeps a circuit breaker for each provider (each runtime instance keeps its own). After five outage failures within 30 seconds, with no successful answer between them, the breaker opens for about a minute, or longer (up to five minutes) when the provider's `429` or `503` asks for it with `Retry-After`. Then one request is let through to test the provider: if it succeeds, the breaker closes; if not, it opens again. Failures from every agent that uses the provider count.
 
-With **Skip a provider that keeps failing** on (the default), a provider whose breaker is open is tried last instead of in its place, so requests go straight to the next provider instead of waiting on one that is down. If every other provider fails, it's still tried. The first fallback tried in its place reports the reason `breaker_open`.
+With **Skip a provider that keeps failing** on (the default), a provider whose breaker is open, the primary included, is tried last instead of in its place, so requests go straight to the next provider instead of waiting on one that is down. If every other provider fails, it's still tried. The first fallback tried in its place reports the reason `breaker_open`.
 
 ## Fallbacks that are left out
 
@@ -212,9 +212,16 @@ Every change to an agent's fallbacks or routing settings is recorded in the audi
 | `X-Xenovia-Provider-Id` | That provider's ID in your organization |
 | `X-Xenovia-Model` | The model that answered or was tried last |
 | `X-Xenovia-Attempts` | Calls made to providers, retries included |
-| `X-Xenovia-Fallback-Reason` | Only when a fallback was used: why the request moved to that provider, as a failure class or `breaker_open` |
+| `X-Xenovia-Fallback-Reason` | Only when the request switched providers to reach the one in `X-Xenovia-Provider`: the failure class of the provider before it, or `breaker_open` when an open breaker moved it |
 
-They're set on requests that ran through the fallback route, on errors as well as successes once at least one provider was called. Requests of agents without fallbacks, requests sent with `X-Xenovia-Fallback: off`, and requests no fallback could take carry none of them. Browsers can read them (they're exposed through CORS).
+A request runs through the agent's fallback route when the agent has at least one fallback that could take it. Every such request gets these headers once a provider was called, on errors as well as successes, including a request the primary answered straight away (`X-Xenovia-Attempts: 1`, no `X-Xenovia-Fallback-Reason`). Browsers can read them (they're exposed through CORS).
+
+These requests don't run through the route, and carry none of the headers even though the primary was called:
+
+- requests of agents without fallbacks;
+- requests sent with `X-Xenovia-Fallback: off`;
+- requests no fallback could take, because of capabilities or provider-side state (see [Fallbacks that are left out](#fallbacks-that-are-left-out));
+- [Simulation](/platform/simulation) runs on another provider than the agent's primary, which that provider serves alone.
 
 With the OpenAI Python SDK:
 
@@ -280,11 +287,11 @@ On **Providers**, each provider shows its health over the last 15 minutes:
 | Status | When |
 |--------|------|
 | Healthy | Under 10% of attempts failed, or fewer than five attempts |
-| Degraded | 10% or more of at least five attempts failed |
+| Degraded | 10% or more, but under 50%, of at least five attempts failed |
 | Failing | 50% or more of at least five attempts failed |
 | Idle | No requests |
 
-A failure is an outage: one of the six classes above, or a `429`, `500`, `502`, `503`, `504` or `529` for agents without fallbacks. The same data comes from `GET /api/v1/providers/health?window=15m` (`15m`, `1h` or `24h`).
+A failure is an attempt that failed with one of the six classes above, or a request that ended in `fallbacks_exhausted`. That includes **Rejects the key or model**: a rejected key or missing model counts against the provider's health even while it doesn't fail over. For requests that didn't run through a fallback route, a failure is a `429`, `500`, `502`, `503`, `504` or `529` from the provider. The same data comes from `GET /api/v1/providers/health?window=15m` (`15m`, `1h` or `24h`).
 
 ### Alerts
 

@@ -102,9 +102,9 @@ For an agent with [fallback providers](/platform/fallback-providers), the runtim
 }
 ```
 
-The body also carries `extra_fields`. Match on `error.code`. If the last provider answered with an error that doesn't fail over (a `400`, say), that error is returned instead.
+The body also carries `extra_fields`. Match on `error.code`. If the last provider answered with an error the agent doesn't fail over on, you get that error as you would without fallbacks: a `400` comes back as the provider's error, and a `401`, `402` or `403` (while **Rejects the key or model** is off) as a `502` with type `upstream_credentials_exhausted`.
 
-Responses to requests that ran through the fallback route, errors included, also carry `X-Xenovia-Provider`, `X-Xenovia-Provider-Id`, `X-Xenovia-Model`, `X-Xenovia-Attempts` and, when a fallback was used, `X-Xenovia-Fallback-Reason`. Log them with `X-Xenovia-Trace-Id`.
+Responses to requests that ran through the fallback route, errors included, also carry `X-Xenovia-Provider`, `X-Xenovia-Provider-Id`, `X-Xenovia-Model`, `X-Xenovia-Attempts` and, when the request switched providers, `X-Xenovia-Fallback-Reason`. Log them with `X-Xenovia-Trace-Id`.
 
 ## Rate limits
 
@@ -118,6 +118,7 @@ The **runtime** has no per-agent rate limit. Requests are metered against the or
 |--------|--------|-------|
 | `429` | Yes | Upstream provider limit; back off with jitter |
 | `500`, `502`, `503` | Yes | Transient; retry with backoff |
+| `503` with `fallbacks_exhausted` | Not right away | Every provider in the agent's route already failed, and a retry runs the whole route again. Back off longer, or check [provider health](/platform/fallback-providers#provider-health) first |
 | `400`, `422` | No | Fix the request |
 | `401` | No | Fix the credential, or activate the agent |
 | `402` | No | Billing; contact your administrator |

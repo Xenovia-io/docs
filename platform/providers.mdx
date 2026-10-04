@@ -129,6 +129,6 @@ Besides `input.provider` and `input.model`, request and response policies receiv
 | `input.provider_host` | The upstream host, for example `api.together.xyz` |
 | `input.model_family` | The model family when known: `anthropic`, `openai`, `gemini`, `llama`, `mistral` and so on, or `""` |
 
-Agents with fallback providers also receive `input.route_attempt` and `input.route_is_fallback`, and each fallback is checked again with its own provider fields before it's called. See [Fallback providers](/platform/fallback-providers#policies).
+For agents with fallback providers, policies also receive `input.route_attempt` and `input.route_is_fallback`, and they check each fallback again with its own provider fields before it's called. See [Fallback providers](/platform/fallback-providers#policies).
 
 The **Approved provider allowlist** template matches on `input.provider`.
