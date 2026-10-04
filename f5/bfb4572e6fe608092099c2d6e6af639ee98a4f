@@ -1,0 +1,19 @@
+api-reference/errors-and-limits.mdx
+  s_fcd674b272af3d::t_236aab3c1662cb 81-82,121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f5bfb4572e6fe608092099c2d6e6af639ee98a4f",
+  "prompts": {},
+  "sessions": {
+    "s_fcd674b272af3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7fad3a9-a3f1-40fc-bf37-eda158d7096f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Akash S <96624761+AkashS0510@users.noreply.github.com>"
+    }
+  }
+}
