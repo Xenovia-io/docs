@@ -75,13 +75,16 @@
               "DELETE /api/v1/agents/{agent_id}",
               "POST /api/v1/agents/{agent_id}/activate",
               "POST /api/v1/agents/{agent_id}/deactivate",
-              "GET /api/v1/agents/{agent_id}/schema/policy-input"
+              "GET /api/v1/agents/{agent_id}/schema/policy-input",
+              "PUT /api/v1/agents/{agent_id}/fallbacks",
+              "GET /api/v1/agents/{agent_id}/routing-stats"
             ]
           },
           {
             "group": "Providers",
             "pages": [
               "GET /api/v1/providers",
+              "GET /api/v1/providers/health",
               "POST /api/v1/providers",
               "GET /api/v1/providers/{provider_id}",
               "PATCH /api/v1/providers/{provider_id}",
