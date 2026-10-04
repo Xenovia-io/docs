@@ -78,8 +78,8 @@ Errors raised before the request reaches the pipeline — body validation, authe
 | `403` | Blocked by an enforced policy or guardrail, or escalated by a policy |
 | `404` | Unknown agent ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served under an agent, plus the SDK's `POST /v1/execute` at the runtime root) |
 | `405` | Wrong method on a supported path |
-| `502` | The agent has no provider, or an ambiguous or invalid provider configuration |
-| `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable, or every provider in the agent's route failed (`fallbacks_exhausted`; see [Fallback providers](#fallback-providers)) |
+| `502` | The agent has no provider, or an ambiguous or invalid provider configuration; or the provider rejected the agent's credential with a `401`, `402` or `403` (type `upstream_credentials_exhausted`) |
+| `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable, or the agent's route ran out of providers: every provider it tried failed, and any others were skipped (`fallbacks_exhausted`; see [Fallback providers](#fallback-providers)) |
 
 ### Policy and guardrail blocks
 
@@ -118,7 +118,7 @@ The **runtime** has no per-agent rate limit. Requests are metered against the or
 |--------|--------|-------|
 | `429` | Yes | Upstream provider limit; back off with jitter |
 | `500`, `502`, `503` | Yes | Transient; retry with backoff |
-| `503` with `fallbacks_exhausted` | Not right away | Every provider in the agent's route already failed, and a retry runs the whole route again. Back off longer, or check [provider health](/platform/fallback-providers#provider-health) first |
+| `503` with `fallbacks_exhausted` | Not right away | The agent's route ran out of providers (every provider tried failed, and any others were skipped), and a retry runs the whole route again. Back off longer, or check [provider health](/platform/fallback-providers#provider-health) first |
 | `400`, `422` | No | Fix the request |
 | `401` | No | Fix the credential, or activate the agent |
 | `402` | No | Billing; contact your administrator |
