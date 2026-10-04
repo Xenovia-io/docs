@@ -79,17 +79,38 @@ Errors raised before the request reaches the pipeline — body validation, authe
 | `404` | Unknown agent ID or unsupported path (only `/v1/chat/completions` and `/v1/responses` are served under an agent, plus the SDK's `POST /v1/execute` at the runtime root) |
 | `405` | Wrong method on a supported path |
 | `502` | The agent has no provider, or an ambiguous or invalid provider configuration |
-| `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable |
+| `503` | A dependency (auth, policy, or an enforced guardrail) was briefly unavailable, or every provider in the agent's route failed (`fallbacks_exhausted`; see [Fallback providers](#fallback-providers)) |
 
 ### Policy and guardrail blocks
 
 A policy block, a guardrail block, and a policy escalation all return `403` with a generic message. A guardrail escalation does not block. The specific reason is recorded server-side and is never returned to the caller. The `X-Xenovia-Trace-Id` header on the response identifies the trace — look it up in the platform to see the policy or guardrail that fired.
 
+### Fallback providers
+
+For an agent with [fallback providers](/platform/fallback-providers), the runtime returns `503` when every provider it tried failed with an error the agent fails over on:
+
+```json
+{
+  "is_bifrost_error": false,
+  "status_code": 503,
+  "type": "fallbacks_exhausted",
+  "error": {
+    "type": "fallbacks_exhausted",
+    "code": "fallbacks_exhausted",
+    "message": "Every provider in this agent's route failed."
+  }
+}
+```
+
+The body also carries `extra_fields`. Match on `error.code`. If the last provider answered with an error that doesn't fail over (a `400`, say), that error is returned instead.
+
+Responses to requests that ran through the fallback route, errors included, also carry `X-Xenovia-Provider`, `X-Xenovia-Provider-Id`, `X-Xenovia-Model`, `X-Xenovia-Attempts` and, when a fallback was used, `X-Xenovia-Fallback-Reason`. Log them with `X-Xenovia-Trace-Id`.
+
 ## Rate limits
 
 The **management API does not rate-limit** requests today.
 
-The **runtime** has no per-agent rate limit. Requests are metered against the organization's request allowance; when it is exhausted the runtime returns `402`. Upstream provider rate limits pass through as the provider's error (for example `429`, with `is_bifrost_error: true`).
+The **runtime** has no per-agent rate limit. Requests are metered against the organization's request allowance; when it is exhausted the runtime returns `402`. Upstream provider rate limits pass through as the provider's error (for example `429`, with `is_bifrost_error: true`), unless a [fallback provider](/platform/fallback-providers) takes the request.
 
 ## Retry guidance
 

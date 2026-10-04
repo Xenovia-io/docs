@@ -1,0 +1,339 @@
+---
+title: "Fallback providers"
+description: "Give an agent up to three backup providers, tried in order when its primary provider is down, overloaded or rate-limited."
+icon: "life-ring"
+---
+
+An agent sends every model request to its **primary** provider. Fallback providers are up to three more of your organization's providers, tried in order when the primary fails with an outage: it can't be reached, it times out, it rate-limits the request, or it answers with a server error or an overload. Your application keeps calling the same agent endpoint. The runtime switches providers behind it and returns one answer.
+
+Fallbacks are set on the agent, in the console or with the management API. A request can't choose its own: a `fallbacks` field in a request body is removed.
+
+Use fallbacks for agents that must keep answering through a provider outage, or for models that are often overloaded or rate-limited at peak times. They don't help with requests that are wrong in themselves: a request the provider rejects as invalid, or that a policy blocks, is not sent anywhere else.
+
+## Set up fallbacks
+
+<Steps>
+  <Step title="Add the providers">
+    Each fallback is one of your organization's providers. Add the ones you need on **Providers** first (see [Supported providers](/platform/providers)). A provider without a default model can still be a fallback; you choose its model when you add it.
+  </Step>
+  <Step title="Open Model routing">
+    Open the agent, go to the **Configuration** tab and find **Model routing**. The primary is at the top, and the fallbacks are listed under **Fallbacks, tried in order**.
+  </Step>
+  <Step title="Add a fallback">
+    Under **Add a fallback**, choose a **Provider** and, if you want another model than the provider's own, a **Model**. Choose **Add fallback**. Repeat for up to three fallbacks.
+  </Step>
+  <Step title="Order them">
+    Move fallbacks up or down with the arrows. The first one is tried first.
+  </Step>
+  <Step title="Choose when to fail over">
+    Under **Fail over when the provider**, tick the failures that move a request to the next provider (see [Which failures fail over](#which-failures-fail-over)). Timeouts and the circuit breaker are under **Timeouts and health**.
+  </Step>
+  <Step title="Save">
+    Choose **Save changes**. Xenovia checks every fallback before saving and refuses the whole change if one fails a check (see [Save checks](#save-checks)).
+  </Step>
+</Steps>
+
+You can also add fallbacks when you create an agent: the model step has an optional **Fallbacks** field, which offers providers that have a default model. Set the order and failover settings on the **Configuration** tab afterward.
+
+The same provider can appear more than once in the route with different models, for example an OpenAI provider serving `gpt-5` as the primary and `gpt-5-mini` as a fallback. That helps when one model is overloaded, not when the whole provider is down, because both use the same account and endpoint.
+
+### Choose the order
+
+Each fallback in **Model routing** is labelled by how close it is to the primary, and warns about capabilities the primary's model has and it lacks (**No image input**, **No tool calling**, **Smaller context window**). A request that needs a missing capability skips that fallback.
+
+1. **Same model as primary** first: the primary's model on another provider, such as a Claude model served by Anthropic as the primary and the same model on Amazon Bedrock or Google Vertex AI as fallback 1. Answers should match.
+2. **Different model** next: another model of the same family.
+3. **Different model family** last. Prompts, tool calls and structured output may behave differently, so test the agent on it first. A [Simulation](/platform/simulation) run can use another of your providers.
+
+### Change or remove the primary
+
+- **Change primary** keeps the fallbacks, except one with the same provider and model as the new primary, which is removed.
+- You can't detach the primary while the agent has fallbacks. Remove the fallbacks or change the primary first.
+- A provider that is a fallback of any agent can't be deleted until it's removed from those agents.
+
+### Save checks
+
+A save is refused, and nothing changes, when:
+
+| Refused when | API code |
+|--------------|----------|
+| The agent has no primary provider | `primary_required` (`409`) |
+| More than three fallbacks | `too_many_fallbacks` |
+| A fallback has the same provider and model as the primary or an earlier fallback | `duplicate_fallback` |
+| A fallback has no model: you didn't choose one and its provider has no default | `fallback_missing_model` |
+| A fallback's provider has no stored credential | `fallback_missing_credential` |
+| One of the agent's enforced policies blocks the fallback (see [Policies](#policies)) | `fallback_blocked_by_policy` |
+| **Keep fallbacks in the primary's region** is on and a fallback serves from another region (see [Residency](#residency)) | `fallback_residency_mismatch` |
+| A provider in the route no longer exists | `provider_not_found` (`404`) |
+
+Codes without a status are `422`. If a saved fallback later becomes unusable (its provider loses its model or credential, it ends up with the same provider and model as another entry, or it no longer matches the primary's region), the agent's readiness and **Model routing** flag it, and the runtime leaves that fallback out until it's fixed. The rest of the route keeps serving.
+
+## Which failures fail over
+
+| Fail over when the provider… | Class | Covers | Default |
+|------------------------------|-------|--------|---------|
+| Is unreachable | `unreachable` | DNS, TLS or connection errors | On |
+| Times out | `timeout` | No answer within the attempt timeout, or no output within the first-token timeout | On |
+| Rate-limits | `rate_limited` | `429` | On |
+| Has a server error | `server_error` | `500`, `502`, `504`, or an empty or unreadable answer | On |
+| Is overloaded | `overloaded` | `503`, `529` | On |
+| Rejects the key or model | `setup_fault` | `401`, `402`, `403` (a revoked key, an empty balance), or a `404` for the configured model | Off |
+
+These never fail over, and reach your application as they would without fallbacks:
+
+- invalid requests: `400`, `413`, `422` and other `4xx` errors, a `404` that isn't about the model, a prompt too long for the context window;
+- Xenovia policy and guardrail blocks, and billing limits;
+- a provider's own content refusal;
+- a client that disconnects.
+
+**Rejects the key or model** is off by default because a revoked key or a missing model is a configuration problem, not an outage: failing over keeps the agent answering but hides the problem. If you turn it on, add the **Request served by a fallback** alert (see [Alerts](#alerts)) so you notice. While it's off, a provider's `401`, `402` or `403` reaches your application as a `502`, as without fallbacks, so it's never mistaken for your own agent key being rejected.
+
+If a fallback answers with an error that doesn't fail over, such as a `400`, that error is the request's answer and later fallbacks are not tried.
+
+## Retries and timeouts
+
+Before moving on, the runtime retries a failed attempt on the same provider at most once: after a short backoff (about half a second) for `unreachable`, `server_error` and `overloaded`, and for `rate_limited` only when the provider's `Retry-After` asks for two seconds or less. Timeouts and rejected keys are not retried on the same provider.
+
+These settings are under **Timeouts and health**, apart from the failover triggers:
+
+| Setting | API field | Default | Range |
+|---------|-----------|---------|-------|
+| Fail over when the provider… | `fail_over_on` | Every class except `setup_fault` | The six classes above |
+| Attempt timeout (seconds): one call to one provider | `attempt_timeout_s` | 120 | 10–600 |
+| Total budget (seconds): every attempt of one request together | `total_budget_s` | 300 | 10–900 |
+| First-token timeout (seconds) | `first_token_timeout_s` | Off | 1–120 |
+| Skip a provider that keeps failing | `breaker_enabled` | On | |
+| Keep fallbacks in the primary's region | `same_residency` | Off | |
+
+With the defaults, a primary that hangs uses 120 seconds, fallback 1 gets up to 120 seconds, and fallback 2 gets the remaining 60. No attempt after the first starts with less than 10 seconds of the budget left; the fallbacks left are skipped as **out of time**.
+
+<Warning>
+  Adding a fallback changes the agent's timeouts. Without fallbacks, a call to the provider can run for 300 seconds, with up to two retries. With fallbacks, each attempt ends at the attempt timeout, 120 seconds by default. If the agent writes long answers or uses a reasoning model that can think for minutes, raise **Attempt timeout** and **Total budget** before you add fallbacks, or long requests will time out and fail over. Keep your HTTP client's timeout above the total budget, or your application gives up while a fallback is still answering.
+</Warning>
+
+### First-token timeout
+
+A provider that accepts a request but never starts answering holds it until the attempt timeout. A first-token timeout notices that early without cutting off long answers.
+
+When it's set, each attempt is streamed from the provider. If no output (text, reasoning, a refusal or a tool call) arrives within that many seconds of the attempt's start, connecting and queueing included, the attempt is cancelled and counted as `timeout`. It isn't retried on the same provider. It fails over when **Times out** is ticked; otherwise your application gets a `504` that names the first-token timeout. Once output has started, only the attempt timeout and the total budget apply.
+
+Your application sees no difference: the runtime still collects the whole answer, runs response policies on it and returns it the way you asked for it, streamed or not.
+
+Use it for interactive agents, where waiting on a stalled provider costs more than switching. Set it well above the model's usual time to first token; traces show **Time to first token** for attempts made under it.
+
+<Warning>
+  A reasoning model that thinks without streaming its thoughts sends nothing until it's done thinking, and that time counts against the first-token timeout. Leave it off for such models, or set it above their longest thinking time.
+</Warning>
+
+- A first-token timeout counts as a failure of that provider for the circuit breaker below, which every agent using the provider shares. A timeout too tight for a slow model can make other agents skip that provider.
+- It doesn't apply to requests that ask for log probabilities, several choices (`n` above 1), audio output or a background Responses run. Those are still sent as one call.
+
+## Skipping a provider that keeps failing
+
+The runtime keeps a circuit breaker for each provider (each runtime instance keeps its own). After five outage failures within 30 seconds, with no successful answer between them, the breaker opens for about a minute, or longer (up to five minutes) when the provider's `429` or `503` asks for it with `Retry-After`. Then one request is let through to test the provider: if it succeeds, the breaker closes; if not, it opens again. Failures from every agent that uses the provider count.
+
+With **Skip a provider that keeps failing** on (the default), a provider whose breaker is open is tried last instead of in its place, so requests go straight to the next provider instead of waiting on one that is down. If every other provider fails, it's still tried. The first fallback tried in its place reports the reason `breaker_open`.
+
+## Fallbacks that are left out
+
+A fallback is skipped for a request, and the next one tried, when:
+
+| Trace shows | Code | When |
+|-------------|------|------|
+| no image input | `capability_vision` | The request has images and the fallback's model doesn't accept them |
+| no tool calling | `capability_tools` | The request has tools and the fallback's model can't call them |
+| context window too small | `capability_context` | The estimated prompt is above 95% of the model's context window |
+| can't take this request | `content_incompatible` | The request depends on provider-side state (see [Limitations](#limitations)), links to an image or file the fallback's provider can't take by URL, or can't be converted for that provider's API |
+| blocked by policy | `policy_blocked` | One of the agent's policies blocks the fallback (see [Policies](#policies)) |
+| out of time | `budget_exhausted` | Less than 10 seconds of the total budget left |
+| kept failing | `breaker_open` | Its breaker was open and the request ended before reaching it |
+| couldn't be set up | `unresolved` | Its configuration or credential couldn't be loaded |
+
+Capabilities come from a public model directory. A model it doesn't know is treated as capable. Capability checks never skip the primary, and a request that no fallback could take, because of capabilities or provider-side state, runs on the primary exactly as it would without fallbacks.
+
+## Governance
+
+### Policies
+
+Fallbacks are held to the agent's policies twice.
+
+**When you save.** Each fallback's provider and model are checked against the agent's enforced policies made from the **Approved provider allowlist**, **Approved model allowlist** and **Model to provider route lock** templates, and against the organization's enforced baselines made from them. A fallback one of them would block can't be saved. Policies you wrote yourself, and template policies whose Rego was edited, are not checked at save time.
+
+**On every attempt.** Before calling a fallback, the runtime runs the agent's request-stage policies again with that fallback's `provider`, `provider_adapter`, `provider_host`, `model_family` and `model`. If a policy blocks or escalates it, or the evaluation fails, that fallback is skipped and the request moves on to the next one; the request itself is not refused. A redaction applies to that attempt only. These re-checks show in the trace but are not the request's policy decision: they are left out of block rates, policy alerts and compliance evidence.
+
+Guardrails run once, before the first attempt. Their verdict, and every redaction made before the first attempt, stands for every attempt, so no fallback receives content Xenovia removed.
+
+Policies of agents with fallbacks receive two more fields:
+
+| Field | Value |
+|-------|-------|
+| `input.route_is_fallback` | `true` when the attempt goes to one of the agent's fallbacks |
+| `input.route_attempt` | The attempt number, from 1 |
+
+The request stage sees `1` and `false` (the primary), a fallback's re-check sees its own attempt and route, and the response stage sees the attempt that answered. To tell a fallback apart, test `route_is_fallback`, not `route_attempt`: a fallback tried first because the primary's breaker is open is attempt 1.
+
+For example, this request-stage policy lets fallbacks use only the organization's cloud accounts:
+
+```rego
+package xenovia
+import future.keywords.if
+
+default decision = {"action": "allow"}
+
+fallback_providers := {"bedrock", "vertex"}
+
+decision = {"action": "block", "rule": "fallbacks-in-our-clouds"} if {
+    input.route_is_fallback == true
+    not fallback_providers[input.provider]
+}
+```
+
+A fallback on any other provider is skipped and shows as **blocked by policy** in the trace. The primary is never affected. See [Policies and Enforcement](/platform/policies-and-approvals) for the decision contract.
+
+### Residency
+
+Turn on **Keep fallbacks in the primary's region** to refuse fallbacks that serve requests from a different region than the primary.
+
+Xenovia detects the region of Amazon Bedrock providers from their AWS region (a model ID starting `global.` counts as Global) and of Google Vertex AI providers from their location. For any other provider, set **Data residency** (US, EU, Asia Pacific or Global) on the provider in **Providers**. A provider whose region is unknown never matches, not even another unknown one.
+
+The setting is checked when you save the route. A fallback that stops matching later, because a provider's region changed, is left out until it's fixed.
+
+### Audit log
+
+Every change to an agent's fallbacks or routing settings is recorded in the audit log as `agent.fallbacks.update`, with the route and settings before and after.
+
+## What your application sees
+
+### Response headers
+
+| Header | Value |
+|--------|-------|
+| `X-Xenovia-Provider` | The type of the provider that answered or was tried last, for example `bedrock` |
+| `X-Xenovia-Provider-Id` | That provider's ID in your organization |
+| `X-Xenovia-Model` | The model that answered or was tried last |
+| `X-Xenovia-Attempts` | Calls made to providers, retries included |
+| `X-Xenovia-Fallback-Reason` | Only when a fallback was used: why the request moved to that provider, as a failure class or `breaker_open` |
+
+They're set on requests that ran through the fallback route, on errors as well as successes once at least one provider was called. Requests of agents without fallbacks, requests sent with `X-Xenovia-Fallback: off`, and requests no fallback could take carry none of them. Browsers can read them (they're exposed through CORS).
+
+With the OpenAI Python SDK:
+
+```python
+raw = client.chat.completions.with_raw_response.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Summarize this ticket."}],
+)
+response = raw.parse()
+
+reason = raw.headers.get("X-Xenovia-Fallback-Reason")
+if reason:
+    print(f"Served by {raw.headers['X-Xenovia-Provider']} after: {reason}")
+```
+
+### When every provider fails
+
+A request's answer is the first success. Only when every provider tried failed with an error the agent fails over on does the runtime return `503`:
+
+```json
+{
+  "is_bifrost_error": false,
+  "status_code": 503,
+  "type": "fallbacks_exhausted",
+  "error": {
+    "type": "fallbacks_exhausted",
+    "code": "fallbacks_exhausted",
+    "message": "Every provider in this agent's route failed."
+  }
+}
+```
+
+Match on `error.code`. The body also carries `extra_fields`, as other [runtime errors](/api-reference/errors-and-limits) do. OpenAI SDKs raise a `503` as `InternalServerError` and retry it twice by default, which runs the whole route again each time; lower `max_retries` if that takes too long. Agents without fallbacks keep their usual errors.
+
+### Turn fallbacks off for one request
+
+Send `X-Xenovia-Fallback: off` to run a request on the primary only, with the usual single-provider retries. Use it for evaluations that must measure one fixed model.
+
+```python
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    extra_headers={"X-Xenovia-Fallback": "off"},
+)
+```
+
+## Monitor fallbacks
+
+### Traces
+
+In **Sessions**, a turn's model call shows how the route went. Each failed attempt is its own **Failed attempt** step with its provider, status and failure class. The model call that answered says which attempt it was, why the request moved on and, when a fallback answered, **Served by fallback 1**, **2** or **3**. Skipped fallbacks are listed with their reason. A failed attempt the runtime recovered from doesn't count as a failed request in overviews.
+
+The [traces API](/platform/traces-and-remediation#querying-traces-programmatically) returns `provider_id`, `route_attempt`, `route_is_fallback`, `fallback_reason` and `primary_provider_id` on model runs, and failed attempts have `run_type` `llm_attempt`.
+
+### Routing panel
+
+The agent's **Overview** tab has a **Routing** panel for the last hour, 24 hours or 7 days: the **Fallback rate**, the requests **Served by a fallback**, the requests where **Every provider failed**, requests and failed attempts per provider, and **Why requests failed over**. The same numbers come from `GET /api/v1/agents/{agent_id}/routing-stats?window=24h` (`1h`, `24h` or `7d`).
+
+### Provider health
+
+On **Providers**, each provider shows its health over the last 15 minutes:
+
+| Status | When |
+|--------|------|
+| Healthy | Under 10% of attempts failed, or fewer than five attempts |
+| Degraded | 10% or more of at least five attempts failed |
+| Failing | 50% or more of at least five attempts failed |
+| Idle | No requests |
+
+A failure is an outage: one of the six classes above, or a `429`, `500`, `502`, `503`, `504` or `529` for agents without fallbacks. The same data comes from `GET /api/v1/providers/health?window=15m` (`15m`, `1h` or `24h`).
+
+### Alerts
+
+Create these in **Settings → Alerts**:
+
+| Alert | Type | Fires on |
+|-------|------|----------|
+| Request served by a fallback (`fallback_served`) | Event | A fallback answered a request |
+| Every provider failed (`fallbacks_exhausted`) | Event | A request ended in `fallbacks_exhausted` |
+| Fallback rate (`fallback_rate`) | Metric, per agent | The share of requests a fallback answered |
+| Provider failure rate (`provider_failure_rate`) | Metric, per provider | The share of attempts on a provider that failed |
+
+Run alert rules can also filter on `provider_id`. **Run error** doesn't fire for failed attempts the runtime moved on from; the request's own model call reports how it ended.
+
+## Manage fallbacks with the API
+
+`PUT /api/v1/agents/{agent_id}/fallbacks` replaces an agent's whole list of fallbacks, and optionally its routing settings. It takes an organization key with `write` scope (see [Authentication](/api-reference/authentication)) or a signed-in session.
+
+```bash
+curl -X PUT "https://cp.xenovia.io/api/v1/agents/$AGENT_ID/fallbacks" \
+  -H "Authorization: Bearer $XENOVIA_ORG_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fallbacks": [
+      {"provider_id": "<bedrock-provider-id>", "model": null},
+      {"provider_id": "<openai-provider-id>", "model": "gpt-5"}
+    ],
+    "routing": {"attempt_timeout_s": 180, "total_budget_s": 420}
+  }'
+```
+
+- The order of `fallbacks` is the order they're tried. An empty list removes every fallback.
+- `model` is optional; `null` uses the provider's own model.
+- `routing` is optional. Leave it out to keep the saved settings, send some fields to change only those, or send `null` to reset every setting to its default. Fields are those in [Retries and timeouts](#retries-and-timeouts); only `first_token_timeout_s` may be `null` (off).
+
+The response is the agent, with `fallbacks` (each with its `position`, `provider_id`, effective `model`, `model_override`, `residency` and the model's `capabilities`) and the effective `routing`. A refused save answers with a `detail` object holding a `code` from [Save checks](#save-checks) and a `message`, and changes nothing.
+
+To read the route, `GET /api/v1/agents/{agent_id}` returns `fallbacks` and `routing`, and `GET /api/v1/agents/{agent_id}/providers` lists the primary (`role: primary`, `position: 0`) followed by the fallbacks. Providers accept a `residency` field (`us`, `eu`, `apac` or `global`; `null` to detect it).
+
+## Costs
+
+- Xenovia counts a request once against your organization's request allowance, however many attempts it took. A request that ends in `fallbacks_exhausted` isn't counted.
+- Xenovia's LLM cost figures price the call that answered. Failed attempts carry no tokens.
+- Providers may still bill for failed attempts. A provider can finish, and charge for, a generation after Xenovia gave up on it at a timeout. With a first-token timeout, output streamed before a provider error may be billed, twice if the attempt was retried on the same provider.
+- Prompt caches don't carry over. A fallback starts with its own cache, so long cached prompts cost more while the agent is failing over, and a fallback's model has its own price.
+
+## Limitations
+
+- **Hybrid deployments.** A [customer-hosted runtime](/platform/runtime-architecture#hybrid-deployments) can't load fallback credentials yet, so it skips every fallback (**couldn't be set up**) and serves from the primary.
+- **Requests can't set fallbacks.** A `fallbacks` field in a request body is removed; only the agent's route is used.
+- **Provider-side state.** A request that refers to state held by the primary's provider, such as a Responses `previous_response_id` or `conversation`, or a provider file ID, can only fail over to a fallback on that same provider with another model. Other fallbacks are skipped.
+- **Up to three fallbacks** per agent.

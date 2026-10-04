@@ -45,6 +45,7 @@
               "platform/overview",
               "platform/runtime-architecture",
               "platform/providers",
+              "platform/fallback-providers",
               "platform/policies-and-approvals",
               "platform/tools-and-access",
               "platform/traces-and-remediation",
