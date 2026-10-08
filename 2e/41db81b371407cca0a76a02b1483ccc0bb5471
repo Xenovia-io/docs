@@ -1,0 +1,21 @@
+platform/providers.mdx
+  s_faff377fb2e02d::t_d6d46698401faf 120
+platform/fallback-providers.mdx
+  s_faff377fb2e02d::t_d6d46698401faf 17,23,38,50,62-64,70,320-321,328,331
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2e41db81b371407cca0a76a02b1483ccc0bb5471",
+  "prompts": {},
+  "sessions": {
+    "s_faff377fb2e02d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb53e7fd-70f7-4205-8f6e-b7c9010e7e2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Akash S <96624761+AkashS0510@users.noreply.github.com>"
+    }
+  }
+}
