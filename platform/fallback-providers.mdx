@@ -14,7 +14,7 @@ Use fallbacks for agents that must keep answering through a provider outage, or 
 
 <Steps>
   <Step title="Add the providers">
-    Each fallback is one of your organization's providers. Add the ones you need on **Providers** first (see [Supported providers](/platform/providers)). A provider without a default model can still be a fallback; you choose its model when you add it.
+    Each fallback is one of your organization's providers. Add the ones you need on **Providers** first (see [Supported providers](/platform/providers)). A fallback uses its provider's model unless you choose another one when you add it.
   </Step>
   <Step title="Open Model routing">
     Open the agent, go to the **Configuration** tab and find **Model routing**. The primary is at the top, and the fallbacks are listed under **Fallbacks, tried in order**.
@@ -33,7 +33,7 @@ Use fallbacks for agents that must keep answering through a provider outage, or 
   </Step>
 </Steps>
 
-You can also add fallbacks when you create an agent: the model step has an optional **Fallbacks** field, which offers providers that have a default model. Set the order and failover settings on the **Configuration** tab afterward.
+You can also add fallbacks when you create an agent: the model step has an optional **Fallbacks** field, which offers providers that have a model. Set the order and failover settings on the **Configuration** tab afterward.
 
 The same provider can appear more than once in the route with different models, for example an OpenAI provider serving `gpt-5` as the primary and `gpt-5-mini` as a fallback. That helps when one model is overloaded, not when the whole provider is down, because both use the same account and endpoint.
 
@@ -60,7 +60,7 @@ A save is refused, and nothing changes, when:
 | The agent has no primary provider | `primary_required` (`409`) |
 | More than three fallbacks | `too_many_fallbacks` |
 | A fallback has the same provider and model as the primary or an earlier fallback | `duplicate_fallback` |
-| A fallback has no model: you didn't choose one and its provider has no default | `fallback_missing_model` |
+| A fallback has no model: you didn't choose one and its provider has none (only providers saved before a model was required) | `fallback_missing_model` |
 | A fallback's provider has no stored credential | `fallback_missing_credential` |
 | One of the agent's enforced policies blocks the fallback (see [Policies](#policies)) | `fallback_blocked_by_policy` |
 | **Keep fallbacks in the primary's region** is on and a fallback serves from another region (see [Residency](#residency)) | `fallback_residency_mismatch` |
