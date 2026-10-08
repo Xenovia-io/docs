@@ -6,15 +6,28 @@ icon: "bolt"
 
 This quickstart uses the **agent endpoint** because it is the fastest path to coverage. If you need to gate non-LLM actions too, continue with the [Xenovia Python SDK](/integrations/xenovia-sdk) after this.
 
-## 1. Collect the values you need
+## 1. Set up the agent
 
-From the Xenovia platform:
+In the platform, open **Agents** and choose **Create agent**. The agent is saved as a **draft** after the first step, and setup walks you through four steps:
 
-1. Create an **agent** and note the **agent ID**.
-2. Generate an **API key** (`xe_...`) for that agent.
-3. **Activate** the agent. While it is a draft, the runtime rejects its keys with `401`.
+<Steps>
+  <Step title="Purpose">
+    Name the agent, choose how it connects, and describe the job it does. The purpose becomes the agent's scope guardrail. This quickstart uses the **Agent endpoint** mode; **SDK only** agents call their model themselves, and **Hybrid deployment** agents are served by your own deployment, which you pick here (organization admins).
+  </Step>
+  <Step title="Model route">
+    Choose a provider (or add one); the agent uses the provider's model. A hybrid agent's provider uses a credential reference that your cluster resolves. SDK-only agents skip this step.
+  </Step>
+  <Step title="Protection">
+    Keep the recommended policies. They are created in **Monitor** (evaluated and recorded, never blocking) and switched on when you activate the agent.
+  </Step>
+  <Step title="Connect">
+    Create an API key (`xe_...`). It is shown once. Copy it together with the agent ID from the endpoint URL.
+  </Step>
+</Steps>
 
-Set them as environment variables:
+Then choose **Activate agent**. The button stays disabled until the control plane reports the agent ready to activate; today that requires only an API key. Once the agent is active, the page waits for its first request. While the agent is a draft, the runtime rejects its keys with `401`.
+
+Set the key and agent ID as environment variables:
 
 ```bash
 export XENOVIA_API_KEY=xe_...
