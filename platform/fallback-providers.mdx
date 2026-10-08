@@ -14,13 +14,13 @@ Use fallbacks for agents that must keep answering through a provider outage, or 
 
 <Steps>
   <Step title="Add the providers">
-    Each fallback is one of your organization's providers. Add the ones you need on **Providers** first (see [Supported providers](/platform/providers)). A provider without a default model can still be a fallback; you choose its model when you add it.
+    Each fallback is one of your organization's providers. Add the ones you need on **Providers** first (see [Supported providers](/platform/providers)). A fallback serves its provider's model: to fall back to another model, add a provider with that model.
   </Step>
   <Step title="Open Model routing">
     Open the agent, go to the **Configuration** tab and find **Model routing**. The primary is at the top, and the fallbacks are listed under **Fallbacks, tried in order**.
   </Step>
   <Step title="Add a fallback">
-    Under **Add a fallback**, choose a **Provider** and, if you want another model than the provider's own, a **Model**. Choose **Add fallback**. Repeat for up to three fallbacks.
+    Choose **Add fallback**, then a **Provider**. The dialog shows the model and region it serves. Choose **Add to route**. Repeat for up to three fallbacks.
   </Step>
   <Step title="Order them">
     Move fallbacks up or down with the arrows. The first one is tried first.
@@ -33,9 +33,9 @@ Use fallbacks for agents that must keep answering through a provider outage, or 
   </Step>
 </Steps>
 
-You can also add fallbacks when you create an agent: the model step has an optional **Fallbacks** field, which offers providers that have a default model. Set the order and failover settings on the **Configuration** tab afterward.
+You can also add fallbacks when you create an agent: the model step has an optional **Fallbacks** field, which offers providers that have a model. Set the order and failover settings on the **Configuration** tab afterward.
 
-The same provider can appear more than once in the route with different models, for example an OpenAI provider serving `gpt-5` as the primary and `gpt-5-mini` as a fallback. That helps when one model is overloaded, not when the whole provider is down, because both use the same account and endpoint.
+A provider appears once in the route. To fall back to another model on the same account, for example `gpt-5` as the primary and `gpt-5-mini` as a fallback, add a second provider with the same key and `gpt-5-mini` as its model. That helps when one model is overloaded, not when the whole provider is down, because both use the same account and endpoint.
 
 ### Choose the order
 
@@ -47,7 +47,7 @@ Each fallback in **Model routing** is labelled by how close it is to the primary
 
 ### Change or remove the primary
 
-- **Change primary** keeps the fallbacks, except one with the same provider and model as the new primary, which is removed.
+- **Change primary** keeps the fallbacks, except one on the new primary's provider, which is removed.
 - You can't detach the primary while the agent has fallbacks. Remove the fallbacks or change the primary first.
 - A provider that is a fallback of any agent can't be deleted until it's removed from those agents.
 
@@ -59,14 +59,15 @@ A save is refused, and nothing changes, when:
 |--------------|----------|
 | The agent has no primary provider | `primary_required` (`409`) |
 | More than three fallbacks | `too_many_fallbacks` |
-| A fallback has the same provider and model as the primary or an earlier fallback | `duplicate_fallback` |
-| A fallback has no model: you didn't choose one and its provider has no default | `fallback_missing_model` |
+| A fallback names a model; a fallback serves its provider's model | `fallback_model_not_allowed` |
+| A fallback uses the same provider as the primary or an earlier fallback | `duplicate_fallback` |
+| A fallback's provider has no model (only providers saved before a model was required) | `fallback_missing_model` |
 | A fallback's provider has no stored credential | `fallback_missing_credential` |
 | One of the agent's enforced policies blocks the fallback (see [Policies](#policies)) | `fallback_blocked_by_policy` |
 | **Keep fallbacks in the primary's region** is on and a fallback serves from another region (see [Residency](#residency)) | `fallback_residency_mismatch` |
 | A provider in the route no longer exists | `provider_not_found` (`404`) |
 
-Codes without a status are `422`. If a saved fallback later becomes unusable (its provider loses its model or credential, it ends up with the same provider and model as another entry, or it no longer matches the primary's region), the agent's readiness and **Model routing** flag it, and the runtime leaves that fallback out until it's fixed. The rest of the route keeps serving.
+Codes without a status are `422`. If a saved fallback later becomes unusable (its provider loses its model or credential, it ends up on the same provider as another entry, or it no longer matches the primary's region), the agent's readiness and **Model routing** flag it, and the runtime leaves that fallback out until it's fixed. The rest of the route keeps serving.
 
 ## Which failures fail over
 
@@ -316,18 +317,18 @@ curl -X PUT "https://cp.xenovia.io/api/v1/agents/$AGENT_ID/fallbacks" \
   -H "Content-Type: application/json" \
   -d '{
     "fallbacks": [
-      {"provider_id": "<bedrock-provider-id>", "model": null},
-      {"provider_id": "<openai-provider-id>", "model": "gpt-5"}
+      {"provider_id": "<bedrock-provider-id>"},
+      {"provider_id": "<openai-provider-id>"}
     ],
     "routing": {"attempt_timeout_s": 180, "total_budget_s": 420}
   }'
 ```
 
 - The order of `fallbacks` is the order they're tried. An empty list removes every fallback.
-- `model` is optional; `null` uses the provider's own model.
+- Each fallback serves its provider's model. Don't send `model`: any value other than `null` is refused with `fallback_model_not_allowed`.
 - `routing` is optional. Leave it out to keep the saved settings, send some fields to change only those, or send `null` to reset every setting to its default. Fields are those in [Retries and timeouts](#retries-and-timeouts); only `first_token_timeout_s` may be `null` (off).
 
-The response is the agent, with `fallbacks` (each with its `position`, `provider_id`, effective `model`, `model_override`, `residency` and the model's `capabilities`) and the effective `routing`. A refused save answers with a `detail` object holding a `code` from [Save checks](#save-checks) and a `message`, and changes nothing.
+The response is the agent, with `fallbacks` (each with its `position`, `provider_id`, its provider's `model`, `residency` and the model's `capabilities`; `model_override` is deprecated and always `null`) and the effective `routing`. A refused save answers with a `detail` object holding a `code` from [Save checks](#save-checks) and a `message`, and changes nothing.
 
 To read the route, `GET /api/v1/agents/{agent_id}` returns `fallbacks` and `routing`, and `GET /api/v1/agents/{agent_id}/providers` lists the primary (`role: primary`, `position: 0`) followed by the fallbacks. Providers accept a `residency` field (`us`, `eu`, `apac` or `global`; `null` to detect it).
 

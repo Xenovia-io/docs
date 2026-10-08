@@ -117,7 +117,7 @@ vLLM, Ollama, SGLang and LM Studio servers, and any other server or gateway that
 
 ## Models
 
-The model is set on the provider (and can be overridden per agent). The model in your application's request is replaced with it. The console lists the provider's models where the provider publishes a model list, and suggests common models otherwise; you can always type a model ID.
+Every provider has a model, and it is required. Every request an agent sends through the provider goes to that model: the runtime replaces the `model` in your application's request with it, so a client can't pick another model. Fallbacks work the same way: each serves its provider's model, so to fall back to another model, add a provider with that model (see [Fallback providers](/platform/fallback-providers)). To change models, change the provider or the agent's routing, not your code. The console lists the provider's models where the provider publishes a model list, and suggests common models otherwise; you can always type a model ID.
 
 ## Policy fields
 
